@@ -138,13 +138,13 @@ jobs:
 
   deploy:
     name: Deploy production
-    # The repository variable is used only for the one-time GHCR visibility bootstrap.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: images
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
+      packages: read
     environment: production
     concurrency:
       group: rep-tracker-production
@@ -169,20 +169,40 @@ jobs:
 
       - name: Deploy immutable images
         env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           set -Eeuo pipefail
+          test -n "${GHCR_TOKEN}"
+          [[ "${GHCR_USER}" =~ ^[A-Za-z0-9-]+$ ]]
           test -n "${VPS_HOST}"
           test -n "${VPS_PORT}"
           test -n "${VPS_USER}"
-          ssh \
+
+          ssh_command=(ssh \
             -i "${HOME}/.ssh/rep-tracker-deploy" \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" \
             -p "${VPS_PORT}" \
-            "${VPS_USER}@${VPS_HOST}" \
-            "bash -s -- '${GITHUB_SHA}'" \
+            "${VPS_USER}@${VPS_HOST}")
+
+          remote_docker_config="$("${ssh_command[@]}" \
+            'mktemp --directory /tmp/rep-tracker-ghcr.XXXXXX')"
+          [[ "${remote_docker_config}" =~ ^/tmp/rep-tracker-ghcr\.[A-Za-z0-9]+$ ]]
+
+          cleanup_registry_auth() {
+            "${ssh_command[@]}" \
+              "rm -rf -- '${remote_docker_config}'" >/dev/null 2>&1 || true
+          }
+          trap cleanup_registry_auth EXIT INT TERM
+
+          printf '%s' "${GHCR_TOKEN}" | "${ssh_command[@]}" \
+            "DOCKER_CONFIG='${remote_docker_config}' docker login ghcr.io --username '${GHCR_USER}' --password-stdin"
+
+          "${ssh_command[@]}" \
+            "DOCKER_CONFIG='${remote_docker_config}' bash -s -- '${GITHUB_SHA}'" \
             < .github/scripts/deploy-production.sh
