@@ -1,5 +1,7 @@
 # Rep Tracker
 
+[![CI](https://github.com/vedmitry7/rep-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/vedmitry7/rep-tracker/actions/workflows/ci.yml)
+
 Telegram-first tracker for quickly recording exercise repetitions.
 
 The main flow is intentionally short:
