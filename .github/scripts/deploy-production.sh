@@ -76,7 +76,7 @@ cleanup_backup_tmp() {
 trap cleanup_backup_tmp EXIT INT TERM
 
 echo "Creating PostgreSQL backup ${BACKUP_NAME}"
-compose exec --no-TTY postgres sh -ec \
+compose exec --no-TTY --interactive=false postgres sh -ec \
   'exec pg_dump --format=custom --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
   > "${BACKUP_TMP}"
 
