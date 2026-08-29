@@ -58,6 +58,7 @@ async def create_entry(
 async def test_empty_exercise_stats(client: AsyncClient) -> None:
     identity = await create_user(client)
     exercise_id = await create_exercise(client, identity)
+    user_today = dates.get_user_today(dates.DEFAULT_TIMEZONE)
 
     response = await client.get(
         f"/exercises/{exercise_id}/stats",
@@ -66,7 +67,7 @@ async def test_empty_exercise_stats(client: AsyncClient) -> None:
 
     assert response.status_code == 200
     assert response.json() == {
-        "today": date.today().isoformat(),
+        "today": user_today.isoformat(),
         "total_reps": 0,
         "today_reps": 0,
         "last_7_days_reps": 0,
@@ -84,7 +85,7 @@ async def test_stats_aggregate_calendar_windows_days_and_entries(
 ) -> None:
     identity = await create_user(client)
     exercise_id = await create_exercise(client, identity)
-    today = date.today()
+    today = dates.get_user_today(dates.DEFAULT_TIMEZONE)
 
     first_today = await create_entry(
         client, identity, exercise_id, [10, 9], today

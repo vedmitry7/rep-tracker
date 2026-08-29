@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.app.core.dates import DEFAULT_TIMEZONE, get_user_today
 from api.app.models import Exercise, ExerciseEntry, User, UserIdentity
 from api.app.schemas.exercise_entry import (
     MAX_REPETITIONS_PER_SET,
@@ -111,6 +112,7 @@ async def test_create_entry_for_past_date(client: AsyncClient) -> None:
 async def test_cannot_create_entry_for_future_date(client: AsyncClient) -> None:
     identity = await create_user(client)
     exercise = await create_exercise_for(client, identity)
+    user_today = get_user_today(DEFAULT_TIMEZONE)
 
     response = await client.post(
         "/exercise-entries",
@@ -118,7 +120,7 @@ async def test_cannot_create_entry_for_future_date(client: AsyncClient) -> None:
             **identity,
             "exercise_id": exercise["id"],
             "reps": [10],
-            "performed_on": (date.today() + timedelta(days=1)).isoformat(),
+            "performed_on": (user_today + timedelta(days=1)).isoformat(),
         },
     )
 
