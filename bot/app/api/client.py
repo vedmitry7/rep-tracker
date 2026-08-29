@@ -70,6 +70,24 @@ class UserSettings(BaseModel):
     language: str = "ru"
 
 
+class ImportPreview(BaseModel):
+    exercises_count: int
+    entries_count: int
+    total_reps: int
+    date_from: date
+    date_to: date
+    new_exercises: list[str]
+    existing_exercises: list[str]
+
+
+class ImportResult(BaseModel):
+    strategy: str
+    exercises_created: int
+    existing_exercises_updated: int
+    entries_imported: int
+    total_reps_imported: int
+
+
 class ApiError(Exception):
     """Base exception safe for handlers to map to a user-facing message."""
 
@@ -368,6 +386,69 @@ class RepTrackerApi:
         await self._request(
             "DELETE",
             f"/exercise-entries/{entry_id}",
+            params=self._identity(telegram_user_id),
+            expected_statuses={204},
+        )
+
+    async def preview_import(
+        self,
+        telegram_user_id: int,
+        document: dict[str, object],
+    ) -> ImportPreview:
+        response = await self._request(
+            "POST",
+            "/imports/preview",
+            json={**self._identity(telegram_user_id), "document": document},
+            expected_statuses={200},
+        )
+        try:
+            return ImportPreview.model_validate(response.json())
+        except (ValueError, ValidationError) as error:
+            logger.exception("Backend returned an invalid import preview")
+            raise UnexpectedApiError from error
+
+    async def import_data(
+        self,
+        telegram_user_id: int,
+        document: dict[str, object],
+        strategy: str,
+    ) -> ImportResult:
+        response = await self._request(
+            "POST",
+            "/imports",
+            json={
+                **self._identity(telegram_user_id),
+                "document": document,
+                "strategy": strategy,
+            },
+            expected_statuses={201},
+        )
+        try:
+            return ImportResult.model_validate(response.json())
+        except (ValueError, ValidationError) as error:
+            logger.exception("Backend returned an invalid import result")
+            raise UnexpectedApiError from error
+
+    async def clear_exercise_history(
+        self,
+        telegram_user_id: int,
+        exercise_id: int,
+    ) -> None:
+        await self._request(
+            "DELETE",
+            f"/exercises/{exercise_id}/history",
+            params=self._identity(telegram_user_id),
+            expected_statuses={204},
+        )
+
+    async def permanently_delete_exercise(
+        self,
+        telegram_user_id: int,
+        exercise_id: int,
+    ) -> None:
+        await self._request(
+            "DELETE",
+            f"/exercises/{exercise_id}/permanent",
             params=self._identity(telegram_user_id),
             expected_statuses={204},
         )

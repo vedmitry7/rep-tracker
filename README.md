@@ -22,6 +22,8 @@ create an exercise
 - History grouped by training day
 - Per-exercise statistics
 - Entry editing and deletion
+- JSON workout import with explicit Merge or Replace handling
+- Clear-history and permanent exercise deletion controls
 - User-specific timezone support
 - English and Russian UI
 - Multi-user identity model
@@ -35,6 +37,9 @@ Telegram Bot → FastAPI → PostgreSQL
 The bot and API live in one repository but run as independent applications. The
 bot never connects to PostgreSQL directly. See [docs/architecture.md](docs/architecture.md)
 for the key design decisions.
+
+The compact JSON import format is documented in
+[docs/import-format.md](docs/import-format.md).
 
 ## Tech Stack
 

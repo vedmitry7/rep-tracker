@@ -7,6 +7,7 @@ from bot.app.keyboards.exercises import (
     ExerciseOpen,
     ExercisePreset,
     exercise_back_keyboard,
+    exercise_destructive_confirmation_keyboard,
     exercise_presets_keyboard,
     exercise_screen_keyboard,
     exercises_list_keyboard,
@@ -59,21 +60,25 @@ def test_exercise_screen_result_callback_keeps_exercise_id() -> None:
     callbacks = callback_values(markup)
 
     result_action = ResultAction.unpack(callbacks[0])
-    detail_actions = [ExerciseDetailAction.unpack(value) for value in callbacks[1:3]]
-    list_action = ExerciseAction.unpack(callbacks[3])
+    detail_actions = [ExerciseDetailAction.unpack(value) for value in callbacks[1:5]]
+    list_action = ExerciseAction.unpack(callbacks[5])
 
     assert result_action.action == ResultActionValue.START
     assert result_action.exercise_id == 42
     assert [(item.action, item.exercise_id) for item in detail_actions] == [
         (ExerciseDetailActionValue.STATISTICS, 42),
         (ExerciseDetailActionValue.HISTORY, 42),
+        (ExerciseDetailActionValue.CLEAR_HISTORY, 42),
+        (ExerciseDetailActionValue.HARD_DELETE, 42),
     ]
     assert list_action.action == ExerciseActionValue.LIST
-    assert [len(row) for row in markup.inline_keyboard] == [2, 2]
+    assert [len(row) for row in markup.inline_keyboard] == [2, 2, 2]
     assert [button.text for row in markup.inline_keyboard for button in row] == [
         "➕ Результат",
         "📊 Статистика",
         "📜 История",
+        "🗑 Очистить историю",
+        "Удалить упражнение",
         "📋 Упражнения",
     ]
 
@@ -83,3 +88,16 @@ def test_back_button_returns_to_correct_exercise() -> None:
 
     assert len(callbacks) == 1
     assert ExerciseOpen.unpack(callbacks[0]).exercise_id == 42
+
+
+def test_destructive_cancel_returns_without_mutating() -> None:
+    markup = exercise_destructive_confirmation_keyboard(
+        42, operation="clear_history"
+    )
+    callbacks = callback_values(markup)
+
+    confirm = ExerciseDetailAction.unpack(callbacks[0])
+    cancel = ExerciseOpen.unpack(callbacks[1])
+    assert confirm.action == ExerciseDetailActionValue.CONFIRM_CLEAR_HISTORY
+    assert confirm.exercise_id == 42
+    assert cancel.exercise_id == 42

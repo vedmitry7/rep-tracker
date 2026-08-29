@@ -395,6 +395,85 @@ async def test_delete_exercise_entry() -> None:
 
 
 @pytest.mark.asyncio
+async def test_preview_and_apply_import_send_identity_document_and_strategy() -> None:
+    document = {
+        "version": 1,
+        "exercises": [
+            {
+                "name": "Pull-ups",
+                "days": [{"date": "2026-08-01", "entries": [[10]]}],
+            }
+        ],
+    }
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        payload = json.loads(request.content)
+        assert payload["provider"] == "telegram"
+        assert payload["external_id"] == "777"
+        assert payload["document"] == document
+        if request.url.path.endswith("/preview"):
+            return httpx.Response(
+                200,
+                json={
+                    "exercises_count": 1,
+                    "entries_count": 1,
+                    "total_reps": 10,
+                    "date_from": "2026-08-01",
+                    "date_to": "2026-08-01",
+                    "new_exercises": ["Pull-ups"],
+                    "existing_exercises": [],
+                },
+            )
+        assert payload["strategy"] == "replace"
+        return httpx.Response(
+            201,
+            json={
+                "strategy": "replace",
+                "exercises_created": 1,
+                "existing_exercises_updated": 0,
+                "entries_imported": 1,
+                "total_reps_imported": 10,
+            },
+        )
+
+    api = build_api(handler)
+    preview = await api.preview_import(777, document)
+    result = await api.import_data(777, document, "replace")
+
+    assert [request.url.path for request in requests] == [
+        "/imports/preview",
+        "/imports",
+    ]
+    assert preview.entries_count == 1
+    assert result.strategy == "replace"
+
+
+@pytest.mark.asyncio
+async def test_clear_and_permanent_delete_use_distinct_api_paths() -> None:
+    paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "DELETE"
+        assert dict(request.url.params) == {
+            "provider": "telegram",
+            "external_id": "777",
+        }
+        paths.append(request.url.path)
+        return httpx.Response(204)
+
+    api = build_api(handler)
+    await api.clear_exercise_history(777, 9)
+    await api.permanently_delete_exercise(777, 9)
+
+    assert paths == [
+        "/exercises/9/history",
+        "/exercises/9/permanent",
+    ]
+
+
+@pytest.mark.asyncio
 async def test_create_exercise_entry_maps_backend_conflict() -> None:
     api = build_api(lambda request: httpx.Response(409))
 

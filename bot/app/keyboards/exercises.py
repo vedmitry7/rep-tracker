@@ -31,6 +31,10 @@ class ExerciseOpen(CallbackData, prefix="exercise_open"):
 class ExerciseDetailActionValue(StrEnum):
     STATISTICS = "statistics"
     HISTORY = "history"
+    CLEAR_HISTORY = "clear_history"
+    CONFIRM_CLEAR_HISTORY = "confirm_clear_history"
+    HARD_DELETE = "hard_delete"
+    CONFIRM_HARD_DELETE = "confirm_hard_delete"
 
 
 class ExerciseDetailAction(CallbackData, prefix="exercise_detail"):
@@ -88,10 +92,48 @@ def exercise_screen_keyboard(exercise_id: int) -> InlineKeyboardMarkup:
         ),
     )
     builder.button(
+        text=texts.BUTTON_CLEAR_HISTORY,
+        callback_data=ExerciseDetailAction(
+            action=ExerciseDetailActionValue.CLEAR_HISTORY,
+            exercise_id=exercise_id,
+        ),
+    )
+    builder.button(
+        text=texts.BUTTON_DELETE_EXERCISE,
+        callback_data=ExerciseDetailAction(
+            action=ExerciseDetailActionValue.HARD_DELETE,
+            exercise_id=exercise_id,
+        ),
+    )
+    builder.button(
         text=texts.BUTTON_EXERCISES,
         callback_data=ExerciseAction(action=ExerciseActionValue.LIST),
     )
-    builder.adjust(2, 2)
+    builder.adjust(2, 2, 2)
+    return builder.as_markup()
+
+
+def exercise_destructive_confirmation_keyboard(
+    exercise_id: int,
+    *,
+    operation: str,
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if operation == "clear_history":
+        text = texts.BUTTON_CONFIRM_CLEAR_HISTORY
+        action = ExerciseDetailActionValue.CONFIRM_CLEAR_HISTORY
+    else:
+        text = texts.BUTTON_DELETE_PERMANENTLY
+        action = ExerciseDetailActionValue.CONFIRM_HARD_DELETE
+    builder.button(
+        text=text,
+        callback_data=ExerciseDetailAction(action=action, exercise_id=exercise_id),
+    )
+    builder.button(
+        text=texts.BUTTON_CANCEL_PLAIN,
+        callback_data=ExerciseOpen(exercise_id=exercise_id),
+    )
+    builder.adjust(1)
     return builder.as_markup()
 
 

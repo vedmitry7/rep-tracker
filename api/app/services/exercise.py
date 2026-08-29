@@ -1,7 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.app.models import Exercise
+from api.app.models import Exercise, ExerciseEntry
 from api.app.services.user import get_allowed_user_by_identity
 
 
@@ -66,6 +66,33 @@ async def archive_exercise(
         user = await get_allowed_user_by_identity(session, provider, external_id)
         exercise = await get_owned_exercise(session, exercise_id, user.id)
         exercise.is_archived = True
+        await session.flush()
+
+
+async def clear_exercise_history(
+    session: AsyncSession,
+    provider: str,
+    external_id: str,
+    exercise_id: int,
+) -> None:
+    async with session.begin():
+        user = await get_allowed_user_by_identity(session, provider, external_id)
+        await get_owned_exercise(session, exercise_id, user.id)
+        await session.execute(
+            delete(ExerciseEntry).where(ExerciseEntry.exercise_id == exercise_id)
+        )
+
+
+async def permanently_delete_exercise(
+    session: AsyncSession,
+    provider: str,
+    external_id: str,
+    exercise_id: int,
+) -> None:
+    async with session.begin():
+        user = await get_allowed_user_by_identity(session, provider, external_id)
+        exercise = await get_owned_exercise(session, exercise_id, user.id)
+        await session.delete(exercise)
         await session.flush()
 
 

@@ -14,6 +14,7 @@ class SettingsActionValue(StrEnum):
     CHANGE_TIMEZONE = "change_timezone"
     OTHER_TIMEZONE = "other_timezone"
     CHANGE_LANGUAGE = "change_language"
+    IMPORT_DATA = "import_data"
     HOME = "home"
 
 
@@ -33,6 +34,18 @@ class LanguageChoice(CallbackData, prefix="language"):
     language: str
 
 
+class ImportActionValue(StrEnum):
+    MERGE = "merge"
+    REPLACE = "replace"
+    APPLY_MERGE = "apply_merge"
+    APPLY_REPLACE = "apply_replace"
+    CANCEL = "cancel"
+
+
+class ImportAction(CallbackData, prefix="data_import"):
+    action: ImportActionValue
+
+
 def settings_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -44,8 +57,47 @@ def settings_keyboard() -> InlineKeyboardMarkup:
         callback_data=SettingsAction(action=SettingsActionValue.CHANGE_LANGUAGE),
     )
     builder.button(
+        text=texts.BUTTON_IMPORT_DATA,
+        callback_data=SettingsAction(action=SettingsActionValue.IMPORT_DATA),
+    )
+    builder.button(
         text=texts.BUTTON_BACK,
         callback_data=SettingsAction(action=SettingsActionValue.HOME),
+    )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def import_strategy_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=texts.BUTTON_IMPORT_MERGE,
+        callback_data=ImportAction(action=ImportActionValue.MERGE),
+    )
+    builder.button(
+        text=texts.BUTTON_IMPORT_REPLACE,
+        callback_data=ImportAction(action=ImportActionValue.REPLACE),
+    )
+    builder.button(
+        text=texts.BUTTON_CANCEL,
+        callback_data=ImportAction(action=ImportActionValue.CANCEL),
+    )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def import_confirmation_keyboard(strategy: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if strategy == "replace":
+        text = texts.BUTTON_REPLACE_AND_IMPORT
+        action = ImportActionValue.APPLY_REPLACE
+    else:
+        text = texts.BUTTON_IMPORT
+        action = ImportActionValue.APPLY_MERGE
+    builder.button(text=text, callback_data=ImportAction(action=action))
+    builder.button(
+        text=texts.BUTTON_CANCEL_PLAIN,
+        callback_data=ImportAction(action=ImportActionValue.CANCEL),
     )
     builder.adjust(1)
     return builder.as_markup()

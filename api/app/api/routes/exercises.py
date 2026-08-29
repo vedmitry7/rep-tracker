@@ -14,8 +14,10 @@ from api.app.schemas.user import ExternalId, Provider
 from api.app.services.exercise import (
     ExerciseNotFoundError,
     archive_exercise,
+    clear_exercise_history,
     create_exercise,
     list_exercises,
+    permanently_delete_exercise,
     rename_exercise,
 )
 from api.app.services.exercise_stats import get_exercise_stats
@@ -160,6 +162,54 @@ async def delete_exercise(
             detail="Exercise not found",
         ) from error
 
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/{exercise_id}/history",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
+        status.HTTP_404_NOT_FOUND: {"description": "User or exercise not found"},
+    },
+)
+async def delete_exercise_history(
+    exercise_id: int,
+    provider: Annotated[Provider, Query()],
+    external_id: Annotated[ExternalId, Query()],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    try:
+        await clear_exercise_history(session, provider, external_id, exercise_id)
+    except (UserNotFoundError, UserBannedError) as error:
+        raise _identity_http_error(error) from error
+    except ExerciseNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Exercise not found") from error
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/{exercise_id}/permanent",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
+        status.HTTP_404_NOT_FOUND: {"description": "User or exercise not found"},
+    },
+)
+async def hard_delete_exercise(
+    exercise_id: int,
+    provider: Annotated[Provider, Query()],
+    external_id: Annotated[ExternalId, Query()],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    try:
+        await permanently_delete_exercise(
+            session, provider, external_id, exercise_id
+        )
+    except (UserNotFoundError, UserBannedError) as error:
+        raise _identity_http_error(error) from error
+    except ExerciseNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Exercise not found") from error
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

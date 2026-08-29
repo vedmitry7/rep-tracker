@@ -14,6 +14,7 @@ from bot.app.keyboards.exercises import (
     ExerciseOpen,
     ExercisePreset,
     exercise_back_keyboard,
+    exercise_destructive_confirmation_keyboard,
     exercise_presets_keyboard,
     exercise_screen_keyboard,
     exercises_list_keyboard,
@@ -223,6 +224,110 @@ async def show_statistics(
         await callback.message.answer(
             stats_screen_text(exercise, stats),
             reply_markup=exercise_back_keyboard(exercise.id),
+        )
+
+
+@router.callback_query(
+    ExerciseDetailAction.filter(
+        F.action.in_(
+            {
+                ExerciseDetailActionValue.CLEAR_HISTORY,
+                ExerciseDetailActionValue.HARD_DELETE,
+            }
+        )
+    )
+)
+async def request_destructive_exercise_action(
+    callback: CallbackQuery,
+    callback_data: ExerciseDetailAction,
+    api_client: RepTrackerApi,
+) -> None:
+    try:
+        exercise = await _find_exercise(
+            api_client, callback.from_user.id, callback_data.exercise_id
+        )
+        if exercise is None:
+            await callback.answer(texts.EXERCISE_NOT_FOUND, show_alert=True)
+            return
+        stats = await api_client.get_exercise_stats(callback.from_user.id, exercise.id)
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
+
+    if callback_data.action is ExerciseDetailActionValue.CLEAR_HISTORY:
+        text = texts.clear_history_confirmation(
+            exercise.name,
+            format_number(stats.all_time_entries),
+            format_number(stats.total_reps),
+        )
+        operation = "clear_history"
+    else:
+        text = texts.hard_delete_confirmation(
+            exercise.name,
+            format_number(stats.all_time_entries),
+            format_number(stats.total_reps),
+        )
+        operation = "hard_delete"
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.answer(
+            text,
+            reply_markup=exercise_destructive_confirmation_keyboard(
+                exercise.id, operation=operation
+            ),
+        )
+
+
+@router.callback_query(
+    ExerciseDetailAction.filter(
+        F.action == ExerciseDetailActionValue.CONFIRM_CLEAR_HISTORY
+    )
+)
+async def confirm_clear_history(
+    callback: CallbackQuery,
+    callback_data: ExerciseDetailAction,
+    api_client: RepTrackerApi,
+) -> None:
+    try:
+        exercise = await _find_exercise(
+            api_client, callback.from_user.id, callback_data.exercise_id
+        )
+        if exercise is None:
+            await callback.answer(texts.EXERCISE_NOT_FOUND, show_alert=True)
+            return
+        await api_client.clear_exercise_history(callback.from_user.id, exercise.id)
+        stats = await api_client.get_exercise_stats(callback.from_user.id, exercise.id)
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
+    await callback.answer(texts.HISTORY_CLEARED)
+    if isinstance(callback.message, Message):
+        await show_exercise(callback.message, exercise, stats)
+
+
+@router.callback_query(
+    ExerciseDetailAction.filter(
+        F.action == ExerciseDetailActionValue.CONFIRM_HARD_DELETE
+    )
+)
+async def confirm_hard_delete(
+    callback: CallbackQuery,
+    callback_data: ExerciseDetailAction,
+    api_client: RepTrackerApi,
+) -> None:
+    try:
+        await api_client.permanently_delete_exercise(
+            callback.from_user.id, callback_data.exercise_id
+        )
+        exercises = await api_client.list_exercises(callback.from_user.id)
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
+    await callback.answer(texts.EXERCISE_PERMANENTLY_DELETED)
+    if isinstance(callback.message, Message):
+        await callback.message.answer(
+            texts.EXERCISES_TITLE if exercises else texts.NO_EXERCISES,
+            reply_markup=exercises_list_keyboard(exercises),
         )
 
 
