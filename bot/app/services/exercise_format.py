@@ -1,3 +1,6 @@
+from bot.app.texts import current_language
+
+
 def format_reps(reps: list[int]) -> str:
     if len(reps) == 1:
         return str(reps[0])
@@ -11,4 +14,5 @@ def format_reps_total(reps: list[int]) -> str:
 
 
 def format_number(value: int) -> str:
-    return f"{value:,}".replace(",", " ")
+    formatted = f"{value:,}"
+    return formatted.replace(",", " ") if current_language() == "ru" else formatted

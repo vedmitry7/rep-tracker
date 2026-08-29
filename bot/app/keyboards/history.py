@@ -171,6 +171,7 @@ def delete_confirmation_keyboard(entry: ExerciseEntry) -> InlineKeyboardMarkup:
             action=HistoryDeleteValue.CONFIRM,
             **common,
         ),
+        style="danger",
     )
     builder.button(
         text=texts.BUTTON_CANCEL_PLAIN,

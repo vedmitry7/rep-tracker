@@ -1,16 +1,16 @@
 """English Telegram UI copy."""
 
 # Common screens and notifications
-EXERCISES_TITLE = "Your exercises:"
-NO_EXERCISES = "You don't have any exercises yet."
+EXERCISES_TITLE = "🏋️ Repka\n\nChoose an exercise"
+NO_EXERCISES = "🏋️ Repka\n\nNo exercises yet"
 WELCOME = (
     "Hi! Here you can quickly log exercises and track your progress."
     "\n\nCreate your first exercise."
 )
-CHOOSE_EXERCISE = "Choose an exercise:"
+CHOOSE_EXERCISE = "➕ Add exercise"
 EXERCISE_ADDED = "Exercise added"
 EXERCISE_NOT_FOUND = "Exercise not found."
-REQUEST_EXERCISE_NAME = "Enter the exercise name:"
+REQUEST_EXERCISE_NAME = "Enter the exercise name"
 EMPTY_EXERCISE_NAME = "The name cannot be empty. Try again:"
 
 SCREEN_EXPIRED = "This screen has expired."
@@ -35,22 +35,25 @@ CHANGES_SAVED = "Changes saved"
 ENTRY_DELETED = "Entry deleted"
 DATE_CHANGED = "Date changed"
 RESULT_ADDED = "Added"
+HISTORY_CLEARED = "History cleared"
+EXERCISE_PERMANENTLY_DELETED = "Exercise permanently deleted"
 
 # API errors
 ACCESS_FORBIDDEN = "Access to the bot is restricted."
 BACKEND_UNAVAILABLE = "The service is temporarily unavailable. Try again later."
 RESOURCE_NOT_FOUND = "Data not found. Send /start and try again."
 RESOURCE_CONFLICT = "The exercise is no longer available."
+DUPLICATE_EXERCISE_NAME = "An exercise with this name already exists."
 REQUEST_FAILED = "Could not complete the request. Try again later."
 
 # Keyboards
 BUTTON_ADD_EXERCISE = "➕ Add exercise"
 BUTTON_SETTINGS = "⚙️ Settings"
-BUTTON_CUSTOM_EXERCISE = "Custom exercise"
+BUTTON_CUSTOM_EXERCISE = "✏️ Custom exercise"
 BUTTON_ADD_RESULT = "➕ Add Result"
 BUTTON_STATISTICS = "📊 Statistics"
 BUTTON_HISTORY = "📜 History"
-BUTTON_EXERCISES = "📋 Exercises"
+BUTTON_EXERCISES = "◀️ Exercises"
 BUTTON_BACK = "◀️ Back"
 BUTTON_BACK_ARROW = "← Back"
 BUTTON_CONSTRUCTOR = "🎛 Constructor"
@@ -65,12 +68,22 @@ BUTTON_ADD = "✅ Add"
 BUTTON_SAVE = "✅ Save"
 BUTTON_EDIT = "✏️ Edit"
 BUTTON_DELETE = "🗑 Delete"
+BUTTON_CLEAR_HISTORY = "🧹 Clear history"
+BUTTON_DELETE_EXERCISE = "🗑 Delete exercise"
+BUTTON_CONFIRM_CLEAR_HISTORY = "🧹 Clear history"
+BUTTON_DELETE_PERMANENTLY = "🗑 Delete permanently"
 BUTTON_CONFIRM_DELETE = "🔴 Yes, delete"
-BUTTON_CHANGE_TIMEZONE = "🕐 Change timezone"
+BUTTON_CHANGE_TIMEZONE = "🌍 Timezone"
 BUTTON_OTHER_TIMEZONE = "🌍 Other timezone"
 BUTTON_PREVIOUS = "◀️ Previous"
 BUTTON_NEXT = "Next ▶️"
 BUTTON_CHANGE_LANGUAGE = "🌐 Language"
+BUTTON_IMPORT_DATA = "📥 Import data"
+BUTTON_EXERCISE_MANAGEMENT = "🛠 Manage exercises"
+BUTTON_IMPORT_MERGE = "🔀 Merge"
+BUTTON_IMPORT_REPLACE = "♻️ Replace"
+BUTTON_IMPORT = "Import"
+BUTTON_REPLACE_AND_IMPORT = "Replace and import"
 BUTTON_ENGLISH = "🇬🇧 English"
 BUTTON_RUSSIAN = "🇷🇺 Русский"
 
@@ -111,7 +124,11 @@ def too_many_sets(max_sets: int) -> str:
 
 # Message templates
 def exercise_empty(name: str) -> str:
-    return f"🏋️ {name}\n\nNo entries yet."
+    return (
+        f"🏋️ {name}\n\n"
+        "↩️ Latest: —\n\n"
+        "🔥 Today — 0\n📅 7 days — 0\n🗓 30 days — 0\n🏆 Total — 0"
+    )
 
 
 def exercise_summary(
@@ -126,13 +143,17 @@ def exercise_summary(
 ) -> str:
     return (
         f"🏋️ {name}\n\n"
-        f"Latest:\n{last_reps}\n"
-        f"{last_date}\n\n"
-        f"Today: {today_reps}\n"
-        f"7 days: {last_7_days_reps}\n"
-        f"30 days: {last_30_days_reps}\n"
-        f"Total: {total_reps}"
+        f"↩️ Latest: {last_reps} · {last_date.lower()}\n\n"
+        f"🔥 Today — {today_reps}\n"
+        f"📅 7 days — {last_7_days_reps}\n"
+        f"🗓 30 days — {last_30_days_reps}\n"
+        f"🏆 Total — {total_reps}"
     )
+
+
+EXERCISE_MANAGEMENT = "🛠 Manage exercises"
+CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Clear history\n\nChoose an exercise"
+DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Delete exercise\n\nChoose an exercise"
 
 
 def statistics(
@@ -183,6 +204,22 @@ def delete_confirmation(performed_on: str, reps: str) -> str:
     return f"Delete this entry?\n\n{performed_on}\n{reps}"
 
 
+def clear_history_confirmation(name: str, entries: str, total_reps: str) -> str:
+    return (
+        f"Clear all history for {name}?\n\n"
+        f"{entries} entries\n{total_reps} reps\n\n"
+        "This cannot be undone."
+    )
+
+
+def hard_delete_confirmation(name: str, entries: str, total_reps: str) -> str:
+    return (
+        f"Delete {name} permanently?\n\n"
+        f"{entries} entries\n{total_reps} reps\n\n"
+        "The exercise and all its history will be permanently deleted."
+    )
+
+
 def result_saved(name: str, reps: str, total_reps: int, performed_on: str) -> str:
     return (
         f"✅ Added\n\n{name}\n{reps}\n\n"
@@ -224,6 +261,94 @@ CHOOSE_LANGUAGE = "🌐 Choose a language"
 LANGUAGE_CHANGED = "Language changed"
 LANGUAGE_ENGLISH = "English"
 LANGUAGE_RUSSIAN = "Русский"
+
+IMPORT_SEND_FILE = "📥 Import\n\nSend a .json file (maximum 1 MB)."
+IMPORT_JSON_ONLY = "Only .json files are supported."
+IMPORT_FILE_TOO_LARGE = "The file is too large. Maximum size is 1 MB."
+IMPORT_INVALID_FILE = "The JSON file is invalid or does not match the import format."
+IMPORT_CANCELLED = "Import cancelled"
+
+
+def import_preview(
+    *,
+    exercises: str,
+    entries: str,
+    total_reps: str,
+    date_from: str,
+    date_to: str,
+    new_count: str,
+    existing_names: list[str],
+) -> str:
+    value = (
+        "📥 Import\n\n"
+        f"Exercises: {exercises}\n"
+        f"Workout entries: {entries}\n"
+        f"Total reps: {total_reps}\n"
+        f"Date range: {date_from} — {date_to}\n\n"
+        f"New exercises: {new_count}\n"
+        f"Existing exercises: {len(existing_names)}"
+    )
+    if existing_names:
+        value += "\n\nExisting:\n" + "\n".join(
+            f"• {name}" for name in existing_names
+        )
+        value += "\n\nHow should existing history be handled?"
+    return value
+
+
+def import_new_exercises_confirmation(
+    *,
+    exercises: str,
+    entries: str,
+    total_reps: str,
+    date_from: str,
+    date_to: str,
+    new_count: str,
+) -> str:
+    return (
+        "📥 Import\n\n"
+        f"Exercises: {exercises}\n"
+        f"Workout entries: {entries}\n"
+        f"Total reps: {total_reps}\n"
+        f"Date range: {date_from} — {date_to}\n\n"
+        f"New exercises to be created: {new_count}"
+    )
+
+
+def import_confirmation(strategy: str, entries: str, existing_count: int) -> str:
+    if strategy == "replace":
+        return (
+            "Replace existing history?\n\n"
+            f"History for {existing_count} matching exercises will be permanently "
+            f"deleted.\n{entries} imported entries will then be added."
+        )
+    return (
+        "Merge imported data?\n\n"
+        "Existing entries will remain.\n"
+        f"{entries} new entries will be added.\n\n"
+        "Repeated import may create duplicates."
+    )
+
+
+def import_completed(
+    *,
+    strategy: str,
+    created: str,
+    updated: str,
+    entries: str,
+    total_reps: str,
+    include_strategy: bool = True,
+) -> str:
+    strategy_name = "Replace" if strategy == "replace" else "Merge"
+    value = "✅ Import completed\n\n"
+    if include_strategy:
+        value += f"Strategy: {strategy_name}\n\n"
+    return value + (
+        f"Exercises created: {created}\n"
+        f"Existing exercises updated: {updated}\n"
+        f"Entries imported: {entries}\n"
+        f"Total reps imported: {total_reps}"
+    )
 
 
 def timezone_changed(timezone: str) -> str:

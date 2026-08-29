@@ -11,6 +11,8 @@ from bot.app.api.client import InvalidRequestError
 from bot.app.handlers import settings
 from bot.app.keyboards.settings import (
     LanguageChoice,
+    SettingsAction,
+    SettingsActionValue,
     TimezoneChoice,
     TimezonePageChoice,
     timezone_choices_keyboard,
@@ -186,6 +188,56 @@ async def test_settings_screen_falls_back_to_manual_iana_name(state: FSMContext)
     rendered = callback.message.edit_text.await_args.args[0]
     assert "Timezone:\n(UTC" in rendered
     assert ") Europe/Paris" in rendered
+
+
+@pytest.mark.asyncio
+async def test_exercise_management_submenu(state: FSMContext) -> None:
+    callback = FakeCallback()
+
+    await settings.show_exercise_management(callback, state)
+
+    assert callback.message.edit_text.await_args.args[0] == (
+        "🛠 Управление упражнениями"
+    )
+    markup = callback.message.edit_text.await_args.kwargs["reply_markup"]
+    actions = [
+        SettingsAction.unpack(button.callback_data).action
+        for row in markup.inline_keyboard
+        for button in row
+    ]
+    assert actions == [
+        SettingsActionValue.CLEAR_HISTORY,
+        SettingsActionValue.HARD_DELETE,
+        SettingsActionValue.OPEN,
+    ]
+
+
+@pytest.mark.asyncio
+async def test_clear_history_selection_lists_exercises(state: FSMContext) -> None:
+    callback = FakeCallback()
+    api = SimpleNamespace(
+        list_exercises=AsyncMock(
+            return_value=[SimpleNamespace(id=7, name="Подтягивания")]
+        )
+    )
+
+    await settings.choose_managed_exercise(
+        callback,
+        SettingsAction(action=SettingsActionValue.CLEAR_HISTORY),
+        state,
+        api,
+    )
+
+    assert callback.message.edit_text.await_args.args[0].startswith(
+        "🧹 Очистить историю"
+    )
+    assert "Подтягивания" in [
+        button.text
+        for row in callback.message.edit_text.await_args.kwargs[
+            "reply_markup"
+        ].inline_keyboard
+        for button in row
+    ]
 
 
 @pytest.mark.parametrize("page", [0, 2])

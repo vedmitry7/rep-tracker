@@ -6,16 +6,16 @@ to the code that owns them.
 """
 
 # Common screens and notifications
-EXERCISES_TITLE = "Твои упражнения:"
-NO_EXERCISES = "У тебя пока нет упражнений."
+EXERCISES_TITLE = "🏋️ Repka\n\nВыберите упражнение"
+NO_EXERCISES = "🏋️ Repka\n\nУпражнений пока нет"
 WELCOME = (
     "Привет! Здесь можно быстро записывать упражнения и следить "
     "за прогрессом.\n\nСоздай первое упражнение."
 )
-CHOOSE_EXERCISE = "Выбери упражнение:"
+CHOOSE_EXERCISE = "➕ Добавить упражнение"
 EXERCISE_ADDED = "Упражнение добавлено"
 EXERCISE_NOT_FOUND = "Упражнение не найдено."
-REQUEST_EXERCISE_NAME = "Напиши название упражнения:"
+REQUEST_EXERCISE_NAME = "Введите название упражнения"
 EMPTY_EXERCISE_NAME = "Название не должно быть пустым. Попробуй ещё раз:"
 
 SCREEN_EXPIRED = "Экран устарел."
@@ -40,22 +40,25 @@ CHANGES_SAVED = "Изменения сохранены"
 ENTRY_DELETED = "Запись удалена"
 DATE_CHANGED = "Дата изменена"
 RESULT_ADDED = "Добавлено"
+HISTORY_CLEARED = "История очищена"
+EXERCISE_PERMANENTLY_DELETED = "Упражнение удалено навсегда"
 
 # API errors
 ACCESS_FORBIDDEN = "Доступ к боту ограничен."
 BACKEND_UNAVAILABLE = "Сервис временно недоступен. Попробуй ещё раз позже."
 RESOURCE_NOT_FOUND = "Данные не найдены. Отправь /start и попробуй ещё раз."
 RESOURCE_CONFLICT = "Упражнение больше недоступно."
+DUPLICATE_EXERCISE_NAME = "Упражнение с таким названием уже существует."
 REQUEST_FAILED = "Не удалось выполнить запрос. Попробуй ещё раз позже."
 
 # Keyboards
 BUTTON_ADD_EXERCISE = "➕ Добавить упражнение"
 BUTTON_SETTINGS = "⚙️ Настройки"
-BUTTON_CUSTOM_EXERCISE = "Своё упражнение"
-BUTTON_ADD_RESULT = "➕ Результат"
+BUTTON_CUSTOM_EXERCISE = "✏️ Своё упражнение"
+BUTTON_ADD_RESULT = "➕ Добавить результат"
 BUTTON_STATISTICS = "📊 Статистика"
 BUTTON_HISTORY = "📜 История"
-BUTTON_EXERCISES = "📋 Упражнения"
+BUTTON_EXERCISES = "◀️ Упражнения"
 BUTTON_BACK = "◀️ Назад"
 BUTTON_BACK_ARROW = "← Назад"
 BUTTON_CONSTRUCTOR = "🎛 Конструктор"
@@ -70,12 +73,22 @@ BUTTON_ADD = "✅ Добавить"
 BUTTON_SAVE = "✅ Сохранить"
 BUTTON_EDIT = "✏️ Изменить"
 BUTTON_DELETE = "🗑 Удалить"
+BUTTON_CLEAR_HISTORY = "🧹 Очистить историю"
+BUTTON_DELETE_EXERCISE = "🗑 Удалить упражнение"
+BUTTON_CONFIRM_CLEAR_HISTORY = "🧹 Очистить историю"
+BUTTON_DELETE_PERMANENTLY = "🗑 Удалить навсегда"
 BUTTON_CONFIRM_DELETE = "🔴 Да, удалить"
-BUTTON_CHANGE_TIMEZONE = "🕐 Изменить часовой пояс"
+BUTTON_CHANGE_TIMEZONE = "🌍 Часовой пояс"
 BUTTON_OTHER_TIMEZONE = "🌍 Другой часовой пояс"
 BUTTON_PREVIOUS = "◀️ Назад"
 BUTTON_NEXT = "Далее ▶️"
 BUTTON_CHANGE_LANGUAGE = "🌐 Язык"
+BUTTON_IMPORT_DATA = "📥 Импорт данных"
+BUTTON_EXERCISE_MANAGEMENT = "🛠 Управление упражнениями"
+BUTTON_IMPORT_MERGE = "🔀 Объединить"
+BUTTON_IMPORT_REPLACE = "♻️ Заменить"
+BUTTON_IMPORT = "Импортировать"
+BUTTON_REPLACE_AND_IMPORT = "Заменить и импортировать"
 BUTTON_ENGLISH = "🇬🇧 English"
 BUTTON_RUSSIAN = "🇷🇺 Русский"
 
@@ -119,7 +132,11 @@ def too_many_sets(max_sets: int) -> str:
 
 # Message templates
 def exercise_empty(name: str) -> str:
-    return f"🏋️ {name}\n\nЗаписей пока нет."
+    return (
+        f"🏋️ {name}\n\n"
+        "↩️ Последнее: —\n\n"
+        "🔥 Сегодня — 0\n📅 7 дней — 0\n🗓 30 дней — 0\n🏆 Всего — 0"
+    )
 
 
 def exercise_summary(
@@ -134,13 +151,17 @@ def exercise_summary(
 ) -> str:
     return (
         f"🏋️ {name}\n\n"
-        f"Последняя:\n{last_reps}\n"
-        f"{last_date}\n\n"
-        f"Сегодня: {today_reps}\n"
-        f"7 дней: {last_7_days_reps}\n"
-        f"30 дней: {last_30_days_reps}\n"
-        f"Всего: {total_reps}"
+        f"↩️ Последнее: {last_reps} · {last_date.lower()}\n\n"
+        f"🔥 Сегодня — {today_reps}\n"
+        f"📅 7 дней — {last_7_days_reps}\n"
+        f"🗓 30 дней — {last_30_days_reps}\n"
+        f"🏆 Всего — {total_reps}"
     )
+
+
+EXERCISE_MANAGEMENT = "🛠 Управление упражнениями"
+CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Очистить историю\n\nВыберите упражнение"
+DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Удалить упражнение\n\nВыберите упражнение"
 
 
 def statistics(
@@ -191,6 +212,22 @@ def delete_confirmation(performed_on: str, reps: str) -> str:
     return f"Удалить запись?\n\n{performed_on}\n{reps}"
 
 
+def clear_history_confirmation(name: str, entries: str, total_reps: str) -> str:
+    return (
+        f"Очистить всю историю для {name}?\n\n"
+        f"Записей: {entries}\nПовторений: {total_reps}\n\n"
+        "Это действие нельзя отменить."
+    )
+
+
+def hard_delete_confirmation(name: str, entries: str, total_reps: str) -> str:
+    return (
+        f"Удалить {name} навсегда?\n\n"
+        f"Записей: {entries}\nПовторений: {total_reps}\n\n"
+        "Упражнение и вся его история будут удалены навсегда."
+    )
+
+
 def result_saved(name: str, reps: str, total_reps: int, performed_on: str) -> str:
     return (
         f"✅ Добавлено\n\n{name}\n{reps}\n\n"
@@ -234,6 +271,94 @@ CHOOSE_LANGUAGE = "🌐 Выберите язык"
 LANGUAGE_CHANGED = "Язык изменён"
 LANGUAGE_ENGLISH = "English"
 LANGUAGE_RUSSIAN = "Русский"
+
+IMPORT_SEND_FILE = "📥 Импорт\n\nОтправь файл .json (не больше 1 МБ)."
+IMPORT_JSON_ONLY = "Поддерживаются только файлы .json."
+IMPORT_FILE_TOO_LARGE = "Файл слишком большой. Максимальный размер — 1 МБ."
+IMPORT_INVALID_FILE = "JSON-файл повреждён или не соответствует формату импорта."
+IMPORT_CANCELLED = "Импорт отменён"
+
+
+def import_preview(
+    *,
+    exercises: str,
+    entries: str,
+    total_reps: str,
+    date_from: str,
+    date_to: str,
+    new_count: str,
+    existing_names: list[str],
+) -> str:
+    value = (
+        "📥 Импорт\n\n"
+        f"Упражнений: {exercises}\n"
+        f"Записей тренировок: {entries}\n"
+        f"Всего повторений: {total_reps}\n"
+        f"Диапазон дат: {date_from} — {date_to}\n\n"
+        f"Новых упражнений: {new_count}\n"
+        f"Существующих упражнений: {len(existing_names)}"
+    )
+    if existing_names:
+        value += "\n\nСуществующие:\n" + "\n".join(
+            f"• {name}" for name in existing_names
+        )
+        value += "\n\nКак обработать существующую историю?"
+    return value
+
+
+def import_new_exercises_confirmation(
+    *,
+    exercises: str,
+    entries: str,
+    total_reps: str,
+    date_from: str,
+    date_to: str,
+    new_count: str,
+) -> str:
+    return (
+        "📥 Импорт\n\n"
+        f"Упражнений: {exercises}\n"
+        f"Записей тренировок: {entries}\n"
+        f"Всего повторений: {total_reps}\n"
+        f"Диапазон дат: {date_from} — {date_to}\n\n"
+        f"Будет создано новых упражнений: {new_count}"
+    )
+
+
+def import_confirmation(strategy: str, entries: str, existing_count: int) -> str:
+    if strategy == "replace":
+        return (
+            "Заменить существующую историю?\n\n"
+            f"История {existing_count} совпавших упражнений будет удалена навсегда.\n"
+            f"Затем будет добавлено записей: {entries}."
+        )
+    return (
+        "Объединить импортированные данные?\n\n"
+        "Существующие записи сохранятся.\n"
+        f"Будет добавлено новых записей: {entries}.\n\n"
+        "Повторный импорт может создать дубликаты."
+    )
+
+
+def import_completed(
+    *,
+    strategy: str,
+    created: str,
+    updated: str,
+    entries: str,
+    total_reps: str,
+    include_strategy: bool = True,
+) -> str:
+    strategy_name = "Замена" if strategy == "replace" else "Объединение"
+    value = "✅ Импорт завершён\n\n"
+    if include_strategy:
+        value += f"Стратегия: {strategy_name}\n\n"
+    return value + (
+        f"Упражнений создано: {created}\n"
+        f"Существующих упражнений обновлено: {updated}\n"
+        f"Записей импортировано: {entries}\n"
+        f"Повторений импортировано: {total_reps}"
+    )
 
 
 def timezone_changed(timezone: str) -> str:

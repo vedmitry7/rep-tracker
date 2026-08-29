@@ -7,6 +7,7 @@ from bot.app.keyboards.exercises import (
     ExerciseOpen,
     ExercisePreset,
     exercise_back_keyboard,
+    exercise_destructive_confirmation_keyboard,
     exercise_presets_keyboard,
     exercise_screen_keyboard,
     exercises_list_keyboard,
@@ -32,9 +33,29 @@ def test_preset_keyboard_uses_typed_callback_data() -> None:
 
     presets = [ExercisePreset.unpack(value).name for value in callbacks[:4]]
     custom = ExerciseAction.unpack(callbacks[4])
+    back = ExerciseAction.unpack(callbacks[5])
 
     assert presets == ["Подтягивания", "Отжимания", "Приседания", "Брусья"]
     assert custom.action == ExerciseActionValue.CUSTOM
+    assert back.action == ExerciseActionValue.LIST
+
+
+def test_preset_keyboard_hides_existing_normalized_names() -> None:
+    markup = exercise_presets_keyboard(
+        [
+            Exercise(id=1, name=" подтягивания "),
+            Exercise(id=2, name="ОТЖИМАНИЯ"),
+            Exercise(id=3, name="Приседания"),
+        ]
+    )
+    callbacks = callback_values(markup)
+
+    presets = [
+        ExercisePreset.unpack(value).name
+        for value in callbacks
+        if value.startswith("exercise_preset:")
+    ]
+    assert presets == ["Брусья"]
 
 
 def test_exercise_list_contains_open_and_add_callbacks() -> None:
@@ -69,13 +90,14 @@ def test_exercise_screen_result_callback_keeps_exercise_id() -> None:
         (ExerciseDetailActionValue.HISTORY, 42),
     ]
     assert list_action.action == ExerciseActionValue.LIST
-    assert [len(row) for row in markup.inline_keyboard] == [2, 2]
+    assert [len(row) for row in markup.inline_keyboard] == [1, 1, 1, 1]
     assert [button.text for row in markup.inline_keyboard for button in row] == [
-        "➕ Результат",
+        "➕ Добавить результат",
         "📊 Статистика",
         "📜 История",
-        "📋 Упражнения",
+        "◀️ Упражнения",
     ]
+    assert markup.inline_keyboard[0][0].style == "primary"
 
 
 def test_back_button_returns_to_correct_exercise() -> None:
@@ -83,3 +105,17 @@ def test_back_button_returns_to_correct_exercise() -> None:
 
     assert len(callbacks) == 1
     assert ExerciseOpen.unpack(callbacks[0]).exercise_id == 42
+
+
+def test_destructive_cancel_returns_without_mutating() -> None:
+    markup = exercise_destructive_confirmation_keyboard(
+        42, operation="clear_history"
+    )
+    callbacks = callback_values(markup)
+
+    confirm = ExerciseDetailAction.unpack(callbacks[0])
+    cancel = SettingsAction.unpack(callbacks[1])
+    assert confirm.action == ExerciseDetailActionValue.CONFIRM_CLEAR_HISTORY
+    assert confirm.exercise_id == 42
+    assert cancel.action == SettingsActionValue.CLEAR_HISTORY
+    assert markup.inline_keyboard[0][0].style == "danger"

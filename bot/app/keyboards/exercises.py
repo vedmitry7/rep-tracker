@@ -31,6 +31,10 @@ class ExerciseOpen(CallbackData, prefix="exercise_open"):
 class ExerciseDetailActionValue(StrEnum):
     STATISTICS = "statistics"
     HISTORY = "history"
+    CLEAR_HISTORY = "clear_history"
+    CONFIRM_CLEAR_HISTORY = "confirm_clear_history"
+    HARD_DELETE = "hard_delete"
+    CONFIRM_HARD_DELETE = "confirm_hard_delete"
 
 
 class ExerciseDetailAction(CallbackData, prefix="exercise_detail"):
@@ -52,13 +56,24 @@ def add_exercise_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def exercise_presets_keyboard() -> InlineKeyboardMarkup:
+def exercise_presets_keyboard(
+    exercises: list[Exercise] | None = None,
+) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    existing_names = {
+        exercise.name.strip().lower() for exercise in (exercises or [])
+    }
     for name in texts.EXERCISE_PRESETS:
+        if name.strip().lower() in existing_names:
+            continue
         builder.button(text=name, callback_data=ExercisePreset(name=name))
     builder.button(
         text=texts.BUTTON_CUSTOM_EXERCISE,
         callback_data=ExerciseAction(action=ExerciseActionValue.CUSTOM),
+    )
+    builder.button(
+        text=texts.BUTTON_BACK,
+        callback_data=ExerciseAction(action=ExerciseActionValue.LIST),
     )
     builder.adjust(1)
     return builder.as_markup()
@@ -72,6 +87,7 @@ def exercise_screen_keyboard(exercise_id: int) -> InlineKeyboardMarkup:
             action=ResultActionValue.START,
             exercise_id=exercise_id,
         ),
+        style="primary",
     )
     builder.button(
         text=texts.BUTTON_STATISTICS,
@@ -91,7 +107,70 @@ def exercise_screen_keyboard(exercise_id: int) -> InlineKeyboardMarkup:
         text=texts.BUTTON_EXERCISES,
         callback_data=ExerciseAction(action=ExerciseActionValue.LIST),
     )
-    builder.adjust(2, 2)
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def exercise_destructive_confirmation_keyboard(
+    exercise_id: int,
+    *,
+    operation: str,
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if operation == "clear_history":
+        text = texts.BUTTON_CONFIRM_CLEAR_HISTORY
+        action = ExerciseDetailActionValue.CONFIRM_CLEAR_HISTORY
+    else:
+        text = texts.BUTTON_DELETE_PERMANENTLY
+        action = ExerciseDetailActionValue.CONFIRM_HARD_DELETE
+    builder.button(
+        text=text,
+        callback_data=ExerciseDetailAction(action=action, exercise_id=exercise_id),
+        style="danger",
+    )
+    back_action = (
+        SettingsActionValue.CLEAR_HISTORY
+        if operation == "clear_history"
+        else SettingsActionValue.HARD_DELETE
+    )
+    builder.button(
+        text=texts.BUTTON_BACK,
+        callback_data=SettingsAction(action=back_action),
+    )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def custom_exercise_back_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=texts.BUTTON_BACK,
+        callback_data=ExerciseAction(action=ExerciseActionValue.ADD),
+    )
+    return builder.as_markup()
+
+
+def exercise_management_selection_keyboard(
+    exercises: list[Exercise],
+    *,
+    operation: ExerciseDetailActionValue,
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for exercise in exercises:
+        builder.button(
+            text=exercise.name,
+            callback_data=ExerciseDetailAction(
+                action=operation,
+                exercise_id=exercise.id,
+            ),
+        )
+    builder.button(
+        text=texts.BUTTON_BACK,
+        callback_data=SettingsAction(
+            action=SettingsActionValue.EXERCISE_MANAGEMENT
+        ),
+    )
+    builder.adjust(1)
     return builder.as_markup()
 
 

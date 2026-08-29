@@ -55,7 +55,7 @@ async def test_start_maps_telegram_language_code(
 
     api.resolve_user.assert_awaited_once_with(42, "Europe/Moscow", expected)
     rendered = message.answer.await_args.args[0]
-    assert ("Привет" in rendered) if expected == "ru" else ("Hi!" in rendered)
+    assert "🏋️ Repka" in rendered
 
 
 @pytest.mark.asyncio
@@ -74,4 +74,4 @@ async def test_existing_user_keeps_saved_language_on_start() -> None:
     await start(message, api, "Europe/Moscow")
 
     api.resolve_user.assert_awaited_once_with(42, "Europe/Moscow", "ru")
-    assert message.answer.await_args.args[0] == "You don't have any exercises yet."
+    assert message.answer.await_args.args[0] == "🏋️ Repka\n\nNo exercises yet"

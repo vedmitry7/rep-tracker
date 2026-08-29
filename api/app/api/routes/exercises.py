@@ -12,10 +12,13 @@ from api.app.schemas.exercise import (
 from api.app.schemas.exercise_stats import ExerciseStatsResponse
 from api.app.schemas.user import ExternalId, Provider
 from api.app.services.exercise import (
+    DuplicateExerciseNameError,
     ExerciseNotFoundError,
     archive_exercise,
+    clear_exercise_history,
     create_exercise,
     list_exercises,
+    permanently_delete_exercise,
     rename_exercise,
 )
 from api.app.services.exercise_stats import get_exercise_stats
@@ -74,7 +77,6 @@ async def get_exercises(
         exercises = await list_exercises(session, provider, external_id)
     except (UserNotFoundError, UserBannedError) as error:
         raise _identity_http_error(error) from error
-
     return [ExerciseResponse.model_validate(exercise) for exercise in exercises]
 
 
@@ -85,6 +87,7 @@ async def get_exercises(
     responses={
         status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
         status.HTTP_404_NOT_FOUND: {"description": "User not found"},
+        status.HTTP_409_CONFLICT: {"description": "Active exercise name exists"},
     },
 )
 async def post_exercise(
@@ -100,6 +103,8 @@ async def post_exercise(
         )
     except (UserNotFoundError, UserBannedError) as error:
         raise _identity_http_error(error) from error
+    except DuplicateExerciseNameError as error:
+        raise _duplicate_name_http_error() from error
 
     return ExerciseResponse.model_validate(exercise)
 
@@ -110,6 +115,7 @@ async def post_exercise(
     responses={
         status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
         status.HTTP_404_NOT_FOUND: {"description": "User or exercise not found"},
+        status.HTTP_409_CONFLICT: {"description": "Active exercise name exists"},
     },
 )
 async def patch_exercise(
@@ -132,6 +138,8 @@ async def patch_exercise(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Exercise not found",
         ) from error
+    except DuplicateExerciseNameError as error:
+        raise _duplicate_name_http_error() from error
 
     return ExerciseResponse.model_validate(exercise)
 
@@ -163,6 +171,54 @@ async def delete_exercise(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.delete(
+    "/{exercise_id}/history",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
+        status.HTTP_404_NOT_FOUND: {"description": "User or exercise not found"},
+    },
+)
+async def delete_exercise_history(
+    exercise_id: int,
+    provider: Annotated[Provider, Query()],
+    external_id: Annotated[ExternalId, Query()],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    try:
+        await clear_exercise_history(session, provider, external_id, exercise_id)
+    except (UserNotFoundError, UserBannedError) as error:
+        raise _identity_http_error(error) from error
+    except ExerciseNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Exercise not found") from error
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/{exercise_id}/permanent",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
+        status.HTTP_404_NOT_FOUND: {"description": "User or exercise not found"},
+    },
+)
+async def hard_delete_exercise(
+    exercise_id: int,
+    provider: Annotated[Provider, Query()],
+    external_id: Annotated[ExternalId, Query()],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    try:
+        await permanently_delete_exercise(
+            session, provider, external_id, exercise_id
+        )
+    except (UserNotFoundError, UserBannedError) as error:
+        raise _identity_http_error(error) from error
+    except ExerciseNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Exercise not found") from error
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 def _identity_http_error(error: Exception) -> HTTPException:
     if isinstance(error, UserBannedError):
         return HTTPException(
@@ -172,4 +228,11 @@ def _identity_http_error(error: Exception) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="User not found",
+    )
+
+
+def _duplicate_name_http_error() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="An active exercise with this name already exists",
     )
