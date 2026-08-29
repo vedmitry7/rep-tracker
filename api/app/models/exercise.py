@@ -5,9 +5,11 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     ForeignKey,
+    Index,
     Integer,
     String,
     false,
+    func,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -51,3 +53,12 @@ class Exercise(TimestampMixin, Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+
+Index(
+    "uq_exercises_user_active_name_normalized",
+    Exercise.user_id,
+    func.lower(func.btrim(Exercise.name)),
+    unique=True,
+    postgresql_where=Exercise.is_archived.is_(False),
+)

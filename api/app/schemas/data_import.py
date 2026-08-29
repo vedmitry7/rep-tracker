@@ -5,6 +5,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from api.app.core.exercise_names import normalize_exercise_name
 from api.app.schemas.exercise import ExerciseName
 from api.app.schemas.exercise_entry import Reps
 from api.app.schemas.user import ExternalId, Provider
@@ -68,6 +69,13 @@ class ImportDocument(BaseModel):
         if entries_count > MAX_IMPORT_ENTRIES:
             raise ValueError(
                 f"import cannot contain more than {MAX_IMPORT_ENTRIES} entries"
+            )
+        normalized_names = [
+            normalize_exercise_name(exercise.name) for exercise in self.exercises
+        ]
+        if len(normalized_names) != len(set(normalized_names)):
+            raise ValueError(
+                "import cannot contain duplicate normalized exercise names"
             )
         return self
 

@@ -223,6 +223,25 @@ async def test_invalid_document_is_rejected_atomically(
     assert (await client.get("/exercises", params=identity)).json() == []
 
 
+async def test_import_rejects_duplicate_normalized_exercise_names(
+    client: AsyncClient,
+) -> None:
+    identity = await create_user(client)
+    payload = document(
+        imported_exercise("Pull-ups"),
+        imported_exercise("  PULL-UPS  "),
+    )
+
+    response = await client.post(
+        "/imports/preview",
+        json={**identity, "document": payload},
+    )
+
+    assert response.status_code == 422
+    assert "duplicate normalized exercise names" in str(response.json())
+    assert (await client.get("/exercises", params=identity)).json() == []
+
+
 async def test_future_date_uses_user_timezone_and_writes_nothing(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:

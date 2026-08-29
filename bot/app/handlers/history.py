@@ -12,7 +12,11 @@ from bot.app.api.client import (
     ExerciseHistoryDay,
     RepTrackerApi,
 )
-from bot.app.handlers.common import answer_api_error
+from bot.app.handlers.common import (
+    answer_api_error,
+    edit_or_answer,
+    edit_stored_or_answer,
+)
 from bot.app.handlers.exercises import _find_exercise
 from bot.app.keyboards.exercises import ExerciseDetailAction, ExerciseDetailActionValue
 from bot.app.keyboards.history import (
@@ -270,6 +274,15 @@ async def history_entry_action(
         return
     context = HistoryEditContext.from_entry(exercise, entry, settings.today)
     await state.set_data(context.as_fsm_data())
+    if isinstance(callback.message, Message):
+        chat = getattr(callback.message, "chat", None)
+        message_id = getattr(callback.message, "message_id", None)
+        chat_id = getattr(chat, "id", None)
+        if isinstance(chat_id, int) and isinstance(message_id, int):
+            await state.update_data(
+                ui_chat_id=chat_id,
+                ui_message_id=message_id,
+            )
     if callback_data.action == HistoryEntryActionValue.EDIT_REPS:
         await state.set_state(EditHistoryEntry.editing_reps)
         await callback.answer()
@@ -527,6 +540,7 @@ async def _save_entry_date(
     context: HistoryEditContext,
     performed_on: date,
 ) -> None:
+    state_data = await state.get_data()
     try:
         entry = await api_client.update_exercise_entry(
             telegram_user_id,
@@ -539,11 +553,19 @@ async def _save_entry_date(
     await state.clear()
     if isinstance(event, CallbackQuery):
         await event.answer(texts.DATE_CHANGED)
-    await _render_entry(
-        event,
-        Exercise(id=context.exercise_id, name=context.exercise_name),
-        entry,
-    )
+    exercise = Exercise(id=context.exercise_id, name=context.exercise_name)
+    if isinstance(event, Message):
+        chat_id = state_data.get("ui_chat_id")
+        message_id = state_data.get("ui_message_id")
+        await edit_stored_or_answer(
+            event,
+            history_entry_text(exercise, entry),
+            history_entry_keyboard(entry),
+            chat_id=chat_id if isinstance(chat_id, int) else None,
+            message_id=message_id if isinstance(message_id, int) else None,
+        )
+    else:
+        await _render_entry(event, exercise, entry)
 
 
 async def _reload_entry(
@@ -712,6 +734,6 @@ async def _render(
 ) -> None:
     if isinstance(event, CallbackQuery):
         if isinstance(event.message, Message):
-            await event.message.edit_text(text, reply_markup=reply_markup)
+            await edit_or_answer(event.message, text, reply_markup)
         return
     await event.answer(text, reply_markup=reply_markup)

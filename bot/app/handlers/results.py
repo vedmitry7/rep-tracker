@@ -6,7 +6,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
 from bot.app.api.client import ApiError, Exercise, RepTrackerApi
-from bot.app.handlers.common import answer_api_error
+from bot.app.handlers.common import (
+    answer_api_error,
+    edit_or_answer,
+    edit_stored_or_answer,
+)
 from bot.app.handlers.exercises import show_exercise
 from bot.app.keyboards.exercises import exercise_screen_keyboard
 from bot.app.keyboards.results import (
@@ -127,7 +131,18 @@ async def start_result_flow(
         reps=[],
     )
     await state.set_state(AddResult.entering_result)
-    await state.set_data(context.as_fsm_data())
+    state_data = context.as_fsm_data()
+    callback_message = getattr(callback, "message", None)
+    if isinstance(callback_message, Message):
+        chat = getattr(callback_message, "chat", None)
+        message_id = getattr(callback_message, "message_id", None)
+        chat_id = getattr(chat, "id", None)
+        if isinstance(chat_id, int) and isinstance(message_id, int):
+            state_data.update(
+                ui_chat_id=chat_id,
+                ui_message_id=message_id,
+            )
+    await state.set_data(state_data)
     await callback.answer()
     await _render_result_input(callback, context)
 
@@ -390,6 +405,7 @@ async def cancel_result_flow(
             callback.message,
             Exercise(id=context.exercise_id, name=context.exercise_name),
             stats,
+            edit=True,
         )
 
 
@@ -411,6 +427,7 @@ async def _save_result(
         await answer_api_error(event, error)
         return False
 
+    state_data = await state.get_data()
     await state.clear()
     formatted_reps = " • ".join(str(value) for value in entry.reps)
     text = texts.result_saved(
@@ -421,11 +438,19 @@ async def _save_result(
     )
     if isinstance(event, CallbackQuery):
         await event.answer(texts.RESULT_ADDED)
-    await _render(
-        event,
-        text,
-        exercise_screen_keyboard(context.exercise_id),
-    )
+    markup = exercise_screen_keyboard(context.exercise_id)
+    if isinstance(event, Message):
+        chat_id = state_data.get("ui_chat_id")
+        message_id = state_data.get("ui_message_id")
+        await edit_stored_or_answer(
+            event,
+            text,
+            markup,
+            chat_id=chat_id if isinstance(chat_id, int) else None,
+            message_id=message_id if isinstance(message_id, int) else None,
+        )
+    else:
+        await _render(event, text, markup)
     return True
 
 
@@ -511,6 +536,6 @@ async def _render(
 ) -> None:
     if isinstance(event, CallbackQuery):
         if isinstance(event.message, Message):
-            await event.message.edit_text(text, reply_markup=reply_markup)
+            await edit_or_answer(event.message, text, reply_markup)
         return
     await event.answer(text, reply_markup=reply_markup)

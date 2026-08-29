@@ -12,6 +12,7 @@ from api.app.schemas.exercise import (
 from api.app.schemas.exercise_stats import ExerciseStatsResponse
 from api.app.schemas.user import ExternalId, Provider
 from api.app.services.exercise import (
+    DuplicateExerciseNameError,
     ExerciseNotFoundError,
     archive_exercise,
     clear_exercise_history,
@@ -76,7 +77,6 @@ async def get_exercises(
         exercises = await list_exercises(session, provider, external_id)
     except (UserNotFoundError, UserBannedError) as error:
         raise _identity_http_error(error) from error
-
     return [ExerciseResponse.model_validate(exercise) for exercise in exercises]
 
 
@@ -87,6 +87,7 @@ async def get_exercises(
     responses={
         status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
         status.HTTP_404_NOT_FOUND: {"description": "User not found"},
+        status.HTTP_409_CONFLICT: {"description": "Active exercise name exists"},
     },
 )
 async def post_exercise(
@@ -102,6 +103,8 @@ async def post_exercise(
         )
     except (UserNotFoundError, UserBannedError) as error:
         raise _identity_http_error(error) from error
+    except DuplicateExerciseNameError as error:
+        raise _duplicate_name_http_error() from error
 
     return ExerciseResponse.model_validate(exercise)
 
@@ -112,6 +115,7 @@ async def post_exercise(
     responses={
         status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
         status.HTTP_404_NOT_FOUND: {"description": "User or exercise not found"},
+        status.HTTP_409_CONFLICT: {"description": "Active exercise name exists"},
     },
 )
 async def patch_exercise(
@@ -134,6 +138,8 @@ async def patch_exercise(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Exercise not found",
         ) from error
+    except DuplicateExerciseNameError as error:
+        raise _duplicate_name_http_error() from error
 
     return ExerciseResponse.model_validate(exercise)
 
@@ -222,4 +228,11 @@ def _identity_http_error(error: Exception) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="User not found",
+    )
+
+
+def _duplicate_name_http_error() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="An active exercise with this name already exists",
     )

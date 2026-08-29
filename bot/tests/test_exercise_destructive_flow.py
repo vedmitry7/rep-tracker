@@ -78,7 +78,7 @@ async def test_clear_history_confirmation_calls_backend_and_refreshes() -> None:
     )
 
     api.clear_exercise_history.assert_awaited_once_with(42, 7)
-    assert "No entries yet" in callback.message.answer.await_args.args[0]
+    assert callback.message.answer.await_args.args[0] == "🛠 Manage exercises"
 
 
 @pytest.mark.asyncio
@@ -86,7 +86,6 @@ async def test_hard_delete_confirmation_returns_to_exercise_list() -> None:
     callback = FakeCallback()
     api = SimpleNamespace(
         permanently_delete_exercise=AsyncMock(),
-        list_exercises=AsyncMock(return_value=[Exercise(id=8, name="Squats")]),
     )
 
     await exercises.confirm_hard_delete(
@@ -99,4 +98,4 @@ async def test_hard_delete_confirmation_returns_to_exercise_list() -> None:
     )
 
     api.permanently_delete_exercise.assert_awaited_once_with(42, 7)
-    assert callback.message.answer.await_args.args[0] == "Your exercises:"
+    assert callback.message.answer.await_args.args[0] == "🛠 Manage exercises"

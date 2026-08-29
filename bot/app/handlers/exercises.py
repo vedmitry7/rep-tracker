@@ -4,8 +4,18 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from bot.app.api.client import ApiError, Exercise, ExerciseStats, RepTrackerApi
-from bot.app.handlers.common import answer_api_error
+from bot.app.api.client import (
+    ApiError,
+    Exercise,
+    ExerciseStats,
+    RepTrackerApi,
+    ResourceConflictError,
+)
+from bot.app.handlers.common import (
+    answer_api_error,
+    edit_or_answer,
+    edit_stored_or_answer,
+)
 from bot.app.keyboards.exercises import (
     ExerciseAction,
     ExerciseActionValue,
@@ -13,12 +23,14 @@ from bot.app.keyboards.exercises import (
     ExerciseDetailActionValue,
     ExerciseOpen,
     ExercisePreset,
+    custom_exercise_back_keyboard,
     exercise_back_keyboard,
     exercise_destructive_confirmation_keyboard,
     exercise_presets_keyboard,
     exercise_screen_keyboard,
     exercises_list_keyboard,
 )
+from bot.app.keyboards.settings import exercise_management_keyboard
 from bot.app.services.exercise_format import format_number, format_reps
 from bot.app.states.exercise import CreateExercise
 from bot.app.texts import texts
@@ -70,20 +82,35 @@ async def show_exercise(
     message: Message,
     exercise: Exercise,
     stats: ExerciseStats,
+    *,
+    edit: bool = False,
 ) -> None:
-    await message.answer(
-        exercise_screen_text(exercise, stats),
-        reply_markup=exercise_screen_keyboard(exercise.id),
-    )
+    text = exercise_screen_text(exercise, stats)
+    markup = exercise_screen_keyboard(exercise.id)
+    if edit:
+        await edit_or_answer(message, text, markup)
+    else:
+        await message.answer(text, reply_markup=markup)
 
 
 @router.callback_query(ExerciseAction.filter(F.action == ExerciseActionValue.ADD))
-async def choose_exercise(callback: CallbackQuery) -> None:
+async def choose_exercise(
+    callback: CallbackQuery,
+    state: FSMContext,
+    api_client: RepTrackerApi,
+) -> None:
+    await state.clear()
+    try:
+        exercises = await api_client.list_exercises(callback.from_user.id)
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
     await callback.answer()
     if isinstance(callback.message, Message):
-        await callback.message.answer(
+        await edit_or_answer(
+            callback.message,
             texts.CHOOSE_EXERCISE,
-            reply_markup=exercise_presets_keyboard(),
+            exercise_presets_keyboard(exercises),
         )
 
 
@@ -92,20 +119,26 @@ async def create_preset_exercise(
     callback: CallbackQuery,
     callback_data: ExercisePreset,
     api_client: RepTrackerApi,
+    state: FSMContext,
 ) -> None:
+    await state.clear()
     try:
         exercise = await api_client.create_exercise(
             callback.from_user.id,
             callback_data.name,
         )
         stats = await api_client.get_exercise_stats(callback.from_user.id, exercise.id)
+    except ResourceConflictError:
+        await callback.answer(texts.DUPLICATE_EXERCISE_NAME, show_alert=True)
+        return
     except ApiError as error:
         await answer_api_error(callback, error)
         return
 
+    await state.clear()
     await callback.answer(texts.EXERCISE_ADDED)
     if isinstance(callback.message, Message):
-        await show_exercise(callback.message, exercise, stats)
+        await show_exercise(callback.message, exercise, stats, edit=True)
 
 
 @router.callback_query(ExerciseAction.filter(F.action == ExerciseActionValue.CUSTOM))
@@ -113,10 +146,20 @@ async def request_custom_exercise_name(
     callback: CallbackQuery,
     state: FSMContext,
 ) -> None:
+    await state.clear()
     await state.set_state(CreateExercise.waiting_for_name)
+    if isinstance(callback.message, Message):
+        await state.update_data(
+            ui_chat_id=callback.message.chat.id,
+            ui_message_id=callback.message.message_id,
+        )
     await callback.answer()
     if isinstance(callback.message, Message):
-        await callback.message.answer(texts.REQUEST_EXERCISE_NAME)
+        await edit_or_answer(
+            callback.message,
+            texts.REQUEST_EXERCISE_NAME,
+            custom_exercise_back_keyboard(),
+        )
 
 
 @router.message(CreateExercise.waiting_for_name)
@@ -125,13 +168,31 @@ async def create_custom_exercise(
     state: FSMContext,
     api_client: RepTrackerApi,
 ) -> None:
+    data = await state.get_data()
+    chat_id = data.get("ui_chat_id")
+    message_id = data.get("ui_message_id")
+    stored_chat_id = chat_id if isinstance(chat_id, int) else None
+    stored_message_id = message_id if isinstance(message_id, int) else None
     name = (message.text or "").strip()
     if not name:
-        await message.answer(texts.EMPTY_EXERCISE_NAME)
+        await edit_stored_or_answer(
+            message,
+            f"{texts.EMPTY_EXERCISE_NAME}\n\n{texts.REQUEST_EXERCISE_NAME}",
+            custom_exercise_back_keyboard(),
+            chat_id=stored_chat_id,
+            message_id=stored_message_id,
+        )
         return
     if len(name) > MAX_EXERCISE_NAME_LENGTH:
-        await message.answer(
-            texts.exercise_name_too_long(MAX_EXERCISE_NAME_LENGTH)
+        await edit_stored_or_answer(
+            message,
+            (
+                f"{texts.exercise_name_too_long(MAX_EXERCISE_NAME_LENGTH)}"
+                f"\n\n{texts.REQUEST_EXERCISE_NAME}"
+            ),
+            custom_exercise_back_keyboard(),
+            chat_id=stored_chat_id,
+            message_id=stored_message_id,
         )
         return
     if message.from_user is None:
@@ -140,19 +201,37 @@ async def create_custom_exercise(
     try:
         exercise = await api_client.create_exercise(message.from_user.id, name)
         stats = await api_client.get_exercise_stats(message.from_user.id, exercise.id)
+    except ResourceConflictError:
+        await edit_stored_or_answer(
+            message,
+            f"{texts.DUPLICATE_EXERCISE_NAME}\n\n{texts.REQUEST_EXERCISE_NAME}",
+            custom_exercise_back_keyboard(),
+            chat_id=stored_chat_id,
+            message_id=stored_message_id,
+        )
+        return
     except ApiError as error:
         await answer_api_error(message, error)
         return
 
     await state.clear()
-    await show_exercise(message, exercise, stats)
+    await edit_stored_or_answer(
+        message,
+        exercise_screen_text(exercise, stats),
+        exercise_screen_keyboard(exercise.id),
+        chat_id=stored_chat_id,
+        message_id=stored_message_id,
+    )
 
 
 @router.callback_query(ExerciseAction.filter(F.action == ExerciseActionValue.LIST))
 async def list_exercises(
     callback: CallbackQuery,
     api_client: RepTrackerApi,
+    state: FSMContext | None = None,
 ) -> None:
+    if state is not None:
+        await state.clear()
     try:
         exercises = await api_client.list_exercises(callback.from_user.id)
     except ApiError as error:
@@ -163,14 +242,16 @@ async def list_exercises(
     if not isinstance(callback.message, Message):
         return
     if exercises:
-        await callback.message.answer(
+        await edit_or_answer(
+            callback.message,
             texts.EXERCISES_TITLE,
-            reply_markup=exercises_list_keyboard(exercises),
+            exercises_list_keyboard(exercises),
         )
     else:
-        await callback.message.answer(
+        await edit_or_answer(
+            callback.message,
             texts.NO_EXERCISES,
-            reply_markup=exercises_list_keyboard([]),
+            exercises_list_keyboard([]),
         )
 
 
@@ -179,7 +260,10 @@ async def open_exercise(
     callback: CallbackQuery,
     callback_data: ExerciseOpen,
     api_client: RepTrackerApi,
+    state: FSMContext | None = None,
 ) -> None:
+    if state is not None:
+        await state.clear()
     try:
         exercise = await _find_exercise(
             api_client,
@@ -196,7 +280,7 @@ async def open_exercise(
 
     await callback.answer()
     if isinstance(callback.message, Message):
-        await show_exercise(callback.message, exercise, stats)
+        await show_exercise(callback.message, exercise, stats, edit=True)
 
 
 @router.callback_query(
@@ -206,7 +290,10 @@ async def show_statistics(
     callback: CallbackQuery,
     callback_data: ExerciseDetailAction,
     api_client: RepTrackerApi,
+    state: FSMContext | None = None,
 ) -> None:
+    if state is not None:
+        await state.clear()
     try:
         exercise = await _find_exercise(
             api_client, callback.from_user.id, callback_data.exercise_id
@@ -221,9 +308,10 @@ async def show_statistics(
 
     await callback.answer()
     if isinstance(callback.message, Message):
-        await callback.message.answer(
+        await edit_or_answer(
+            callback.message,
             stats_screen_text(exercise, stats),
-            reply_markup=exercise_back_keyboard(exercise.id),
+            exercise_back_keyboard(exercise.id),
         )
 
 
@@ -270,9 +358,10 @@ async def request_destructive_exercise_action(
         operation = "hard_delete"
     await callback.answer()
     if isinstance(callback.message, Message):
-        await callback.message.answer(
+        await edit_or_answer(
+            callback.message,
             text,
-            reply_markup=exercise_destructive_confirmation_keyboard(
+            exercise_destructive_confirmation_keyboard(
                 exercise.id, operation=operation
             ),
         )
@@ -296,13 +385,16 @@ async def confirm_clear_history(
             await callback.answer(texts.EXERCISE_NOT_FOUND, show_alert=True)
             return
         await api_client.clear_exercise_history(callback.from_user.id, exercise.id)
-        stats = await api_client.get_exercise_stats(callback.from_user.id, exercise.id)
     except ApiError as error:
         await answer_api_error(callback, error)
         return
     await callback.answer(texts.HISTORY_CLEARED)
     if isinstance(callback.message, Message):
-        await show_exercise(callback.message, exercise, stats)
+        await edit_or_answer(
+            callback.message,
+            texts.EXERCISE_MANAGEMENT,
+            exercise_management_keyboard(),
+        )
 
 
 @router.callback_query(
@@ -319,15 +411,15 @@ async def confirm_hard_delete(
         await api_client.permanently_delete_exercise(
             callback.from_user.id, callback_data.exercise_id
         )
-        exercises = await api_client.list_exercises(callback.from_user.id)
     except ApiError as error:
         await answer_api_error(callback, error)
         return
     await callback.answer(texts.EXERCISE_PERMANENTLY_DELETED)
     if isinstance(callback.message, Message):
-        await callback.message.answer(
-            texts.EXERCISES_TITLE if exercises else texts.NO_EXERCISES,
-            reply_markup=exercises_list_keyboard(exercises),
+        await edit_or_answer(
+            callback.message,
+            texts.EXERCISE_MANAGEMENT,
+            exercise_management_keyboard(),
         )
 
 

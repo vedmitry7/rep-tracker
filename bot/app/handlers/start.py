@@ -54,7 +54,9 @@ async def start(
             )
             return
 
-        text = texts.WELCOME if resolution.created else texts.NO_EXERCISES
-        await message.answer(text, reply_markup=add_exercise_keyboard())
+        await message.answer(
+            texts.NO_EXERCISES,
+            reply_markup=add_exercise_keyboard(),
+        )
     finally:
         reset_current_language(token)

@@ -15,6 +15,9 @@ class SettingsActionValue(StrEnum):
     OTHER_TIMEZONE = "other_timezone"
     CHANGE_LANGUAGE = "change_language"
     IMPORT_DATA = "import_data"
+    EXERCISE_MANAGEMENT = "exercise_management"
+    CLEAR_HISTORY = "clear_history"
+    HARD_DELETE = "hard_delete"
     HOME = "home"
 
 
@@ -49,20 +52,44 @@ class ImportAction(CallbackData, prefix="data_import"):
 def settings_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
-        text=texts.BUTTON_CHANGE_TIMEZONE,
-        callback_data=SettingsAction(action=SettingsActionValue.CHANGE_TIMEZONE),
-    )
-    builder.button(
         text=texts.BUTTON_CHANGE_LANGUAGE,
         callback_data=SettingsAction(action=SettingsActionValue.CHANGE_LANGUAGE),
+    )
+    builder.button(
+        text=texts.BUTTON_CHANGE_TIMEZONE,
+        callback_data=SettingsAction(action=SettingsActionValue.CHANGE_TIMEZONE),
     )
     builder.button(
         text=texts.BUTTON_IMPORT_DATA,
         callback_data=SettingsAction(action=SettingsActionValue.IMPORT_DATA),
     )
     builder.button(
+        text=texts.BUTTON_EXERCISE_MANAGEMENT,
+        callback_data=SettingsAction(
+            action=SettingsActionValue.EXERCISE_MANAGEMENT
+        ),
+    )
+    builder.button(
         text=texts.BUTTON_BACK,
         callback_data=SettingsAction(action=SettingsActionValue.HOME),
+    )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def exercise_management_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=texts.BUTTON_CLEAR_HISTORY,
+        callback_data=SettingsAction(action=SettingsActionValue.CLEAR_HISTORY),
+    )
+    builder.button(
+        text=texts.BUTTON_DELETE_EXERCISE,
+        callback_data=SettingsAction(action=SettingsActionValue.HARD_DELETE),
+    )
+    builder.button(
+        text=texts.BUTTON_BACK,
+        callback_data=SettingsAction(action=SettingsActionValue.OPEN),
     )
     builder.adjust(1)
     return builder.as_markup()
@@ -94,7 +121,11 @@ def import_confirmation_keyboard(strategy: str) -> InlineKeyboardMarkup:
     else:
         text = texts.BUTTON_IMPORT
         action = ImportActionValue.APPLY_MERGE
-    builder.button(text=text, callback_data=ImportAction(action=action))
+    builder.button(
+        text=text,
+        callback_data=ImportAction(action=action),
+        style=("danger" if strategy == "replace" else None),
+    )
     builder.button(
         text=texts.BUTTON_CANCEL_PLAIN,
         callback_data=ImportAction(action=ImportActionValue.CANCEL),

@@ -58,6 +58,55 @@ async def test_create_exercise(
     assert "user_id" not in body
 
 
+@pytest.mark.parametrize("duplicate", ["Pull-ups", " pull-ups ", "PULL-UPS"])
+async def test_duplicate_active_exercise_name_returns_conflict(
+    client: AsyncClient,
+    duplicate: str,
+) -> None:
+    identity = await create_user(client)
+    original = await create_exercise_for(client, identity, "Pull-ups")
+
+    response = await client.post(
+        "/exercises",
+        json={**identity, "name": duplicate},
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "An active exercise with this name already exists"
+    }
+    assert (await client.get("/exercises", params=identity)).json() == [original]
+
+
+async def test_distinct_normalized_exercise_names_are_allowed(
+    client: AsyncClient,
+) -> None:
+    identity = await create_user(client)
+
+    first = await create_exercise_for(client, identity, "Pull-ups 1")
+    second = await create_exercise_for(client, identity, "Pull-ups 2")
+
+    assert first["id"] != second["id"]
+
+
+async def test_archived_name_does_not_block_new_active_exercise(
+    client: AsyncClient,
+) -> None:
+    identity = await create_user(client)
+    archived = await create_exercise_for(client, identity, "Pull-ups")
+    assert (
+        await client.delete(f"/exercises/{archived['id']}", params=identity)
+    ).status_code == 204
+
+    response = await client.post(
+        "/exercises",
+        json={**identity, "name": " pull-UPS "},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["name"] == "pull-UPS"
+
+
 async def test_get_exercises(
     client: AsyncClient,
 ) -> None:

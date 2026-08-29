@@ -33,7 +33,11 @@ def test_empty_exercise_screen() -> None:
         ExerciseStats.empty(today=date(2026, 8, 27)),
     )
 
-    assert text == "🏋️ Подтягивания\n\nЗаписей пока нет."
+    assert text == (
+        "🏋️ Подтягивания\n\n"
+        "↩️ Последнее: —\n\n"
+        "🔥 Сегодня — 0\n📅 7 дней — 0\n🗓 30 дней — 0\n🏆 Всего — 0"
+    )
 
 
 def test_empty_stats_screen() -> None:
@@ -90,11 +94,11 @@ def test_exercise_screen_shows_last_entry_and_summary() -> None:
 
     assert text == (
         "🏋️ Подтягивания\n\n"
-        "Последняя:\n10 • 9 • 8 • 7\nСегодня\n\n"
-        "Сегодня: 34\n"
-        "7 дней: 126\n"
-        "30 дней: 483\n"
-        "Всего: 1 284"
+        "↩️ Последнее: 10 • 9 • 8 • 7 · сегодня\n\n"
+        "🔥 Сегодня — 34\n"
+        "📅 7 дней — 126\n"
+        "🗓 30 дней — 483\n"
+        "🏆 Всего — 1 284"
     )
 
 

@@ -6,16 +6,16 @@ to the code that owns them.
 """
 
 # Common screens and notifications
-EXERCISES_TITLE = "Твои упражнения:"
-NO_EXERCISES = "У тебя пока нет упражнений."
+EXERCISES_TITLE = "🏋️ Repka\n\nВыберите упражнение"
+NO_EXERCISES = "🏋️ Repka\n\nУпражнений пока нет"
 WELCOME = (
     "Привет! Здесь можно быстро записывать упражнения и следить "
     "за прогрессом.\n\nСоздай первое упражнение."
 )
-CHOOSE_EXERCISE = "Выбери упражнение:"
+CHOOSE_EXERCISE = "➕ Добавить упражнение"
 EXERCISE_ADDED = "Упражнение добавлено"
 EXERCISE_NOT_FOUND = "Упражнение не найдено."
-REQUEST_EXERCISE_NAME = "Напиши название упражнения:"
+REQUEST_EXERCISE_NAME = "Введите название упражнения"
 EMPTY_EXERCISE_NAME = "Название не должно быть пустым. Попробуй ещё раз:"
 
 SCREEN_EXPIRED = "Экран устарел."
@@ -48,16 +48,17 @@ ACCESS_FORBIDDEN = "Доступ к боту ограничен."
 BACKEND_UNAVAILABLE = "Сервис временно недоступен. Попробуй ещё раз позже."
 RESOURCE_NOT_FOUND = "Данные не найдены. Отправь /start и попробуй ещё раз."
 RESOURCE_CONFLICT = "Упражнение больше недоступно."
+DUPLICATE_EXERCISE_NAME = "Упражнение с таким названием уже существует."
 REQUEST_FAILED = "Не удалось выполнить запрос. Попробуй ещё раз позже."
 
 # Keyboards
 BUTTON_ADD_EXERCISE = "➕ Добавить упражнение"
 BUTTON_SETTINGS = "⚙️ Настройки"
-BUTTON_CUSTOM_EXERCISE = "Своё упражнение"
-BUTTON_ADD_RESULT = "➕ Результат"
+BUTTON_CUSTOM_EXERCISE = "✏️ Своё упражнение"
+BUTTON_ADD_RESULT = "➕ Добавить результат"
 BUTTON_STATISTICS = "📊 Статистика"
 BUTTON_HISTORY = "📜 История"
-BUTTON_EXERCISES = "📋 Упражнения"
+BUTTON_EXERCISES = "◀️ Упражнения"
 BUTTON_BACK = "◀️ Назад"
 BUTTON_BACK_ARROW = "← Назад"
 BUTTON_CONSTRUCTOR = "🎛 Конструктор"
@@ -72,17 +73,18 @@ BUTTON_ADD = "✅ Добавить"
 BUTTON_SAVE = "✅ Сохранить"
 BUTTON_EDIT = "✏️ Изменить"
 BUTTON_DELETE = "🗑 Удалить"
-BUTTON_CLEAR_HISTORY = "🗑 Очистить историю"
-BUTTON_DELETE_EXERCISE = "Удалить упражнение"
-BUTTON_CONFIRM_CLEAR_HISTORY = "Очистить историю"
-BUTTON_DELETE_PERMANENTLY = "Удалить навсегда"
+BUTTON_CLEAR_HISTORY = "🧹 Очистить историю"
+BUTTON_DELETE_EXERCISE = "🗑 Удалить упражнение"
+BUTTON_CONFIRM_CLEAR_HISTORY = "🧹 Очистить историю"
+BUTTON_DELETE_PERMANENTLY = "🗑 Удалить навсегда"
 BUTTON_CONFIRM_DELETE = "🔴 Да, удалить"
-BUTTON_CHANGE_TIMEZONE = "🕐 Изменить часовой пояс"
+BUTTON_CHANGE_TIMEZONE = "🌍 Часовой пояс"
 BUTTON_OTHER_TIMEZONE = "🌍 Другой часовой пояс"
 BUTTON_PREVIOUS = "◀️ Назад"
 BUTTON_NEXT = "Далее ▶️"
 BUTTON_CHANGE_LANGUAGE = "🌐 Язык"
 BUTTON_IMPORT_DATA = "📥 Импорт данных"
+BUTTON_EXERCISE_MANAGEMENT = "🛠 Управление упражнениями"
 BUTTON_IMPORT_MERGE = "🔀 Объединить"
 BUTTON_IMPORT_REPLACE = "♻️ Заменить"
 BUTTON_IMPORT = "Импортировать"
@@ -130,7 +132,11 @@ def too_many_sets(max_sets: int) -> str:
 
 # Message templates
 def exercise_empty(name: str) -> str:
-    return f"🏋️ {name}\n\nЗаписей пока нет."
+    return (
+        f"🏋️ {name}\n\n"
+        "↩️ Последнее: —\n\n"
+        "🔥 Сегодня — 0\n📅 7 дней — 0\n🗓 30 дней — 0\n🏆 Всего — 0"
+    )
 
 
 def exercise_summary(
@@ -145,13 +151,17 @@ def exercise_summary(
 ) -> str:
     return (
         f"🏋️ {name}\n\n"
-        f"Последняя:\n{last_reps}\n"
-        f"{last_date}\n\n"
-        f"Сегодня: {today_reps}\n"
-        f"7 дней: {last_7_days_reps}\n"
-        f"30 дней: {last_30_days_reps}\n"
-        f"Всего: {total_reps}"
+        f"↩️ Последнее: {last_reps} · {last_date.lower()}\n\n"
+        f"🔥 Сегодня — {today_reps}\n"
+        f"📅 7 дней — {last_7_days_reps}\n"
+        f"🗓 30 дней — {last_30_days_reps}\n"
+        f"🏆 Всего — {total_reps}"
     )
+
+
+EXERCISE_MANAGEMENT = "🛠 Управление упражнениями"
+CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Очистить историю\n\nВыберите упражнение"
+DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Удалить упражнение\n\nВыберите упражнение"
 
 
 def statistics(

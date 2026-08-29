@@ -11,8 +11,17 @@ from bot.app.api.client import (
     InvalidRequestError,
     RepTrackerApi,
 )
-from bot.app.handlers.common import answer_api_error
-from bot.app.keyboards.exercises import add_exercise_keyboard, exercises_list_keyboard
+from bot.app.handlers.common import (
+    answer_api_error,
+    edit_or_answer,
+    edit_stored_or_answer,
+)
+from bot.app.keyboards.exercises import (
+    ExerciseDetailActionValue,
+    add_exercise_keyboard,
+    exercise_management_selection_keyboard,
+    exercises_list_keyboard,
+)
 from bot.app.keyboards.settings import (
     ImportAction,
     ImportActionValue,
@@ -21,9 +30,10 @@ from bot.app.keyboards.settings import (
     SettingsActionValue,
     TimezoneChoice,
     TimezonePageChoice,
-    language_choices_keyboard,
+    exercise_management_keyboard,
     import_confirmation_keyboard,
     import_strategy_keyboard,
+    language_choices_keyboard,
     settings_back_keyboard,
     settings_keyboard,
     timezone_choices_keyboard,
@@ -79,6 +89,11 @@ async def show_settings(
 async def request_import_file(callback: CallbackQuery, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(ImportData.waiting_for_file)
+    if isinstance(callback.message, Message):
+        await state.update_data(
+            ui_chat_id=callback.message.chat.id,
+            ui_message_id=callback.message.message_id,
+        )
     await callback.answer()
     await _render(callback, texts.IMPORT_SEND_FILE, settings_back_keyboard())
 
@@ -120,18 +135,29 @@ async def receive_import_file(
         import_document=payload,
         import_preview=preview.model_dump(mode="json"),
     )
+    data = await state.get_data()
+    chat_id = data.get("ui_chat_id")
+    message_id = data.get("ui_message_id")
+    stored_chat_id = chat_id if isinstance(chat_id, int) else None
+    stored_message_id = message_id if isinstance(message_id, int) else None
     if preview.existing_exercises:
         await state.set_state(ImportData.waiting_for_strategy)
-        await message.answer(
+        await edit_stored_or_answer(
+            message,
             _import_preview_text(preview),
-            reply_markup=import_strategy_keyboard(),
+            import_strategy_keyboard(),
+            chat_id=stored_chat_id,
+            message_id=stored_message_id,
         )
         return
 
     await state.set_state(ImportData.waiting_for_confirmation)
-    await message.answer(
+    await edit_stored_or_answer(
+        message,
         _new_exercises_import_text(preview),
-        reply_markup=import_confirmation_keyboard("merge"),
+        import_confirmation_keyboard("merge"),
+        chat_id=stored_chat_id,
+        message_id=stored_message_id,
     )
 
 
@@ -235,6 +261,60 @@ async def choose_language(callback: CallbackQuery, state: FSMContext) -> None:
     await _render(callback, texts.CHOOSE_LANGUAGE, language_choices_keyboard())
 
 
+@router.callback_query(
+    SettingsAction.filter(F.action == SettingsActionValue.EXERCISE_MANAGEMENT)
+)
+async def show_exercise_management(
+    callback: CallbackQuery,
+    state: FSMContext,
+) -> None:
+    await state.clear()
+    await callback.answer()
+    await _render(
+        callback,
+        texts.EXERCISE_MANAGEMENT,
+        exercise_management_keyboard(),
+    )
+
+
+@router.callback_query(
+    SettingsAction.filter(
+        F.action.in_(
+            {SettingsActionValue.CLEAR_HISTORY, SettingsActionValue.HARD_DELETE}
+        )
+    )
+)
+async def choose_managed_exercise(
+    callback: CallbackQuery,
+    callback_data: SettingsAction,
+    state: FSMContext,
+    api_client: RepTrackerApi,
+) -> None:
+    await state.clear()
+    try:
+        exercises = await api_client.list_exercises(callback.from_user.id)
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
+    is_clear = callback_data.action is SettingsActionValue.CLEAR_HISTORY
+    text = (
+        texts.CLEAR_HISTORY_CHOOSE_EXERCISE
+        if is_clear
+        else texts.DELETE_EXERCISE_CHOOSE_EXERCISE
+    )
+    operation = (
+        ExerciseDetailActionValue.CLEAR_HISTORY
+        if is_clear
+        else ExerciseDetailActionValue.HARD_DELETE
+    )
+    await callback.answer()
+    await _render(
+        callback,
+        text,
+        exercise_management_selection_keyboard(exercises, operation=operation),
+    )
+
+
 @router.callback_query(LanguageChoice.filter())
 async def set_language(
     callback: CallbackQuery,
@@ -298,6 +378,15 @@ async def paginate_timezones(
 )
 async def request_other_timezone(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(ChangeTimezone.entering_timezone)
+    if isinstance(callback.message, Message):
+        chat = getattr(callback.message, "chat", None)
+        message_id = getattr(callback.message, "message_id", None)
+        chat_id = getattr(chat, "id", None)
+        if isinstance(chat_id, int) and isinstance(message_id, int):
+            await state.update_data(
+                ui_chat_id=chat_id,
+                ui_message_id=message_id,
+            )
     await callback.answer()
     await _render(
         callback,
@@ -373,6 +462,7 @@ async def _update_timezone(
     telegram_user_id: int,
     timezone: str,
 ) -> None:
+    state_data = await state.get_data()
     try:
         settings = await api_client.update_user_timezone(telegram_user_id, timezone)
     except InvalidRequestError:
@@ -393,14 +483,23 @@ async def _update_timezone(
     try:
         if isinstance(event, CallbackQuery):
             await event.answer(texts.TIMEZONE_CHANGED)
-        await _render(
-            event,
-            texts.settings(
-                format_timezone(settings.timezone, language),
-                _language_name(language),
-            ),
-            settings_keyboard(),
+        text = texts.settings(
+            format_timezone(settings.timezone, language),
+            _language_name(language),
         )
+        markup = settings_keyboard()
+        if isinstance(event, Message):
+            chat_id = state_data.get("ui_chat_id")
+            message_id = state_data.get("ui_message_id")
+            await edit_stored_or_answer(
+                event,
+                text,
+                markup,
+                chat_id=chat_id if isinstance(chat_id, int) else None,
+                message_id=message_id if isinstance(message_id, int) else None,
+            )
+        else:
+            await _render(event, text, markup)
     finally:
         reset_current_language(token)
 
@@ -412,7 +511,7 @@ async def _render(
 ) -> None:
     if isinstance(event, CallbackQuery):
         if isinstance(event.message, Message):
-            await event.message.edit_text(text, reply_markup=reply_markup)
+            await edit_or_answer(event.message, text, reply_markup)
         return
     await event.answer(text, reply_markup=reply_markup)
 

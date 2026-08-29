@@ -4,6 +4,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.app.core.dates import get_user_today
+from api.app.core.exercise_names import normalize_exercise_name
 from api.app.models import Exercise, ExerciseEntry, User
 from api.app.schemas.data_import import (
     ImportDocument,
@@ -22,10 +23,6 @@ class ImportDateInFutureError(Exception):
 class ImportPlan:
     preview: ImportPreviewResponse
     matches: dict[int, Exercise]
-
-
-def normalize_exercise_name(name: str) -> str:
-    return name.strip().casefold()
 
 
 async def preview_data_import(
