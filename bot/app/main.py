@@ -15,6 +15,8 @@ from bot.app.handlers import (
 )
 from bot.app.localization import LocalizationMiddleware
 from bot.app.profile import configure_profile
+from bot.app.commands import register_commands
+from bot.app.handlers.commands import router as commands_router
 
 
 async def main() -> None:
@@ -27,6 +29,7 @@ async def main() -> None:
     dispatcher = Dispatcher(storage=MemoryStorage())
     dispatcher.update.outer_middleware(LocalizationMiddleware())
     dispatcher.include_router(start_router)
+    dispatcher.include_router(commands_router)
     dispatcher.include_router(settings_router)
     dispatcher.include_router(exercises_router)
     dispatcher.include_router(history_router)
@@ -34,6 +37,7 @@ async def main() -> None:
 
     try:
         await configure_profile(bot)
+        await register_commands(bot)
         async with RepTrackerApi(settings.api_base_url) as api_client:
             await dispatcher.start_polling(
                 bot,

@@ -60,19 +60,30 @@ async def show_settings(
     state: FSMContext,
     api_client: RepTrackerApi,
 ) -> None:
+    await render_settings(callback, state, api_client)
+
+
+async def render_settings(
+    event: Message | CallbackQuery,
+    state: FSMContext,
+    api_client: RepTrackerApi,
+) -> None:
     await state.clear()
+    if event.from_user is None:
+        return
     try:
-        settings = await api_client.get_user_settings(callback.from_user.id)
+        settings = await api_client.get_user_settings(event.from_user.id)
     except ApiError as error:
-        await answer_api_error(callback, error)
+        await answer_api_error(event, error)
         return
     language = getattr(settings, "language", "ru")
-    user_languages.set(callback.from_user.id, language)
+    user_languages.set(event.from_user.id, language)
     token = set_current_language(language)
     try:
-        await callback.answer()
+        if isinstance(event, CallbackQuery):
+            await event.answer()
         await _render(
-            callback,
+            event,
             texts.settings(
                 format_timezone(settings.timezone, language),
                 _language_name(language),

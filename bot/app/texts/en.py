@@ -357,3 +357,11 @@ def timezone_changed(timezone: str) -> str:
 
 def language_changed(language_name: str) -> str:
     return f"✅ Language changed\n\n{language_name}"
+
+COMMAND_DESCRIPTIONS = dict(menu="Main menu", settings="Settings", help="Help")
+HELP_TEXT = (
+    "🌱 Using Repka\n\n"
+    "Open /menu to choose or add an exercise.\n"
+    "Log a result: 10, 4x10 or 10 9 8 7. You can change the date.\n"
+    "Find history and statistics in the exercise menu.\n\n"
+    "/settings — language, timezone and other settings."

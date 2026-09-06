@@ -1,5 +1,6 @@
 from aiogram import Router
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from bot.app.api.client import ApiError, RepTrackerApi
@@ -21,11 +22,15 @@ router = Router(name=__name__)
 
 
 @router.message(CommandStart())
+@router.message(Command("menu"))
 async def start(
     message: Message,
     api_client: RepTrackerApi,
     default_timezone: str,
+    state: FSMContext | None = None,
 ) -> None:
+    if state is not None:
+        await state.clear()
     if message.from_user is None:
         return
 
