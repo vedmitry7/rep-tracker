@@ -14,6 +14,7 @@ from bot.app.handlers import (
     start_router,
 )
 from bot.app.localization import LocalizationMiddleware
+from bot.app.profile import configure_profile
 
 
 async def main() -> None:
@@ -32,6 +33,7 @@ async def main() -> None:
     dispatcher.include_router(results_router)
 
     try:
+        await configure_profile(bot)
         async with RepTrackerApi(settings.api_base_url) as api_client:
             await dispatcher.start_polling(
                 bot,
