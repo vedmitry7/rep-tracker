@@ -1,4 +1,5 @@
 from datetime import date
+import re
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -177,7 +178,10 @@ async def test_export_selects_all_exercises_then_toggles_and_sends_json(
     api.export_data.assert_awaited_once_with(42, [7])
     assert callback.message.answer_document.await_count == 1
     document = callback.message.answer_document.await_args.args[0]
-    assert document.filename == "repka-export.json"
+    assert re.fullmatch(
+        r"repka-export-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.json",
+        document.filename,
+    )
     assert b'"version": 1' in document.data
     assert await state.get_state() is None
     assert "✅ Export ready" in callback.message.edit_text.await_args.args[0]

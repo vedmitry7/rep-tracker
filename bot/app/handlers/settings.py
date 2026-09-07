@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from io import BytesIO
 
 from aiogram import F, Router
@@ -238,7 +239,7 @@ async def export_selected_exercises(
         return
 
     await callback.message.answer_document(
-        BufferedInputFile(content, filename="repka-export.json")
+        BufferedInputFile(content, filename=_export_filename())
     )
     await state.clear()
     await callback.answer()
@@ -764,3 +765,8 @@ def _export_entries_count(document: dict[str, object]) -> int:
             if isinstance(day, dict) and isinstance(day.get("entries"), list):
                 count += len(day["entries"])
     return count
+
+
+def _export_filename() -> str:
+    created_at = datetime.now().astimezone()
+    return created_at.strftime("repka-export-%Y-%m-%d_%H-%M-%S.json")
