@@ -22,12 +22,27 @@ class Settings(BaseSettings):
         default=False,
         alias="WEEKLY_REPORTS_ENABLED",
     )
+    admin_telegram_ids_raw: str = Field(
+        default="",
+        alias="ADMIN_TELEGRAM_IDS",
+    )
 
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def admin_telegram_ids(self) -> frozenset[int]:
+        """Telegram user IDs allowed to run one-off bot administration commands."""
+        values = [value.strip() for value in self.admin_telegram_ids_raw.split(",")]
+        try:
+            return frozenset(int(value) for value in values if value)
+        except ValueError as error:
+            raise ValueError(
+                "ADMIN_TELEGRAM_IDS must be a comma-separated list of numeric Telegram IDs"
+            ) from error
 
 
 @lru_cache

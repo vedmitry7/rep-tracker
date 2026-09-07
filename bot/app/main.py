@@ -8,6 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from bot.app.api.client import RepTrackerApi
 from bot.app.core.config import get_settings
 from bot.app.handlers import (
+    admin_router,
     exercises_router,
     history_router,
     results_router,
@@ -29,6 +30,7 @@ async def main() -> None:
     bot = Bot(token=settings.telegram_bot_token.get_secret_value())
     dispatcher = Dispatcher(storage=MemoryStorage())
     dispatcher.update.outer_middleware(LocalizationMiddleware())
+    dispatcher.include_router(admin_router)
     dispatcher.include_router(start_router)
     dispatcher.include_router(commands_router)
     dispatcher.include_router(weekly_reports_router)
