@@ -13,6 +13,7 @@ from api.app.schemas.data_import import (
     ImportStrategy,
 )
 from api.app.services.user import get_allowed_user_by_identity
+from api.app.services.user_events import record_user_event
 
 
 class ImportDateInFutureError(Exception):
@@ -75,6 +76,7 @@ async def apply_data_import(
                 )
 
         await session.flush()
+        await record_user_event(session, user, "import_used")
         return ImportResultResponse(
             strategy=strategy,
             exercises_created=exercises_created,

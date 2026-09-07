@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.app.core.exercise_names import normalize_exercise_name
 from api.app.models import Exercise, ExerciseEntry
 from api.app.services.user import get_allowed_user_by_identity
+from api.app.services.user_events import record_user_event
 
 
 class ExerciseNotFoundError(Exception):
@@ -47,6 +48,7 @@ async def create_exercise(
             exercise = Exercise(user_id=user.id, name=name)
             session.add(exercise)
             await session.flush()
+            await record_user_event(session, user, "exercise_created")
             return exercise
     except IntegrityError as error:
         # The partial unique index closes the race between the friendly check

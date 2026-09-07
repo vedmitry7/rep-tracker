@@ -262,6 +262,7 @@ async def show_statistics(
         await answer_api_error(callback, error)
         return
 
+    await api_client.track_event_safely(callback.from_user.id, "stats_opened")
     await callback.answer()
     if isinstance(callback.message, Message):
         await edit_or_answer(

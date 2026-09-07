@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, String, false
+from sqlalchemy import BigInteger, Boolean, DateTime, String, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.app.core.dates import DEFAULT_TIMEZONE
@@ -9,6 +10,7 @@ from api.app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from api.app.models.exercise import Exercise
+    from api.app.models.user_event import UserEvent
     from api.app.models.user_identity import UserIdentity
 
 
@@ -32,6 +34,13 @@ class User(TimestampMixin, Base):
         server_default=false(),
         nullable=False,
     )
+    is_blocked: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default=false(),
+        nullable=False,
+    )
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     identities: Mapped[list["UserIdentity"]] = relationship(
         back_populates="user",
@@ -39,6 +48,11 @@ class User(TimestampMixin, Base):
         passive_deletes=True,
     )
     exercises: Mapped[list["Exercise"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    events: Mapped[list["UserEvent"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,

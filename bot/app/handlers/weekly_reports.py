@@ -13,6 +13,12 @@ router = Router(name="weekly_reports")
 logger = logging.getLogger(__name__)
 
 
+async def _track_weekly_report_open(api_client, user_id: int) -> None:
+    track_event = getattr(api_client, "track_event_safely", None)
+    if track_event is not None:
+        await track_event(user_id, "weekly_report_opened")
+
+
 async def send_card(message, api_client, user_id, exercise_id, report_id=None):
     try:
         png = await api_client.get_weekly_card(user_id, exercise_id, report_id)
@@ -29,6 +35,7 @@ async def send_card(message, api_client, user_id, exercise_id, report_id=None):
 async def exercise_weekly_card(callback: CallbackQuery, callback_data: ExerciseDetailAction,
                                api_client: RepTrackerApi):
     await callback.answer()
+    await _track_weekly_report_open(api_client, callback.from_user.id)
     if isinstance(callback.message, Message):
         await send_card(callback.message, api_client, callback.from_user.id, callback_data.exercise_id)
 
@@ -44,6 +51,7 @@ async def report_cards(callback: CallbackQuery, api_client: RepTrackerApi):
     except ApiError as error:
         await answer_api_error(callback.message, error)
         return
+    await _track_weekly_report_open(api_client, callback.from_user.id)
     for exercise in report["exercises"]:
         await send_card(callback.message, api_client, callback.from_user.id,
                         exercise["exercise_id"], report_id)

@@ -8,6 +8,7 @@ from api.app.models import Exercise, ExerciseEntry
 from api.app.core.dates import get_user_today
 from api.app.services.exercise import get_owned_exercise
 from api.app.services.user import get_allowed_user_by_identity
+from api.app.services.user_events import record_user_event
 
 
 class ExerciseArchivedError(Exception):
@@ -65,6 +66,7 @@ async def create_exercise_entry(
         )
         session.add(entry)
         await session.flush()
+        await record_user_event(session, user, "result_added")
         return entry
 
 

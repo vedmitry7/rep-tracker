@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,7 @@ from api.app.core.dates import (
 )
 from api.app.core.languages import DEFAULT_LANGUAGE, normalize_default_language
 from api.app.models import User, UserIdentity
+from api.app.services.user_events import record_user_event
 
 
 UNIQUE_VIOLATION_SQLSTATE = "23505"
@@ -99,6 +100,9 @@ async def resolve_user(
             user = await find_user_by_identity(session, provider, external_id)
             if user is not None:
                 ensure_user_is_allowed(user)
+                # A Telegram update can only arrive after the user has unblocked us.
+                user.is_blocked = False
+                user.last_active_at = func.now()
                 return ResolveUserResult(user=user, created=False)
 
             user = User(timezone=default_timezone, language=default_language)
@@ -107,6 +111,7 @@ async def resolve_user(
             )
             session.add(user)
             await session.flush()
+            await record_user_event(session, user, "start")
 
             return ResolveUserResult(user=user, created=True)
     except IntegrityError as error:
@@ -160,3 +165,16 @@ async def update_user_settings(
             today=get_user_today(user.timezone),
             language=user.language,
         )
+
+
+async def mark_user_blocked(
+    session: AsyncSession,
+    provider: str,
+    external_id: str,
+) -> None:
+    """Record a Telegram delivery refusal without treating it as a manual ban."""
+
+    async with session.begin():
+        user = await find_user_by_identity(session, provider, external_id)
+        if user is not None:
+            user.is_blocked = True

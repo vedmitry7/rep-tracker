@@ -4,7 +4,7 @@ import logging
 from uuid import uuid4
 
 from aiogram import Bot
-from aiogram.exceptions import TelegramRetryAfter
+from aiogram.exceptions import TelegramForbiddenError, TelegramRetryAfter
 
 from bot.app.api.client import RepTrackerApi
 from bot.app.core.config import get_settings
@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 POLL_INTERVAL_SECONDS = 30
 MESSAGE_INTERVAL_SECONDS = 1
 LEASE_BATCH_SIZE = 10
+
+
+async def _record_delivery_failure(api_client, telegram_user_id: int) -> None:
+    track_event = getattr(api_client, "track_event_safely", None)
+    if track_event is not None:
+        await track_event(telegram_user_id, "weekly_delivery_failed")
 
 
 async def materialize_all(api_client) -> None:
@@ -59,9 +65,24 @@ async def deliver_leased_reports(bot, api_client, worker_id: str) -> int:
             logger.info("Telegram rate limit for weekly report %s: retry in %s seconds",
                         report["id"], error.retry_after)
             await mark_retry(api_client, report, error, retry_after_seconds=int(error.retry_after))
+            await _record_delivery_failure(api_client, int(report["external_id"]))
+        except TelegramForbiddenError as error:
+            logger.info("Telegram user blocked the bot: %s", report["external_id"])
+            await _record_delivery_failure(api_client, int(report["external_id"]))
+            try:
+                mark_user_blocked = getattr(api_client, "mark_user_blocked", None)
+                if mark_user_blocked is None:
+                    raise RuntimeError("API client cannot mark a blocked user")
+                await mark_user_blocked(int(report["external_id"]))
+                await api_client.complete_weekly_delivery(
+                    report["id"], report["lock_token"], "failed", error=str(error)[:1000]
+                )
+            except Exception:
+                logger.exception("Could not record blocked Telegram user: %s", report["id"])
         except Exception as error:
             logger.exception("Weekly report delivery failed: %s", report["id"])
             await mark_retry(api_client, report, error)
+            await _record_delivery_failure(api_client, int(report["external_id"]))
         else:
             try:
                 await api_client.complete_weekly_delivery(

@@ -71,6 +71,26 @@ class UserSettings(BaseModel):
     language: str = "ru"
 
 
+class Retention(BaseModel):
+    cohort_size: int
+    returned_users: int
+
+
+class AnalyticsSummary(BaseModel):
+    period_days: int
+    total_users: int
+    new_users: int
+    active_users: int
+    activated_new_users: int
+    result_entries: int
+    average_entries_per_active_user: float
+    feature_opens: dict[str, int]
+    locales: dict[str, int]
+    retention: dict[str, Retention]
+    blocked_users: int
+    weekly_delivery_failures: int
+
+
 class ImportPreview(BaseModel):
     exercises_count: int
     entries_count: int
@@ -189,6 +209,43 @@ class RepTrackerApi:
         except (ValueError, ValidationError) as error:
             logger.exception("Backend returned invalid user settings")
             raise UnexpectedApiError from error
+
+    async def get_analytics_summary(self, days: int) -> AnalyticsSummary:
+        response = await self._request(
+            "GET",
+            "/analytics/summary",
+            params={"days": days},
+            expected_statuses={200},
+        )
+        try:
+            return AnalyticsSummary.model_validate(response.json())
+        except (ValueError, ValidationError) as error:
+            logger.exception("Backend returned invalid analytics summary")
+            raise UnexpectedApiError from error
+
+    async def track_event(self, telegram_user_id: int, event_type: str) -> None:
+        await self._request(
+            "POST",
+            "/analytics/events",
+            json={**self._identity(telegram_user_id), "event_type": event_type},
+            expected_statuses={204},
+        )
+
+    async def track_event_safely(self, telegram_user_id: int, event_type: str) -> None:
+        """Analytics must never make the user-facing interaction fail."""
+
+        try:
+            await self.track_event(telegram_user_id, event_type)
+        except ApiError:
+            logger.warning("Could not record analytics event: %s", event_type)
+
+    async def mark_user_blocked(self, telegram_user_id: int) -> None:
+        await self._request(
+            "POST",
+            "/analytics/blocked",
+            params=self._identity(telegram_user_id),
+            expected_statuses={204},
+        )
 
     async def update_user_timezone(
         self,

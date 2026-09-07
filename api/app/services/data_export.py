@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.app.models import Exercise, ExerciseEntry
 from api.app.schemas.data_import import ImportDay, ImportDocument, ImportExercise
 from api.app.services.user import get_allowed_user_by_identity
+from api.app.services.user_events import record_user_event
 
 
 class ExportExerciseNotFoundError(Exception):
@@ -37,6 +38,8 @@ async def export_data(
         )
         if len(exercises) != len(exercise_ids):
             raise ExportExerciseNotFoundError
+
+        await record_user_event(session, user, "export_used")
 
         entries = list(
             (
