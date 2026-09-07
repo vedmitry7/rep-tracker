@@ -8,7 +8,11 @@ from aiogram.types import Message
 
 from bot.app.api.client import RepTrackerApi, UnexpectedApiError, ResourceNotFoundError
 from bot.app.handlers.weekly_reports import exercise_weekly_card, report_cards
-from bot.app.keyboards.exercises import ExerciseDetailAction, ExerciseDetailActionValue, exercise_screen_keyboard
+from bot.app.keyboards.exercises import (
+    ExerciseDetailAction,
+    ExerciseDetailActionValue,
+    exercise_statistics_keyboard,
+)
 from bot.app.services.weekly_report import report_keyboard, split_summary, summary_text
 from bot.app.texts import reset_current_language, set_current_language
 from bot.app.workers.weekly_reports import deliver_leased_reports, materialize_all
@@ -34,7 +38,11 @@ def test_summary_and_buttons(language):
         "🖼 Сгенерировать карточки" if language == "ru" else "🖼 Generate cards")
     token = set_current_language(language)
     try:
-        buttons = [b for row in exercise_screen_keyboard(9).inline_keyboard for b in row]
+        buttons = [
+            button
+            for row in exercise_statistics_keyboard(9, weekly_report_enabled=True).inline_keyboard
+            for button in row
+        ]
         card = next(b for b in buttons if "weekly_card" in b.callback_data)
         assert card.text == ("🖼 Картинка недели" if language == "ru" else "🖼 Weekly card")
         assert ExerciseDetailAction.unpack(card.callback_data).exercise_id == 9

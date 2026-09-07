@@ -10,6 +10,7 @@ from bot.app.keyboards.exercises import (
     exercise_destructive_confirmation_keyboard,
     exercise_presets_keyboard,
     exercise_screen_keyboard,
+    exercise_statistics_keyboard,
     exercises_list_keyboard,
 )
 from bot.app.keyboards.results import (
@@ -80,28 +81,42 @@ def test_exercise_screen_result_callback_keeps_exercise_id() -> None:
     callbacks = callback_values(markup)
 
     result_action = ResultAction.unpack(callbacks[0])
-    detail_actions = [ExerciseDetailAction.unpack(value) for value in callbacks[1:5]]
-    list_action = ExerciseAction.unpack(callbacks[5])
+    statistics_action = ExerciseDetailAction.unpack(callbacks[1])
+    list_action = ExerciseAction.unpack(callbacks[2])
 
     assert result_action.action == ResultActionValue.START
     assert result_action.exercise_id == 42
+    assert (statistics_action.action, statistics_action.exercise_id) == (
+        ExerciseDetailActionValue.STATISTICS,
+        42,
+    )
+    assert list_action.action == ExerciseActionValue.LIST
+    assert [len(row) for row in markup.inline_keyboard] == [1, 1, 1]
+    assert [button.text for row in markup.inline_keyboard for button in row] == [
+        "➕ Добавить результат",
+        "📊 Статистика",
+        "◀️ Упражнения",
+    ]
+    assert markup.inline_keyboard[0][0].style == "primary"
+
+
+def test_statistics_keyboard_keeps_exercise_actions_together() -> None:
+    markup = exercise_statistics_keyboard(42, weekly_report_enabled=True)
+    callbacks = callback_values(markup)
+    detail_actions = [ExerciseDetailAction.unpack(value) for value in callbacks[:3]]
+
     assert [(item.action, item.exercise_id) for item in detail_actions] == [
-        (ExerciseDetailActionValue.STATISTICS, 42),
         (ExerciseDetailActionValue.HISTORY, 42),
         (ExerciseDetailActionValue.WEEKLY_CARD, 42),
         (ExerciseDetailActionValue.TOGGLE_WEEKLY_REPORT, 42),
     ]
-    assert list_action.action == ExerciseActionValue.LIST
-    assert [len(row) for row in markup.inline_keyboard] == [1, 1, 1, 1, 1, 1]
+    assert ExerciseOpen.unpack(callbacks[3]).exercise_id == 42
     assert [button.text for row in markup.inline_keyboard for button in row] == [
-        "➕ Добавить результат",
-        "📊 Статистика",
         "📜 История",
         "🖼 Картинка недели",
         "📅 Недельный отчёт: вкл",
-        "◀️ Упражнения",
+        "← Назад",
     ]
-    assert markup.inline_keyboard[0][0].style == "primary"
 
 
 def test_back_button_returns_to_correct_exercise() -> None:

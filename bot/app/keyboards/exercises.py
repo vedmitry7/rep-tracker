@@ -83,8 +83,6 @@ def exercise_presets_keyboard(
 
 def exercise_screen_keyboard(
     exercise_id: int,
-    *,
-    weekly_report_enabled: bool = True,
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -99,24 +97,6 @@ def exercise_screen_keyboard(
         text=texts.BUTTON_STATISTICS,
         callback_data=ExerciseDetailAction(
             action=ExerciseDetailActionValue.STATISTICS,
-            exercise_id=exercise_id,
-        ),
-    )
-    builder.button(
-        text=texts.BUTTON_HISTORY,
-        callback_data=ExerciseDetailAction(
-            action=ExerciseDetailActionValue.HISTORY,
-            exercise_id=exercise_id,
-        ),
-    )
-    builder.button(
-        text=texts.BUTTON_WEEKLY_CARD,
-        callback_data=ExerciseDetailAction(action=ExerciseDetailActionValue.WEEKLY_CARD, exercise_id=exercise_id),
-    )
-    builder.button(
-        text=texts.weekly_report_toggle(weekly_report_enabled),
-        callback_data=ExerciseDetailAction(
-            action=ExerciseDetailActionValue.TOGGLE_WEEKLY_REPORT,
             exercise_id=exercise_id,
         ),
     )
@@ -197,6 +177,41 @@ def exercise_back_keyboard(exercise_id: int) -> InlineKeyboardMarkup:
         text=texts.BUTTON_BACK_ARROW,
         callback_data=ExerciseOpen(exercise_id=exercise_id),
     )
+    return builder.as_markup()
+
+
+def exercise_statistics_keyboard(
+    exercise_id: int,
+    *,
+    weekly_report_enabled: bool,
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=texts.BUTTON_HISTORY,
+        callback_data=ExerciseDetailAction(
+            action=ExerciseDetailActionValue.HISTORY,
+            exercise_id=exercise_id,
+        ),
+    )
+    builder.button(
+        text=texts.BUTTON_WEEKLY_CARD,
+        callback_data=ExerciseDetailAction(
+            action=ExerciseDetailActionValue.WEEKLY_CARD,
+            exercise_id=exercise_id,
+        ),
+    )
+    builder.button(
+        text=texts.weekly_report_toggle(weekly_report_enabled),
+        callback_data=ExerciseDetailAction(
+            action=ExerciseDetailActionValue.TOGGLE_WEEKLY_REPORT,
+            exercise_id=exercise_id,
+        ),
+    )
+    builder.button(
+        text=texts.BUTTON_BACK_ARROW,
+        callback_data=ExerciseOpen(exercise_id=exercise_id),
+    )
+    builder.adjust(1)
     return builder.as_markup()
 
 

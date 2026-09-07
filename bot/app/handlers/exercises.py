@@ -24,10 +24,10 @@ from bot.app.keyboards.exercises import (
     ExerciseOpen,
     ExercisePreset,
     custom_exercise_back_keyboard,
-    exercise_back_keyboard,
     exercise_destructive_confirmation_keyboard,
     exercise_presets_keyboard,
     exercise_screen_keyboard,
+    exercise_statistics_keyboard,
     exercises_list_keyboard,
 )
 from bot.app.keyboards.settings import exercise_management_keyboard
@@ -88,7 +88,6 @@ async def show_exercise(
     text = exercise_screen_text(exercise, stats)
     markup = exercise_screen_keyboard(
         exercise.id,
-        weekly_report_enabled=exercise.weekly_report_enabled,
     )
     if edit:
         await edit_or_answer(message, text, markup)
@@ -223,7 +222,6 @@ async def create_custom_exercise(
         exercise_screen_text(exercise, stats),
         exercise_screen_keyboard(
             exercise.id,
-            weekly_report_enabled=exercise.weekly_report_enabled,
         ),
         chat_id=stored_chat_id,
         message_id=stored_message_id,
@@ -317,7 +315,10 @@ async def show_statistics(
         await edit_or_answer(
             callback.message,
             stats_screen_text(exercise, stats),
-            exercise_back_keyboard(exercise.id),
+            exercise_statistics_keyboard(
+                exercise.id,
+                weekly_report_enabled=exercise.weekly_report_enabled,
+            ),
         )
 
 
@@ -350,7 +351,14 @@ async def toggle_weekly_report(
 
     await callback.answer(texts.weekly_report_changed(updated.weekly_report_enabled))
     if isinstance(callback.message, Message):
-        await show_exercise(callback.message, updated, stats, edit=True)
+        await edit_or_answer(
+            callback.message,
+            stats_screen_text(updated, stats),
+            exercise_statistics_keyboard(
+                updated.id,
+                weekly_report_enabled=updated.weekly_report_enabled,
+            ),
+        )
 
 
 @router.callback_query(
