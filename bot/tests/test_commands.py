@@ -34,7 +34,12 @@ async def test_menu_clears_active_flow_and_opens_menu(
     await commands.menu(message, state, api_client, "Europe/Moscow")
 
     assert await state.get_state() is None
-    send_menu.assert_awaited_once_with(message, api_client, "Europe/Moscow")
+    send_menu.assert_awaited_once_with(
+        message,
+        api_client,
+        "Europe/Moscow",
+        bot=None,
+    )
 
 
 @pytest.mark.asyncio

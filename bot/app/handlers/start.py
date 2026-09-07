@@ -32,25 +32,13 @@ async def start(
     bot: Bot | None = None,
 ) -> None:
     await state.clear()
-    resolution = await send_menu_message(
+    await send_menu_message(
         message,
         api_client,
         default_timezone,
         welcome_new_user=True,
+        bot=bot,
     )
-    if (
-        resolution is not None
-        and resolution.created
-        and bot is not None
-        and message.from_user is not None
-    ):
-        await notify_new_user_registration(
-            bot,
-            get_settings().admin_telegram_ids,
-            api_client,
-            message.from_user,
-            resolution.language,
-        )
 
 
 async def send_menu_message(
@@ -59,6 +47,7 @@ async def send_menu_message(
     default_timezone: str,
     *,
     welcome_new_user: bool = False,
+    bot: Bot | None = None,
 ) -> UserResolution | None:
     if message.from_user is None:
         return None
@@ -86,9 +75,7 @@ async def send_menu_message(
                 texts.EXERCISES_TITLE,
                 reply_markup=exercises_list_keyboard(exercises),
             )
-            return resolution
-
-        if welcome_new_user and getattr(resolution, "created", False):
+        elif welcome_new_user and resolution.created:
             await message.answer(
                 texts.WELCOME,
                 reply_markup=add_exercise_keyboard(first_exercise=True),
@@ -100,5 +87,14 @@ async def send_menu_message(
             )
     finally:
         reset_current_language(token)
+
+    if resolution.created and bot is not None:
+        await notify_new_user_registration(
+            bot,
+            get_settings().admin_telegram_ids,
+            api_client,
+            message.from_user,
+            resolution.language,
+        )
 
     return resolution
