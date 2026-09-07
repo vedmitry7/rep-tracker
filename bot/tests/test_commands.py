@@ -9,6 +9,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from bot.app.commands import register_commands
 from bot.app.handlers import commands
 from bot.app.states.result import AddResult
+from bot.app.texts import available_locales, get_catalog
 
 
 @pytest.fixture
@@ -74,12 +75,21 @@ async def test_register_commands_sets_default_and_localized_menus() -> None:
     await register_commands(bot)
 
     calls = bot.set_my_commands.await_args_list
-    assert [[command.command for command in call.args[0]] for call in calls] == [
-        ["menu", "settings", "help"],
-        ["menu", "settings", "help"],
-        ["menu", "settings", "help"],
+    assert [command.command for command in calls[0].args[0]] == [
+        "menu",
+        "settings",
+        "help",
     ]
-    assert calls[0].args[0][0].description == "Menu"
-    assert calls[2].args[0][0].description == "Меню"
-    assert calls[1].kwargs == {"language_code": "en"}
-    assert calls[2].kwargs == {"language_code": "ru"}
+    assert calls[0].args[0][0].description == get_catalog("en").BOT_COMMANDS["menu"]
+    assert calls[0].kwargs == {}
+
+    locales = available_locales()
+    assert len(calls) == 1 + len(locales)
+    for call, locale in zip(calls[1:], locales, strict=True):
+        assert [command.command for command in call.args[0]] == [
+            "menu",
+            "settings",
+            "help",
+        ]
+        assert call.args[0][0].description == get_catalog(locale.code).BOT_COMMANDS["menu"]
+        assert call.kwargs == {"language_code": locale.code}

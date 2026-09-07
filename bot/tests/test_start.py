@@ -7,6 +7,7 @@ from aiogram.fsm.storage.base import StorageKey
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.app.handlers.start import start
+from bot.app.texts import get_catalog
 
 
 @pytest.fixture
@@ -46,7 +47,7 @@ async def test_start_passes_bot_instance_default_timezone(state: FSMContext) -> 
         ("ru-RU", "ru"),
         ("en", "en"),
         ("en-US", "en"),
-        ("es", "en"),
+        ("es", "es"),
         (None, "en"),
     ],
 )
@@ -70,8 +71,7 @@ async def test_start_maps_telegram_language_code(
 
     api.resolve_user.assert_awaited_once_with(42, "Europe/Moscow", expected)
     rendered = message.answer.await_args.args[0]
-    expected_greeting = "🥬 Привет! Я Repka." if expected == "ru" else "🥬 Hi! I’m Repka."
-    assert rendered.startswith(expected_greeting)
+    assert rendered.startswith(get_catalog(expected).WELCOME)
 
 
 @pytest.mark.asyncio
