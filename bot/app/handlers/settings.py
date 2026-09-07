@@ -50,6 +50,7 @@ from bot.app.services.exercise_format import format_number
 from bot.app.states.settings import ChangeTimezone, ExportData, ImportData
 from bot.app.texts import (
     current_language,
+    locale_name,
     reset_current_language,
     set_current_language,
     texts,
@@ -82,7 +83,7 @@ async def show_settings(
             callback,
             texts.settings(
                 format_timezone(settings.timezone, language),
-                _language_name(language),
+                locale_name(language),
             ),
             settings_keyboard(),
         )
@@ -110,7 +111,7 @@ async def send_settings_message(
         await message.answer(
             texts.settings(
                 format_timezone(settings.timezone, language),
-                _language_name(language),
+                locale_name(language),
             ),
             reply_markup=settings_keyboard(),
         )
@@ -493,7 +494,7 @@ async def set_language(
         await callback.answer(texts.LANGUAGE_CHANGED)
         await _render(
             callback,
-            texts.language_changed(_language_name(settings.language)),
+            texts.language_changed(locale_name(settings.language)),
             settings_back_keyboard(),
         )
     finally:
@@ -640,7 +641,7 @@ async def _update_timezone(
             await event.answer(texts.TIMEZONE_CHANGED)
         text = texts.settings(
             format_timezone(settings.timezone, language),
-            _language_name(language),
+            locale_name(language),
         )
         markup = settings_keyboard()
         if isinstance(event, Message):
@@ -676,10 +677,6 @@ async def _render(
             )
         return
     await event.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
-
-
-def _language_name(language: str) -> str:
-    return texts.LANGUAGE_RUSSIAN if language == "ru" else texts.LANGUAGE_ENGLISH
 
 
 def _import_preview_text(preview: ImportPreview) -> str:

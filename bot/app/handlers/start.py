@@ -29,13 +29,15 @@ async def start(
     default_timezone: str,
 ) -> None:
     await state.clear()
-    await send_menu_message(message, api_client, default_timezone)
+    await send_menu_message(message, api_client, default_timezone, welcome_new_user=True)
 
 
 async def send_menu_message(
     message: Message,
     api_client: RepTrackerApi,
     default_timezone: str,
+    *,
+    welcome_new_user: bool = False,
 ) -> None:
     if message.from_user is None:
         return
@@ -65,9 +67,15 @@ async def send_menu_message(
             )
             return
 
-        await message.answer(
-            texts.NO_EXERCISES,
-            reply_markup=add_exercise_keyboard(),
-        )
+        if welcome_new_user and getattr(resolution, "created", False):
+            await message.answer(
+                texts.WELCOME,
+                reply_markup=add_exercise_keyboard(first_exercise=True),
+            )
+        else:
+            await message.answer(
+                texts.NO_EXERCISES,
+                reply_markup=add_exercise_keyboard(),
+            )
     finally:
         reset_current_language(token)

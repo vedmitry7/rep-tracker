@@ -39,10 +39,14 @@ class ExerciseDetailAction(CallbackData, prefix="exercise_detail"):
     exercise_id: int
 
 
-def add_exercise_keyboard() -> InlineKeyboardMarkup:
+def add_exercise_keyboard(*, first_exercise: bool = False) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
-        text=texts.BUTTON_ADD_EXERCISE,
+        text=(
+            texts.BUTTON_ADD_FIRST_EXERCISE
+            if first_exercise
+            else texts.BUTTON_ADD_EXERCISE
+        ),
         callback_data=ExerciseAction(action=ExerciseActionValue.ADD),
         style="primary",
     )

@@ -1,23 +1,22 @@
 from aiogram import Bot
 from aiogram.types import BotCommand
 
+from bot.app.texts import available_locales, get_catalog
 
-DEFAULT_COMMANDS = [
-    BotCommand(command="menu", description="Open menu"),
-    BotCommand(command="settings", description="Settings"),
-    BotCommand(command="help", description="Help"),
-]
 
-RUSSIAN_COMMANDS = [
-    BotCommand(command="menu", description="Открыть меню"),
-    BotCommand(command="settings", description="Настройки"),
-    BotCommand(command="help", description="Помощь"),
-]
+def commands_for(language: str) -> list[BotCommand]:
+    return [
+        BotCommand(command=command, description=description)
+        for command, description in get_catalog(language).BOT_COMMANDS.items()
+    ]
 
 
 async def register_commands(bot: Bot) -> None:
-    """Register the command menu in Telegram's default, Russian and English UIs."""
+    """Register a default menu and a menu for every bot-local locale."""
 
-    await bot.set_my_commands(DEFAULT_COMMANDS)
-    await bot.set_my_commands(RUSSIAN_COMMANDS, language_code="ru")
-    await bot.set_my_commands(DEFAULT_COMMANDS, language_code="en")
+    await bot.set_my_commands(commands_for("en"))
+    for locale in available_locales():
+        await bot.set_my_commands(
+            commands_for(locale.code),
+            language_code=locale.code,
+        )

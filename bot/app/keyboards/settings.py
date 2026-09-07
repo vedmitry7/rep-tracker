@@ -5,7 +5,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.app.texts import current_language, texts
+from bot.app.texts import available_locales, current_language, texts
 from bot.app.api.client import Exercise
 from bot.app.timezones import format_timezone, timezone_page
 
@@ -244,14 +244,11 @@ def settings_back_keyboard() -> InlineKeyboardMarkup:
 
 def language_choices_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(
-        text=texts.BUTTON_ENGLISH,
-        callback_data=LanguageChoice(language="en"),
-    )
-    builder.button(
-        text=texts.BUTTON_RUSSIAN,
-        callback_data=LanguageChoice(language="ru"),
-    )
+    for locale in available_locales():
+        builder.button(
+            text=locale.button,
+            callback_data=LanguageChoice(language=locale.code),
+        )
     builder.button(
         text=texts.BUTTON_BACK,
         callback_data=SettingsAction(action=SettingsActionValue.OPEN),

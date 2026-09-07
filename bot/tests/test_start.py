@@ -33,6 +33,9 @@ async def test_start_passes_bot_instance_default_timezone(state: FSMContext) -> 
     await start(message, state, api, "Europe/Madrid")
 
     api.resolve_user.assert_awaited_once_with(42, "Europe/Madrid", "ru")
+    assert message.answer.await_args.args[0].startswith("🥬 Привет! Я Репка.")
+    keyboard = message.answer.await_args.kwargs["reply_markup"]
+    assert keyboard.inline_keyboard[0][0].text == "➕ Добавить первое упражнение"
 
 
 @pytest.mark.asyncio
@@ -67,7 +70,8 @@ async def test_start_maps_telegram_language_code(
 
     api.resolve_user.assert_awaited_once_with(42, "Europe/Moscow", expected)
     rendered = message.answer.await_args.args[0]
-    assert "🏋️ Repka" in rendered
+    expected_greeting = "🥬 Привет! Я Репка." if expected == "ru" else "🥬 Hi! I’m Repka."
+    assert rendered.startswith(expected_greeting)
 
 
 @pytest.mark.asyncio

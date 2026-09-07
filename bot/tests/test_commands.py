@@ -79,5 +79,7 @@ async def test_register_commands_sets_default_and_localized_menus() -> None:
         ["menu", "settings", "help"],
         ["menu", "settings", "help"],
     ]
-    assert calls[1].kwargs == {"language_code": "ru"}
-    assert calls[2].kwargs == {"language_code": "en"}
+    assert calls[0].args[0][0].description == "Menu"
+    assert calls[2].args[0][0].description == "Меню"
+    assert calls[1].kwargs == {"language_code": "en"}
+    assert calls[2].kwargs == {"language_code": "ru"}

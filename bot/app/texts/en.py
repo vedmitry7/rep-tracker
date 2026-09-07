@@ -5,17 +5,36 @@ LANGUAGE_NAME = "English"
 LANGUAGE_BUTTON = "🇬🇧 English"
 BOT_NAME = "Repka · Workout Tracker"
 BOT_COMMANDS = {
-    "menu": "Open menu",
+    "menu": "Menu",
     "settings": "Settings",
     "help": "Help",
 }
+BOT_SHORT_DESCRIPTION = "Track exercises, see your progress, and get weekly reports."
+BOT_DESCRIPTION = (
+    "🥬 Repka is a simple workout tracker in Telegram.\n\n"
+    "Log pull-ups, push-ups, squats, or any other exercise right in the chat. "
+    "Send a result like 16, 4×10, or 12, 10, 8 — Repka saves the workout, "
+    "counts the volume, and shows your progress.\n\n"
+    "📊 Week and month statistics\n"
+    "📈 History and progress over time\n"
+    "🖼 Shareable weekly reports\n"
+    "📦 Data import and export"
+)
 
 # Common screens and notifications
 EXERCISES_TITLE = "🏋️ Repka\n\nChoose an exercise"
 NO_EXERCISES = "🏋️ Repka\n\nNo exercises yet"
 WELCOME = (
-    "Hi! Here you can quickly log exercises and track your progress."
-    "\n\nCreate your first exercise."
+    "🥬 Hi! I’m Repka.\n\n"
+    "I remember your workouts and turn simple numbers into a clear story of your progress.\n\n"
+    "Getting started is easy:\n"
+    "1. Add an exercise — for example, Pull-ups.\n"
+    "2. After a workout, send a result: 16, 4×10, or 12, 10, 8.\n"
+    "3. I’ll save it and calculate your statistics.\n\n"
+    "Over time, you’ll see your workout history, weekly and monthly progress, "
+    "and weekly reports you can share.\n\n"
+    "Your data can be imported and exported — it is never locked inside Repka.\n\n"
+    "👇 Add your first exercise. It only takes a few seconds."
 )
 HELP = (
     "ℹ️ Help\n\n"
@@ -60,6 +79,7 @@ REQUEST_FAILED = "Could not complete the request. Try again later."
 
 # Keyboards
 BUTTON_ADD_EXERCISE = "➕ Add exercise"
+BUTTON_ADD_FIRST_EXERCISE = "➕ Add your first exercise"
 BUTTON_SETTINGS = "⚙️ Settings"
 BUTTON_ADD_RESULT = "➕ Add Result"
 BUTTON_STATISTICS = "📊 Statistics"
@@ -97,8 +117,6 @@ BUTTON_IMPORT_REPLACE = "♻️ Replace"
 BUTTON_IMPORT = "Import"
 BUTTON_REPLACE_AND_IMPORT = "Replace and import"
 BUTTON_EXPORT = "📤 Export"
-BUTTON_ENGLISH = "🇬🇧 English"
-BUTTON_RUSSIAN = "🇷🇺 Русский"
 
 # Input validation
 ENTER_RESULT = "Enter a result."
@@ -281,8 +299,6 @@ INVALID_TIMEZONE = "Timezone not recognized. Enter an IANA timezone and try agai
 TIMEZONE_CHANGED = "Timezone changed"
 CHOOSE_LANGUAGE = "🌐 Choose a language"
 LANGUAGE_CHANGED = "Language changed"
-LANGUAGE_ENGLISH = "English"
-LANGUAGE_RUSSIAN = "Русский"
 
 IMPORT_SEND_FILE = """📥 <b>Import data</b>
 
