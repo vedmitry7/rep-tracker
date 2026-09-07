@@ -17,6 +17,7 @@ from bot.app.handlers import (
     commands_router,
 )
 from bot.app.localization import LocalizationMiddleware
+from bot.app.notifications import notify_administrators
 from bot.app.handlers.weekly_reports import router as weekly_reports_router
 from bot.app.workers.weekly_reports import run_worker
 
@@ -26,14 +27,7 @@ async def notify_admins_about_startup(
     administrator_ids: frozenset[int],
 ) -> None:
     """Notify configured administrators without blocking bot startup."""
-    for administrator_id in administrator_ids:
-        try:
-            await bot.send_message(administrator_id, "Repka bot started.")
-        except Exception:
-            logging.getLogger(__name__).exception(
-                "Could not notify administrator %s about bot startup",
-                administrator_id,
-            )
+    await notify_administrators(bot, administrator_ids, "Repka bot started.")
 
 
 async def main() -> None:

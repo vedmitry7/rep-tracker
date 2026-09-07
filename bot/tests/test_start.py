@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.fsm.storage.memory import MemoryStorage
 
+import bot.app.handlers.start as start_module
 from bot.app.handlers.start import start
 from bot.app.texts import get_catalog
 
@@ -91,3 +92,36 @@ async def test_existing_user_keeps_saved_language_on_start(state: FSMContext) ->
 
     api.resolve_user.assert_awaited_once_with(42, "Europe/Moscow", "ru")
     assert message.answer.await_args.args[0] == "🏋️ Repka\n\nNo exercises yet"
+
+
+@pytest.mark.asyncio
+async def test_start_notifies_administrators_about_a_created_user(
+    state: FSMContext,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    message = SimpleNamespace(
+        from_user=SimpleNamespace(id=42, language_code="en"),
+        answer=AsyncMock(),
+    )
+    api = SimpleNamespace(
+        resolve_user=AsyncMock(return_value=SimpleNamespace(created=True, language="en")),
+        list_exercises=AsyncMock(return_value=[]),
+    )
+    bot = SimpleNamespace()
+    notify = AsyncMock()
+    monkeypatch.setattr(start_module, "notify_new_user_registration", notify)
+    monkeypatch.setattr(
+        start_module,
+        "get_settings",
+        lambda: SimpleNamespace(admin_telegram_ids=frozenset({10})),
+    )
+
+    await start_module.start(message, state, api, "Europe/Moscow", bot)
+
+    notify.assert_awaited_once_with(
+        bot,
+        frozenset({10}),
+        api,
+        message.from_user,
+        "en",
+    )
