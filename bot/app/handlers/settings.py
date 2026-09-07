@@ -2,11 +2,13 @@ import json
 from io import BytesIO
 
 from aiogram import F, Router
+from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, InlineKeyboardMarkup, Message
 
 from bot.app.api.client import (
     ApiError,
+    Exercise,
     ImportPreview,
     InvalidRequestError,
     RepTrackerApi,
@@ -23,6 +25,9 @@ from bot.app.keyboards.exercises import (
     exercises_list_keyboard,
 )
 from bot.app.keyboards.settings import (
+    ExportAction,
+    ExportActionValue,
+    ExportToggle,
     ImportAction,
     ImportActionValue,
     LanguageChoice,
@@ -31,6 +36,7 @@ from bot.app.keyboards.settings import (
     TimezoneChoice,
     TimezonePageChoice,
     exercise_management_keyboard,
+    export_selection_keyboard,
     import_confirmation_keyboard,
     import_strategy_keyboard,
     language_choices_keyboard,
@@ -40,7 +46,7 @@ from bot.app.keyboards.settings import (
 )
 from bot.app.localization import user_languages
 from bot.app.services.exercise_format import format_number
-from bot.app.states.settings import ChangeTimezone, ImportData
+from bot.app.states.settings import ChangeTimezone, ExportData, ImportData
 from bot.app.texts import (
     current_language,
     reset_current_language,
@@ -123,7 +129,127 @@ async def request_import_file(callback: CallbackQuery, state: FSMContext) -> Non
             ui_message_id=callback.message.message_id,
         )
     await callback.answer()
-    await _render(callback, texts.IMPORT_SEND_FILE, settings_back_keyboard())
+    await _render(
+        callback,
+        texts.IMPORT_SEND_FILE,
+        settings_back_keyboard(),
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@router.callback_query(
+    SettingsAction.filter(F.action == SettingsActionValue.EXPORT_DATA)
+)
+async def request_export(
+    callback: CallbackQuery,
+    state: FSMContext,
+    api_client: RepTrackerApi,
+) -> None:
+    await state.clear()
+    try:
+        exercises = await api_client.list_exercises(callback.from_user.id)
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
+
+    await callback.answer()
+    if not exercises:
+        await _render(callback, texts.EXPORT_NO_EXERCISES, settings_back_keyboard())
+        return
+
+    selected_ids = {exercise.id for exercise in exercises}
+    await state.set_state(ExportData.selecting_exercises)
+    await state.update_data(
+        export_exercises=[exercise.model_dump() for exercise in exercises],
+        export_selected_ids=list(selected_ids),
+    )
+    await _render(
+        callback,
+        texts.export_selection(selected=len(selected_ids), total=len(exercises)),
+        export_selection_keyboard(exercises, selected_ids),
+    )
+
+
+@router.callback_query(ExportData.selecting_exercises, ExportToggle.filter())
+async def toggle_export_exercise(
+    callback: CallbackQuery,
+    callback_data: ExportToggle,
+    state: FSMContext,
+) -> None:
+    export_state = await _export_state(state)
+    if export_state is None:
+        await callback.answer(texts.SCREEN_EXPIRED, show_alert=True)
+        return
+    exercises, selected_ids = export_state
+    exercise_ids = {exercise.id for exercise in exercises}
+    if callback_data.exercise_id not in exercise_ids:
+        await callback.answer(texts.SCREEN_EXPIRED, show_alert=True)
+        return
+
+    if callback_data.exercise_id in selected_ids:
+        selected_ids.remove(callback_data.exercise_id)
+    else:
+        selected_ids.add(callback_data.exercise_id)
+    await state.update_data(export_selected_ids=list(selected_ids))
+    await callback.answer()
+    await _render(
+        callback,
+        texts.export_selection(selected=len(selected_ids), total=len(exercises)),
+        export_selection_keyboard(exercises, selected_ids),
+    )
+
+
+@router.callback_query(
+    ExportData.selecting_exercises,
+    ExportAction.filter(F.action == ExportActionValue.APPLY),
+)
+async def export_selected_exercises(
+    callback: CallbackQuery,
+    state: FSMContext,
+    api_client: RepTrackerApi,
+) -> None:
+    export_state = await _export_state(state)
+    if export_state is None:
+        await callback.answer(texts.SCREEN_EXPIRED, show_alert=True)
+        return
+    exercises, selected_ids = export_state
+    selected_exercises = [
+        exercise for exercise in exercises if exercise.id in selected_ids
+    ]
+    if not selected_exercises:
+        await callback.answer(texts.SCREEN_EXPIRED, show_alert=True)
+        return
+
+    try:
+        document = await api_client.export_data(
+            callback.from_user.id,
+            [exercise.id for exercise in selected_exercises],
+        )
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
+
+    content = json.dumps(document, ensure_ascii=False, indent=2).encode("utf-8")
+    if len(content) > MAX_IMPORT_FILE_SIZE:
+        await callback.answer(texts.EXPORT_FILE_TOO_LARGE, show_alert=True)
+        return
+    if not isinstance(callback.message, Message):
+        await callback.answer(texts.SCREEN_EXPIRED, show_alert=True)
+        return
+
+    await callback.message.answer_document(
+        BufferedInputFile(content, filename="repka-export.json")
+    )
+    await state.clear()
+    await callback.answer()
+    await _render(
+        callback,
+        texts.export_completed(
+            exercises=format_number(len(selected_exercises)),
+            entries=format_number(_export_entries_count(document)),
+        ),
+        settings_back_keyboard(),
+    )
 
 
 @router.message(ImportData.waiting_for_file)
@@ -536,12 +662,19 @@ async def _render(
     event: Message | CallbackQuery,
     text: str,
     reply_markup: InlineKeyboardMarkup,
+    *,
+    parse_mode: ParseMode | None = None,
 ) -> None:
     if isinstance(event, CallbackQuery):
         if isinstance(event.message, Message):
-            await edit_or_answer(event.message, text, reply_markup)
+            await edit_or_answer(
+                event.message,
+                text,
+                reply_markup,
+                parse_mode=parse_mode,
+            )
         return
-    await event.answer(text, reply_markup=reply_markup)
+    await event.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 
 def _language_name(language: str) -> str:
@@ -553,8 +686,16 @@ def _import_preview_text(preview: ImportPreview) -> str:
         exercises=format_number(preview.exercises_count),
         entries=format_number(preview.entries_count),
         total_reps=format_number(preview.total_reps),
-        date_from=preview.date_from.strftime("%d.%m.%Y"),
-        date_to=preview.date_to.strftime("%d.%m.%Y"),
+        date_from=(
+            preview.date_from.strftime("%d.%m.%Y")
+            if preview.date_from is not None
+            else "—"
+        ),
+        date_to=(
+            preview.date_to.strftime("%d.%m.%Y")
+            if preview.date_to is not None
+            else "—"
+        ),
         new_count=format_number(len(preview.new_exercises)),
         existing_names=preview.existing_exercises,
     )
@@ -565,8 +706,16 @@ def _new_exercises_import_text(preview: ImportPreview) -> str:
         exercises=format_number(preview.exercises_count),
         entries=format_number(preview.entries_count),
         total_reps=format_number(preview.total_reps),
-        date_from=preview.date_from.strftime("%d.%m.%Y"),
-        date_to=preview.date_to.strftime("%d.%m.%Y"),
+        date_from=(
+            preview.date_from.strftime("%d.%m.%Y")
+            if preview.date_from is not None
+            else "—"
+        ),
+        date_to=(
+            preview.date_to.strftime("%d.%m.%Y")
+            if preview.date_to is not None
+            else "—"
+        ),
         new_count=format_number(len(preview.new_exercises)),
     )
 
@@ -578,3 +727,40 @@ def _preview_has_existing_exercises(payload: object) -> bool:
         # Old/stale confirmations did not store preview data. Preserve their
         # previous result copy instead of guessing that the import was conflict-free.
         return True
+
+
+async def _export_state(
+    state: FSMContext,
+) -> tuple[list[Exercise], set[int]] | None:
+    data = await state.get_data()
+    raw_exercises = data.get("export_exercises")
+    raw_selected_ids = data.get("export_selected_ids")
+    if not isinstance(raw_exercises, list) or not isinstance(raw_selected_ids, list):
+        return None
+    try:
+        exercises = [Exercise.model_validate(value) for value in raw_exercises]
+    except (TypeError, ValueError):
+        return None
+    if not all(isinstance(value, int) for value in raw_selected_ids):
+        return None
+    selected_ids = set(raw_selected_ids)
+    if not selected_ids.issubset({exercise.id for exercise in exercises}):
+        return None
+    return exercises, selected_ids
+
+
+def _export_entries_count(document: dict[str, object]) -> int:
+    raw_exercises = document.get("exercises")
+    if not isinstance(raw_exercises, list):
+        return 0
+    count = 0
+    for exercise in raw_exercises:
+        if not isinstance(exercise, dict):
+            continue
+        days = exercise.get("days")
+        if not isinstance(days, list):
+            continue
+        for day in days:
+            if isinstance(day, dict) and isinstance(day.get("entries"), list):
+                count += len(day["entries"])
+    return count

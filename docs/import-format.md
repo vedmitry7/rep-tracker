@@ -27,7 +27,8 @@ Rep Tracker accepts UTF-8 `.json` files in this version 1 format:
 }
 ```
 
-The nesting is `exercises → days → entries`. Every array inside `entries` is
+The nesting is `exercises → days → entries`. An exercise without workouts may
+use an empty `days` array. Every array inside `entries` is
 one workout entry: `[10]` creates one entry with one set, while
 `[10, 10, 10, 8]` creates one entry with four sets. All entries under a day use
 that day's `date`. The system assigns `created_at` when the import is applied.

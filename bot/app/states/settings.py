@@ -9,3 +9,7 @@ class ImportData(StatesGroup):
     waiting_for_file = State()
     waiting_for_strategy = State()
     waiting_for_confirmation = State()
+
+
+class ExportData(StatesGroup):
+    selecting_exercises = State()

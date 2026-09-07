@@ -75,8 +75,8 @@ class ImportPreview(BaseModel):
     exercises_count: int
     entries_count: int
     total_reps: int
-    date_from: date
-    date_to: date
+    date_from: date | None
+    date_to: date | None
     new_exercises: list[str]
     existing_exercises: list[str]
 
@@ -87,6 +87,11 @@ class ImportResult(BaseModel):
     existing_exercises_updated: int
     entries_imported: int
     total_reps_imported: int
+
+
+class ExportDocument(BaseModel):
+    version: int
+    exercises: list[dict[str, object]]
 
 
 class ApiError(Exception):
@@ -449,6 +454,28 @@ class RepTrackerApi:
             return ImportResult.model_validate(response.json())
         except (ValueError, ValidationError) as error:
             logger.exception("Backend returned an invalid import result")
+            raise UnexpectedApiError from error
+
+    async def export_data(
+        self,
+        telegram_user_id: int,
+        exercise_ids: list[int],
+    ) -> dict[str, object]:
+        response = await self._request(
+            "POST",
+            "/exports",
+            json={
+                **self._identity(telegram_user_id),
+                "exercise_ids": exercise_ids,
+            },
+            expected_statuses={200},
+        )
+        try:
+            return ExportDocument.model_validate(response.json()).model_dump(
+                mode="json"
+            )
+        except (ValueError, ValidationError) as error:
+            logger.exception("Backend returned an invalid export document")
             raise UnexpectedApiError from error
 
     async def clear_exercise_history(

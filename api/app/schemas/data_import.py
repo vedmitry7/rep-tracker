@@ -44,7 +44,7 @@ class ImportExercise(BaseModel):
     name: ExerciseName
     days: Annotated[
         list[ImportDay],
-        Field(min_length=1, max_length=MAX_IMPORT_DAYS_PER_EXERCISE),
+        Field(max_length=MAX_IMPORT_DAYS_PER_EXERCISE),
     ]
 
 
@@ -96,8 +96,8 @@ class ImportPreviewResponse(BaseModel):
     exercises_count: int
     entries_count: int
     total_reps: int
-    date_from: date
-    date_to: date
+    date_from: date | None
+    date_to: date | None
     new_exercises: list[str]
     existing_exercises: list[str]
 

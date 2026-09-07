@@ -22,7 +22,7 @@ create an exercise
 - History grouped by training day
 - Per-exercise statistics
 - Entry editing and deletion
-- JSON workout import with explicit Merge or Replace handling
+- JSON workout import and export with explicit Merge or Replace handling
 - Clear-history and permanent exercise deletion controls
 - User-specific timezone support
 - English and Russian UI

@@ -6,6 +6,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.app.texts import current_language, texts
+from bot.app.api.client import Exercise
 from bot.app.timezones import format_timezone, timezone_page
 
 
@@ -15,6 +16,7 @@ class SettingsActionValue(StrEnum):
     OTHER_TIMEZONE = "other_timezone"
     CHANGE_LANGUAGE = "change_language"
     IMPORT_DATA = "import_data"
+    EXPORT_DATA = "export_data"
     EXERCISE_MANAGEMENT = "exercise_management"
     CLEAR_HISTORY = "clear_history"
     HARD_DELETE = "hard_delete"
@@ -49,6 +51,18 @@ class ImportAction(CallbackData, prefix="data_import"):
     action: ImportActionValue
 
 
+class ExportActionValue(StrEnum):
+    APPLY = "apply"
+
+
+class ExportAction(CallbackData, prefix="data_export"):
+    action: ExportActionValue
+
+
+class ExportToggle(CallbackData, prefix="data_export_toggle"):
+    exercise_id: int
+
+
 def settings_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -62,6 +76,10 @@ def settings_keyboard() -> InlineKeyboardMarkup:
     builder.button(
         text=texts.BUTTON_IMPORT_DATA,
         callback_data=SettingsAction(action=SettingsActionValue.IMPORT_DATA),
+    )
+    builder.button(
+        text=texts.BUTTON_EXPORT_DATA,
+        callback_data=SettingsAction(action=SettingsActionValue.EXPORT_DATA),
     )
     builder.button(
         text=texts.BUTTON_EXERCISE_MANAGEMENT,
@@ -129,6 +147,30 @@ def import_confirmation_keyboard(strategy: str) -> InlineKeyboardMarkup:
     builder.button(
         text=texts.BUTTON_CANCEL_PLAIN,
         callback_data=ImportAction(action=ImportActionValue.CANCEL),
+    )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def export_selection_keyboard(
+    exercises: list[Exercise],
+    selected_ids: set[int],
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for exercise in exercises:
+        marker = "✅" if exercise.id in selected_ids else "☐"
+        builder.button(
+            text=f"{marker} {exercise.name}",
+            callback_data=ExportToggle(exercise_id=exercise.id),
+        )
+    if selected_ids:
+        builder.button(
+            text=texts.BUTTON_EXPORT,
+            callback_data=ExportAction(action=ExportActionValue.APPLY),
+        )
+    builder.button(
+        text=texts.BUTTON_BACK,
+        callback_data=SettingsAction(action=SettingsActionValue.OPEN),
     )
     builder.adjust(1)
     return builder.as_markup()

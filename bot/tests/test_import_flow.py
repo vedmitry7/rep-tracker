@@ -7,10 +7,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from bot.app.api.client import ImportPreview, ImportResult
+from bot.app.api.client import Exercise, ImportPreview, ImportResult
 from bot.app.handlers import settings
-from bot.app.keyboards.settings import ImportAction, ImportActionValue
-from bot.app.states.settings import ImportData
+from bot.app.keyboards.settings import (
+    ExportToggle,
+    ImportAction,
+    ImportActionValue,
+)
+from bot.app.states.settings import ExportData, ImportData
 from bot.app.texts import reset_current_language, set_current_language
 
 
@@ -37,11 +41,14 @@ class FakeBot:
 class FakeMessage:
     def __init__(self, *, filename: str = "workouts.json") -> None:
         self.from_user = SimpleNamespace(id=42)
+        self.chat = SimpleNamespace(id=2)
+        self.message_id = 1
         self.document = SimpleNamespace(
             file_name=filename, file_size=200, file_id="file-1"
         )
         self.bot = FakeBot()
         self.answer = AsyncMock()
+        self.answer_document = AsyncMock()
         self.edit_text = AsyncMock()
 
 
@@ -106,6 +113,74 @@ async def test_json_file_is_previewed_without_importing(state: FSMContext) -> No
     rendered = message.answer.await_args.args[0]
     assert "Existing:\n• Pull-ups" in rendered
     assert "Workout entries: 2" in rendered
+
+
+@pytest.mark.asyncio
+async def test_import_screen_explains_format_and_renders_code_block() -> None:
+    callback = FakeCallback()
+    state = FSMContext(
+        storage=MemoryStorage(),
+        key=StorageKey(bot_id=1, chat_id=2, user_id=3),
+    )
+
+    await settings.request_import_file(callback, state)
+
+    args = callback.message.edit_text.await_args
+    assert "exercises" in args.args[0]
+    assert "&lt;pre&gt;" not in args.args[0]
+    assert "<pre><code>" in args.args[0]
+    assert args.kwargs["parse_mode"] == "HTML"
+    assert await state.get_state() == ImportData.waiting_for_file.state
+
+
+@pytest.mark.asyncio
+async def test_export_selects_all_exercises_then_toggles_and_sends_json(
+    state: FSMContext,
+) -> None:
+    callback = FakeCallback()
+    exercises = [Exercise(id=7, name="Pull-ups"), Exercise(id=8, name="Plank")]
+    api = SimpleNamespace(
+        list_exercises=AsyncMock(return_value=exercises),
+        export_data=AsyncMock(
+            return_value={
+                "version": 1,
+                "exercises": [
+                    {
+                        "name": "Pull-ups",
+                        "days": [
+                            {"date": "2026-08-01", "entries": [[10], [8, 7]]}
+                        ],
+                    }
+                ],
+            }
+        ),
+    )
+
+    await settings.request_export(callback, state, api)
+
+    assert await state.get_state() == ExportData.selecting_exercises.state
+    assert "Selected: 2 of 2" in callback.message.edit_text.await_args.args[0]
+    assert button_texts(callback.message.edit_text.await_args.kwargs["reply_markup"]) == [
+        "✅ Pull-ups",
+        "✅ Plank",
+        "📤 Export",
+        "← Back",
+    ]
+
+    await settings.toggle_export_exercise(
+        callback, ExportToggle(exercise_id=8), state
+    )
+    assert "Selected: 1 of 2" in callback.message.edit_text.await_args.args[0]
+
+    await settings.export_selected_exercises(callback, state, api)
+
+    api.export_data.assert_awaited_once_with(42, [7])
+    assert callback.message.answer_document.await_count == 1
+    document = callback.message.answer_document.await_args.args[0]
+    assert document.filename == "repka-export.json"
+    assert b'"version": 1' in document.data
+    assert await state.get_state() is None
+    assert "✅ Export ready" in callback.message.edit_text.await_args.args[0]
 
 
 @pytest.mark.parametrize(

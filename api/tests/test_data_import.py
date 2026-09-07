@@ -242,6 +242,27 @@ async def test_import_rejects_duplicate_normalized_exercise_names(
     assert (await client.get("/exercises", params=identity)).json() == []
 
 
+async def test_import_accepts_an_exercise_without_workouts(
+    client: AsyncClient,
+) -> None:
+    identity = await create_user(client)
+    payload = document({"name": "Plank", "days": []})
+
+    preview = await client.post(
+        "/imports/preview", json={**identity, "document": payload}
+    )
+    assert preview.status_code == 200
+    assert preview.json()["date_from"] is None
+    assert preview.json()["date_to"] is None
+
+    imported = await client.post(
+        "/imports", json={**identity, "document": payload, "strategy": "merge"}
+    )
+    assert imported.status_code == 201
+    assert imported.json()["exercises_created"] == 1
+    assert (await client.get("/exercises", params=identity)).json()[0]["name"] == "Plank"
+
+
 async def test_future_date_uses_user_timezone_and_writes_nothing(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:

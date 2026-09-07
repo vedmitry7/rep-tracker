@@ -1,3 +1,4 @@
+from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
@@ -35,11 +36,17 @@ async def edit_or_answer(
     message: Message,
     text: str,
     reply_markup: InlineKeyboardMarkup,
+    *,
+    parse_mode: ParseMode | None = None,
 ) -> None:
     """Edit the current bot UI message, falling back to a new message safely."""
 
     try:
-        await message.edit_text(text, reply_markup=reply_markup)
+        await message.edit_text(
+            text,
+            reply_markup=reply_markup,
+            parse_mode=parse_mode,
+        )
         return
     except TelegramBadRequest as error:
         if "message is not modified" in str(error).lower():
@@ -47,7 +54,7 @@ async def edit_or_answer(
     except AttributeError:
         # Lightweight test doubles and inaccessible messages use the fallback.
         pass
-    await message.answer(text, reply_markup=reply_markup)
+    await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 
 async def edit_stored_or_answer(

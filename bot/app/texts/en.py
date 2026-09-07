@@ -80,11 +80,13 @@ BUTTON_PREVIOUS = "◀️ Previous"
 BUTTON_NEXT = "Next ▶️"
 BUTTON_CHANGE_LANGUAGE = "🌐 Language"
 BUTTON_IMPORT_DATA = "📥 Import data"
+BUTTON_EXPORT_DATA = "📤 Export data"
 BUTTON_EXERCISE_MANAGEMENT = "🛠 Manage exercises"
 BUTTON_IMPORT_MERGE = "🔀 Merge"
 BUTTON_IMPORT_REPLACE = "♻️ Replace"
 BUTTON_IMPORT = "Import"
 BUTTON_REPLACE_AND_IMPORT = "Replace and import"
+BUTTON_EXPORT = "📤 Export"
 BUTTON_ENGLISH = "🇬🇧 English"
 BUTTON_RUSSIAN = "🇷🇺 Русский"
 
@@ -272,11 +274,60 @@ LANGUAGE_CHANGED = "Language changed"
 LANGUAGE_ENGLISH = "English"
 LANGUAGE_RUSSIAN = "Русский"
 
-IMPORT_SEND_FILE = "📥 Import\n\nSend a .json file (maximum 1 MB)."
+IMPORT_SEND_FILE = """📥 <b>Import data</b>
+
+Upload a JSON file with exercises and workouts.
+
+The file must use UTF-8 encoding and be no larger than 1 MB.
+
+<b>File structure and example</b>
+<pre><code>{
+  "version": 1,
+  "exercises": [
+    {
+      "name": "Pull-ups",
+      "days": [
+        {
+          "date": "2026-08-01",
+          "entries": [[10], [8, 7]]
+        }
+      ]
+    }
+  ]
+}</code></pre>
+"""
 IMPORT_JSON_ONLY = "Only .json files are supported."
 IMPORT_FILE_TOO_LARGE = "The file is too large. Maximum size is 1 MB."
 IMPORT_INVALID_FILE = "The JSON file is invalid or does not match the import format."
 IMPORT_CANCELLED = "Import cancelled"
+
+
+def export_selection(*, selected: int, total: int) -> str:
+    value = (
+        "📤 Export data\n\n"
+        "Choose exercises to export.\n\n"
+        "The file will include all workout entries for the selected exercises.\n"
+        "You can import the file back later.\n\n"
+        f"Selected: {selected} of {total}"
+    )
+    if selected == 0:
+        value += "\n\nChoose at least one exercise."
+    return value
+
+
+EXPORT_NO_EXERCISES = "📤 Export data\n\nThere are no exercises to export yet."
+EXPORT_FILE_TOO_LARGE = (
+    "The file is larger than 1 MB and cannot be imported. "
+    "Choose fewer exercises."
+)
+
+
+def export_completed(*, exercises: str, entries: str) -> str:
+    return (
+        "✅ Export ready\n\n"
+        f"Exercises: {exercises}\n"
+        f"Workout entries: {entries}"
+    )
 
 
 def import_preview(
