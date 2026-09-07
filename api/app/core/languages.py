@@ -1,4 +1,4 @@
-SUPPORTED_LANGUAGES = frozenset({"en", "ru"})
+SUPPORTED_LANGUAGES = frozenset({"en", "ru", "es", "pt", "tr", "uk", "id", "hi", "kk", "pl", "fr"})
 DEFAULT_LANGUAGE = "en"
 
 

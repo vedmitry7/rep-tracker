@@ -9,7 +9,9 @@ from bot.app.services.date_parser import format_result_date
 from bot.app.services.date_parser import DateParseError, parse_result_date
 from bot.app.services.result_parser import ResultParseError, parse_result
 from bot.app.texts import (
+    available_locales,
     en,
+    get_catalog,
     get_text,
     normalize_language_code,
     reset_current_language,
@@ -25,6 +27,37 @@ def catalog_keys(module: object) -> set[str]:
 
 def test_english_and_russian_catalogs_have_matching_keys() -> None:
     assert catalog_keys(en) == catalog_keys(ru)
+
+
+@pytest.mark.parametrize(
+    ("language", "button"),
+    [
+        ("es", "⚙️ Ajustes"),
+        ("pt", "⚙️ Configurações"),
+        ("tr", "⚙️ Ayarlar"),
+        ("uk", "⚙️ Налаштування"),
+        ("id", "⚙️ Pengaturan"),
+        ("hi", "⚙️ सेटिंग्स"),
+        ("kk", "⚙️ Баптаулар"),
+        ("pl", "⚙️ Ustawienia"),
+        ("fr", "⚙️ Paramètres"),
+    ],
+)
+def test_new_locales_have_localized_bot_profile_and_settings_button(
+    language: str,
+    button: str,
+) -> None:
+    catalog = get_catalog(language)
+    assert catalog.BOT_NAME.startswith("Repka · ")
+    assert catalog.BOT_SHORT_DESCRIPTION != en.BOT_SHORT_DESCRIPTION
+    assert catalog.BOT_DESCRIPTION != en.BOT_DESCRIPTION
+    assert catalog.BUTTON_SETTINGS == button
+
+
+def test_language_picker_lists_requested_locales() -> None:
+    assert {locale.code for locale in available_locales()} == {
+        "en", "ru", "es", "pt", "tr", "uk", "id", "hi", "kk", "pl", "fr"
+    }
 
 
 def test_unknown_language_falls_back_to_english() -> None:

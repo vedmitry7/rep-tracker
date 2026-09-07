@@ -27,7 +27,7 @@ TimezoneName = Annotated[
     StringConstraints(strip_whitespace=True, min_length=1, max_length=255),
     AfterValidator(validate_timezone_name),
 ]
-Language = Literal["en", "ru"]
+Language = Literal["en", "ru", "es", "pt", "tr", "uk", "id", "hi", "kk", "pl", "fr"]
 
 
 class UserResolveRequest(BaseModel):

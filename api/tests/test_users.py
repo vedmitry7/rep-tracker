@@ -97,7 +97,11 @@ async def test_repeated_resolve_does_not_change_timezone(client: AsyncClient) ->
 
 @pytest.mark.parametrize(
     ("default_language", "expected"),
-    [("ru", "ru"), ("en", "en"), ("es", "en")],
+    [
+        ("ru", "ru"), ("en", "en"), ("es", "es"), ("pt", "pt"),
+        ("tr", "tr"), ("uk", "uk"), ("id", "id"), ("hi", "hi"), ("kk", "kk"), ("pl", "pl"), ("fr", "fr"),
+        ("de", "en"),
+    ],
 )
 async def test_new_user_language_with_fallback(
     client: AsyncClient,
