@@ -5,6 +5,16 @@ Callback values, API paths, provider names, and other protocol strings stay next
 to the code that owns them.
 """
 
+LANGUAGE_CODE = "ru"
+LANGUAGE_NAME = "Русский"
+LANGUAGE_BUTTON = "🇷🇺 Русский"
+BOT_NAME = "Репка · Трекер упражнений"
+BOT_COMMANDS = {
+    "menu": "Открыть меню",
+    "settings": "Настройки",
+    "help": "Помощь",
+}
+
 # Common screens and notifications
 EXERCISES_TITLE = "🏋️ Repka\n\nВыберите упражнение"
 NO_EXERCISES = "🏋️ Repka\n\nУпражнений пока нет"

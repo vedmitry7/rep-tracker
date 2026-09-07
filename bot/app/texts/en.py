@@ -1,5 +1,15 @@
 """English Telegram UI copy."""
 
+LANGUAGE_CODE = "en"
+LANGUAGE_NAME = "English"
+LANGUAGE_BUTTON = "🇬🇧 English"
+BOT_NAME = "Repka · Workout Tracker"
+BOT_COMMANDS = {
+    "menu": "Open menu",
+    "settings": "Settings",
+    "help": "Help",
+}
+
 # Common screens and notifications
 EXERCISES_TITLE = "🏋️ Repka\n\nChoose an exercise"
 NO_EXERCISES = "🏋️ Repka\n\nNo exercises yet"
