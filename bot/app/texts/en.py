@@ -11,13 +11,11 @@ BOT_COMMANDS = {
 }
 BOT_SHORT_DESCRIPTION = "Track exercises, see your progress, and get weekly reports."
 BOT_DESCRIPTION = (
-    "🥬 Repka is a simple workout tracker in Telegram.\n\n"
-    "Log pull-ups, push-ups, squats, or any other exercise right in the chat. "
-    "Send a result like 16, 4×10, or 12, 10, 8 — Repka saves the workout, "
-    "counts the volume, and shows your progress.\n\n"
-    "📊 Week and month statistics\n"
-    "📈 History and progress over time\n"
-    "🖼 Shareable weekly reports\n"
+    "🥬 Repka is an exercise tracker in Telegram.\n\n"
+    "Log sets and reps in one line: 16, 4×10, or 12, 10, 8. Repka saves the result, "
+    "totals your reps for the day, week, and month, and shows progress for each exercise.\n\n"
+    "📊 Training statistics and history\n"
+    "🖼 Weekly reports worth sharing\n"
     "📦 Data import and export"
 )
 

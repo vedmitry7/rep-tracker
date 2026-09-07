@@ -19,7 +19,7 @@ async def test_configure_profile_sets_default_and_localized_profile_copy():
     assert bot.set_my_name.call_args_list == [
         ((), {"name": "Repka · Workout Tracker"}),
         ((), {"name": "Repka · Workout Tracker", "language_code": "en"}),
-        ((), {"name": "Репка · Трекер упражнений", "language_code": "ru"}),
+        ((), {"name": "Repka · Трекер упражнений", "language_code": "ru"}),
     ]
     assert [call.kwargs["language_code"] for call in bot.set_my_description.call_args_list[1:]] == [
         "en",
