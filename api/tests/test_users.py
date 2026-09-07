@@ -6,7 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.app.db.session import async_session_factory
+from api.app.db.session import async_session_factory, engine
 from api.app.main import app
 from api.app.models.user import User
 from api.app.models.user_identity import UserIdentity
@@ -283,9 +283,12 @@ async def test_concurrent_requests_do_not_create_duplicate_identity() -> None:
         async with async_session_factory() as session:
             assert await identity_count(session, payload) == 1
     finally:
-        async with async_session_factory.begin() as session:
-            user_ids = select(UserIdentity.user_id).where(
-                UserIdentity.provider == payload["provider"],
-                UserIdentity.external_id == payload["external_id"],
-            )
-            await session.execute(delete(User).where(User.id.in_(user_ids)))
+        try:
+            async with async_session_factory.begin() as session:
+                user_ids = select(UserIdentity.user_id).where(
+                    UserIdentity.provider == payload["provider"],
+                    UserIdentity.external_id == payload["external_id"],
+                )
+                await session.execute(delete(User).where(User.id.in_(user_ids)))
+        finally:
+            await engine.dispose()
