@@ -21,6 +21,21 @@ from bot.app.handlers.weekly_reports import router as weekly_reports_router
 from bot.app.workers.weekly_reports import run_worker
 
 
+async def notify_admins_about_startup(
+    bot: Bot,
+    administrator_ids: frozenset[int],
+) -> None:
+    """Notify configured administrators without blocking bot startup."""
+    for administrator_id in administrator_ids:
+        try:
+            await bot.send_message(administrator_id, "Repka bot started.")
+        except Exception:
+            logging.getLogger(__name__).exception(
+                "Could not notify administrator %s about bot startup",
+                administrator_id,
+            )
+
+
 async def main() -> None:
     logging.basicConfig(
         level=logging.INFO,
@@ -41,6 +56,7 @@ async def main() -> None:
 
     try:
         async with RepTrackerApi(settings.api_base_url) as api_client:
+            await notify_admins_about_startup(bot, settings.admin_telegram_ids)
             worker = (
                 asyncio.create_task(run_worker(bot, api_client))
                 if settings.weekly_reports_enabled
