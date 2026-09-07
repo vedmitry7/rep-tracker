@@ -4,3 +4,5 @@ from api.app.models.user import User
 from api.app.models.user_identity import UserIdentity
 
 __all__ = ["Exercise", "ExerciseEntry", "User", "UserIdentity"]
+
+from api.app.models.weekly_report import WeeklyReport

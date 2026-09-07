@@ -29,6 +29,8 @@ class ExerciseOpen(CallbackData, prefix="exercise_open"):
 
 
 class ExerciseDetailActionValue(StrEnum):
+    WEEKLY_CARD = "weekly_card"
+    TOGGLE_WEEKLY_REPORT = "toggle_weekly_report"
     STATISTICS = "statistics"
     HISTORY = "history"
     CLEAR_HISTORY = "clear_history"
@@ -79,7 +81,11 @@ def exercise_presets_keyboard(
     return builder.as_markup()
 
 
-def exercise_screen_keyboard(exercise_id: int) -> InlineKeyboardMarkup:
+def exercise_screen_keyboard(
+    exercise_id: int,
+    *,
+    weekly_report_enabled: bool = True,
+) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
         text=texts.BUTTON_ADD_RESULT,
@@ -100,6 +106,17 @@ def exercise_screen_keyboard(exercise_id: int) -> InlineKeyboardMarkup:
         text=texts.BUTTON_HISTORY,
         callback_data=ExerciseDetailAction(
             action=ExerciseDetailActionValue.HISTORY,
+            exercise_id=exercise_id,
+        ),
+    )
+    builder.button(
+        text=texts.BUTTON_WEEKLY_CARD,
+        callback_data=ExerciseDetailAction(action=ExerciseDetailActionValue.WEEKLY_CARD, exercise_id=exercise_id),
+    )
+    builder.button(
+        text=texts.weekly_report_toggle(weekly_report_enabled),
+        callback_data=ExerciseDetailAction(
+            action=ExerciseDetailActionValue.TOGGLE_WEEKLY_REPORT,
             exercise_id=exercise_id,
         ),
     )

@@ -26,6 +26,7 @@ create an exercise
 - Clear-history and permanent exercise deletion controls
 - User-specific timezone support
 - English and Russian UI
+- Weekly text reports and per-exercise PNG cards
 - Multi-user identity model
 
 ## Architecture
@@ -40,6 +41,9 @@ for the key design decisions.
 
 The compact JSON import format is documented in
 [docs/import-format.md](docs/import-format.md).
+
+Weekly delivery, card rendering and local runtime notes are documented in
+[docs/weekly-reports.md](docs/weekly-reports.md).
 
 ## Tech Stack
 

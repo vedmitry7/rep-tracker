@@ -28,5 +28,10 @@ def get_user_today(timezone_name: str) -> date:
 
     Future rollover rules belong here so every consumer keeps the same day policy.
     """
+    return get_user_now(timezone_name).date()
+
+
+def get_user_now(timezone_name: str) -> datetime:
+    """Return the current aware datetime in the user's configured timezone."""
     timezone_info = ZoneInfo(validate_timezone_name(timezone_name))
-    return get_utc_now().astimezone(timezone_info).date()
+    return get_utc_now().astimezone(timezone_info)

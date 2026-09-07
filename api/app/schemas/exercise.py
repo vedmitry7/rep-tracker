@@ -27,6 +27,10 @@ class ExerciseUpdateRequest(ExerciseIdentity):
     name: ExerciseName
 
 
+class ExerciseWeeklyReportUpdateRequest(ExerciseIdentity):
+    weekly_report_enabled: bool
+
+
 class ExerciseResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,4 +38,5 @@ class ExerciseResponse(BaseModel):
     name: str
     position: int
     is_archived: bool
+    weekly_report_enabled: bool
     created_at: datetime

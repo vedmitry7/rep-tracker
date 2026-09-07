@@ -80,21 +80,25 @@ def test_exercise_screen_result_callback_keeps_exercise_id() -> None:
     callbacks = callback_values(markup)
 
     result_action = ResultAction.unpack(callbacks[0])
-    detail_actions = [ExerciseDetailAction.unpack(value) for value in callbacks[1:3]]
-    list_action = ExerciseAction.unpack(callbacks[3])
+    detail_actions = [ExerciseDetailAction.unpack(value) for value in callbacks[1:5]]
+    list_action = ExerciseAction.unpack(callbacks[5])
 
     assert result_action.action == ResultActionValue.START
     assert result_action.exercise_id == 42
     assert [(item.action, item.exercise_id) for item in detail_actions] == [
         (ExerciseDetailActionValue.STATISTICS, 42),
         (ExerciseDetailActionValue.HISTORY, 42),
+        (ExerciseDetailActionValue.WEEKLY_CARD, 42),
+        (ExerciseDetailActionValue.TOGGLE_WEEKLY_REPORT, 42),
     ]
     assert list_action.action == ExerciseActionValue.LIST
-    assert [len(row) for row in markup.inline_keyboard] == [1, 1, 1, 1]
+    assert [len(row) for row in markup.inline_keyboard] == [1, 1, 1, 1, 1, 1]
     assert [button.text for row in markup.inline_keyboard for button in row] == [
         "➕ Добавить результат",
         "📊 Статистика",
         "📜 История",
+        "🖼 Картинка недели",
+        "📅 Недельный отчёт: вкл",
         "◀️ Упражнения",
     ]
     assert markup.inline_keyboard[0][0].style == "primary"

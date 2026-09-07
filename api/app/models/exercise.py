@@ -11,6 +11,7 @@ from sqlalchemy import (
     false,
     func,
     text,
+    true,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -44,6 +45,12 @@ class Exercise(TimestampMixin, Base):
         Boolean,
         default=False,
         server_default=false(),
+        nullable=False,
+    )
+    weekly_report_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        server_default=true(),
         nullable=False,
     )
 

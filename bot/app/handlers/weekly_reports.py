@@ -1,0 +1,49 @@
+import logging
+
+from aiogram import F, Router
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
+
+from bot.app.api.client import ApiError, RepTrackerApi, ResourceNotFoundError
+from bot.app.handlers.common import answer_api_error
+from bot.app.keyboards.exercises import ExerciseDetailAction, ExerciseDetailActionValue
+from bot.app.texts import texts
+from bot.app.services.telegram_delivery import send_with_rate_limit_retry
+
+router = Router(name="weekly_reports")
+logger = logging.getLogger(__name__)
+
+
+async def send_card(message, api_client, user_id, exercise_id, report_id=None):
+    try:
+        png = await api_client.get_weekly_card(user_id, exercise_id, report_id)
+        await send_with_rate_limit_retry(lambda: message.answer_photo(
+            BufferedInputFile(png, filename=f"weekly-{exercise_id}.png")))
+    except ResourceNotFoundError:
+        await message.answer(texts.WEEKLY_NO_DATA)
+    except Exception:
+        logger.exception("Weekly card failed for exercise %s", exercise_id)
+        await message.answer(texts.WEEKLY_CARD_FAILED)
+
+
+@router.callback_query(ExerciseDetailAction.filter(F.action == ExerciseDetailActionValue.WEEKLY_CARD))
+async def exercise_weekly_card(callback: CallbackQuery, callback_data: ExerciseDetailAction,
+                               api_client: RepTrackerApi):
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await send_card(callback.message, api_client, callback.from_user.id, callback_data.exercise_id)
+
+
+@router.callback_query(F.data.startswith("weekly:"))
+async def report_cards(callback: CallbackQuery, api_client: RepTrackerApi):
+    await callback.answer()
+    if not isinstance(callback.message, Message):
+        return
+    report_id = callback.data.split(":", 1)[1]
+    try:
+        report = await api_client.get_weekly_report(callback.from_user.id, report_id)
+    except ApiError as error:
+        await answer_api_error(callback.message, error)
+        return
+    for exercise in report["exercises"]:
+        await send_card(callback.message, api_client, callback.from_user.id,
+                        exercise["exercise_id"], report_id)

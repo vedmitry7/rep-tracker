@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class Exercise(BaseModel):
     id: int
     name: str
+    weekly_report_enabled: bool = True
 
 
 class ExerciseEntry(BaseModel):
@@ -251,6 +252,27 @@ class RepTrackerApi:
             logger.exception("Backend returned an invalid exercise")
             raise UnexpectedApiError from error
 
+    async def set_exercise_weekly_report_enabled(
+        self,
+        telegram_user_id: int,
+        exercise_id: int,
+        weekly_report_enabled: bool,
+    ) -> Exercise:
+        response = await self._request(
+            "PATCH",
+            f"/exercises/{exercise_id}/weekly-report",
+            json={
+                **self._identity(telegram_user_id),
+                "weekly_report_enabled": weekly_report_enabled,
+            },
+            expected_statuses={200},
+        )
+        try:
+            return Exercise.model_validate(response.json())
+        except (ValueError, ValidationError) as error:
+            logger.exception("Backend returned an invalid exercise")
+            raise UnexpectedApiError from error
+
     async def create_exercise_entry(
         self,
         telegram_user_id: int,
@@ -452,6 +474,54 @@ class RepTrackerApi:
             params=self._identity(telegram_user_id),
             expected_statuses={204},
         )
+
+    async def materialize_weekly_reports(
+        self,
+        after_id: int = 0,
+    ) -> dict:
+        response = await self._request("POST", "/weekly-reports/materialize",
+            params={"after_id": after_id}, timeout=60,
+            expected_statuses={200})
+        return response.json()
+
+    async def lease_weekly_reports(self, worker_id: str, limit: int = 10) -> dict:
+        response = await self._request("POST", "/weekly-reports/lease",
+            json={"worker_id": worker_id, "limit": limit}, timeout=60,
+            expected_statuses={200})
+        return response.json()
+
+    async def get_weekly_report(self, telegram_user_id: int, report_id: str) -> dict:
+        response = await self._request("GET", f"/weekly-reports/{report_id}",
+            params=self._identity(telegram_user_id), expected_statuses={200})
+        return response.json()
+
+    async def complete_weekly_delivery(
+        self,
+        report_id: str,
+        lock_token: str,
+        status: str,
+        *,
+        error: str | None = None,
+        retry_after_seconds: int | None = None,
+    ) -> None:
+        payload: dict[str, object] = {"lock_token": lock_token, "status": status}
+        if error is not None:
+            payload["error"] = error
+        if retry_after_seconds is not None:
+            payload["retry_after_seconds"] = retry_after_seconds
+        await self._request("POST", f"/weekly-reports/{report_id}/delivery",
+            json=payload, expected_statuses={204})
+
+    async def get_weekly_card(self, telegram_user_id: int, exercise_id: int,
+                              report_id: str | None = None) -> bytes:
+        params = self._identity(telegram_user_id)
+        if report_id:
+            params["report_id"] = report_id
+        response = await self._request("GET", f"/exercises/{exercise_id}/weekly-card",
+            params=params, timeout=60, expected_statuses={200})
+        if not response.content.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise UnexpectedApiError("Invalid weekly PNG")
+        return response.content
 
     async def _request(
         self,

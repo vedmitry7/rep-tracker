@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import suppress
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -14,6 +15,8 @@ from bot.app.handlers import (
     start_router,
 )
 from bot.app.localization import LocalizationMiddleware
+from bot.app.handlers.weekly_reports import router as weekly_reports_router
+from bot.app.workers.weekly_reports import run_worker
 
 
 async def main() -> None:
@@ -26,6 +29,7 @@ async def main() -> None:
     dispatcher = Dispatcher(storage=MemoryStorage())
     dispatcher.update.outer_middleware(LocalizationMiddleware())
     dispatcher.include_router(start_router)
+    dispatcher.include_router(weekly_reports_router)
     dispatcher.include_router(settings_router)
     dispatcher.include_router(exercises_router)
     dispatcher.include_router(history_router)
@@ -33,11 +37,22 @@ async def main() -> None:
 
     try:
         async with RepTrackerApi(settings.api_base_url) as api_client:
-            await dispatcher.start_polling(
-                bot,
-                api_client=api_client,
-                default_timezone=settings.default_timezone,
+            worker = (
+                asyncio.create_task(run_worker(bot, api_client))
+                if settings.weekly_reports_enabled
+                else None
             )
+            try:
+                await dispatcher.start_polling(
+                    bot,
+                    api_client=api_client,
+                    default_timezone=settings.default_timezone,
+                )
+            finally:
+                if worker is not None:
+                    worker.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await worker
     finally:
         await bot.session.close()
 

@@ -18,6 +18,10 @@ class Settings(BaseSettings):
         default="Europe/Moscow",
         alias="DEFAULT_TIMEZONE",
     )
+    weekly_reports_enabled: bool = Field(
+        default=False,
+        alias="WEEKLY_REPORTS_ENABLED",
+    )
 
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env",

@@ -54,6 +54,7 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       DEFAULT_TIMEZONE: ${DEFAULT_TIMEZONE:-Europe/Moscow}
       API_BASE_URL: http://api:8000
+      WEEKLY_REPORTS_ENABLED: "true"
     depends_on:
       api:
         condition: service_healthy

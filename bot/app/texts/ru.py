@@ -367,3 +367,30 @@ def timezone_changed(timezone: str) -> str:
 
 def language_changed(language_name: str) -> str:
     return f"✅ Язык изменён\n\n{language_name}"
+BUTTON_GENERATE_CARDS = "🖼 Сгенерировать карточки"
+BUTTON_WEEKLY_CARD = "🖼 Картинка недели"
+
+
+def weekly_report_toggle(enabled: bool) -> str:
+    return "📅 Недельный отчёт: вкл" if enabled else "📅 Недельный отчёт: выкл"
+
+
+def weekly_report_changed(enabled: bool) -> str:
+    return "Недельный отчёт включён" if enabled else "Недельный отчёт выключен"
+
+
+WEEKLY_NO_DATA = "Пока нет данных за полные недели для этой карточки."
+WEEKLY_CARD_FAILED = "Не удалось отправить одну из карточек. Попробуйте ещё раз из меню упражнения."
+WEEKLY_LABELS = dict(title="📅 Недельный отчёт", period="Период", total="За неделю: {total} {unit}",
+                     first="Предыдущей полной недели ещё нет.", previous="Прошлая неделя",
+                     change="Изменение", active="Активных дней", best="Лучший день")
+
+
+def weekly_reps_unit(total: int) -> str:
+    if 11 <= total % 100 <= 14:
+        return "повторений"
+    if total % 10 == 1:
+        return "повторение"
+    if 2 <= total % 10 <= 4:
+        return "повторения"
+    return "повторений"

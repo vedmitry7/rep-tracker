@@ -76,6 +76,21 @@ async def rename_exercise(
         raise DuplicateExerciseNameError from error
 
 
+async def set_weekly_report_enabled(
+    session: AsyncSession,
+    provider: str,
+    external_id: str,
+    exercise_id: int,
+    weekly_report_enabled: bool,
+) -> Exercise:
+    async with session.begin():
+        user = await get_allowed_user_by_identity(session, provider, external_id)
+        exercise = await get_owned_exercise(session, exercise_id, user.id)
+        exercise.weekly_report_enabled = weekly_report_enabled
+        await session.flush()
+        return exercise
+
+
 async def archive_exercise(
     session: AsyncSession,
     provider: str,

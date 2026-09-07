@@ -54,6 +54,7 @@ async def test_create_exercise(
     assert body["name"] == "Pull-ups"
     assert body["position"] == 0
     assert body["is_archived"] is False
+    assert body["weekly_report_enabled"] is True
     assert body["created_at"]
     assert "user_id" not in body
 
@@ -147,6 +148,24 @@ async def test_rename_exercise(
 
     assert response.status_code == 200
     assert response.json()["name"] == "Chin-ups"
+
+
+async def test_exercise_weekly_report_can_be_disabled(
+    client: AsyncClient,
+) -> None:
+    identity = await create_user(client)
+    exercise = await create_exercise_for(client, identity)
+
+    response = await client.patch(
+        f"/exercises/{exercise['id']}/weekly-report",
+        json={**identity, "weekly_report_enabled": False},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["weekly_report_enabled"] is False
+    assert (await client.get("/exercises", params=identity)).json()[0][
+        "weekly_report_enabled"
+    ] is False
 
 
 async def test_cannot_rename_another_users_exercise(

@@ -161,6 +161,28 @@ async def test_create_exercise_sends_identity_and_name() -> None:
 
 
 @pytest.mark.asyncio
+async def test_update_exercise_weekly_report_setting() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "PATCH"
+        assert request.url.path == "/exercises/9/weekly-report"
+        assert json.loads(request.content) == {
+            "provider": "telegram",
+            "external_id": "777",
+            "weekly_report_enabled": False,
+        }
+        return httpx.Response(
+            200,
+            json={"id": 9, "name": "Брусья", "weekly_report_enabled": False},
+        )
+
+    exercise = await build_api(handler).set_exercise_weekly_report_enabled(
+        777, 9, False
+    )
+
+    assert exercise.weekly_report_enabled is False
+
+
+@pytest.mark.asyncio
 async def test_create_exercise_entry_sends_result_and_date() -> None:
     performed_on = date(2026, 8, 27)
 

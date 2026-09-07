@@ -357,3 +357,24 @@ def timezone_changed(timezone: str) -> str:
 
 def language_changed(language_name: str) -> str:
     return f"✅ Language changed\n\n{language_name}"
+BUTTON_GENERATE_CARDS = "🖼 Generate cards"
+BUTTON_WEEKLY_CARD = "🖼 Weekly card"
+
+
+def weekly_report_toggle(enabled: bool) -> str:
+    return "📅 Weekly report: on" if enabled else "📅 Weekly report: off"
+
+
+def weekly_report_changed(enabled: bool) -> str:
+    return "Weekly report enabled" if enabled else "Weekly report disabled"
+
+
+WEEKLY_NO_DATA = "No complete-week data for this card yet."
+WEEKLY_CARD_FAILED = "Couldn't send one of the cards. Please try again from the exercise menu."
+WEEKLY_LABELS = dict(title="📅 Weekly report", period="Period", total="This week: {total} {unit}",
+                     first="No previous complete week yet.", previous="Previous week",
+                     change="Change", active="Active days", best="Best day")
+
+
+def weekly_reps_unit(total: int) -> str:
+    return "rep" if total == 1 else "reps"

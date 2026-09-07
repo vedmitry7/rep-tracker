@@ -86,7 +86,10 @@ async def show_exercise(
     edit: bool = False,
 ) -> None:
     text = exercise_screen_text(exercise, stats)
-    markup = exercise_screen_keyboard(exercise.id)
+    markup = exercise_screen_keyboard(
+        exercise.id,
+        weekly_report_enabled=exercise.weekly_report_enabled,
+    )
     if edit:
         await edit_or_answer(message, text, markup)
     else:
@@ -218,7 +221,10 @@ async def create_custom_exercise(
     await edit_stored_or_answer(
         message,
         exercise_screen_text(exercise, stats),
-        exercise_screen_keyboard(exercise.id),
+        exercise_screen_keyboard(
+            exercise.id,
+            weekly_report_enabled=exercise.weekly_report_enabled,
+        ),
         chat_id=stored_chat_id,
         message_id=stored_message_id,
     )
@@ -313,6 +319,38 @@ async def show_statistics(
             stats_screen_text(exercise, stats),
             exercise_back_keyboard(exercise.id),
         )
+
+
+@router.callback_query(
+    ExerciseDetailAction.filter(
+        F.action == ExerciseDetailActionValue.TOGGLE_WEEKLY_REPORT
+    )
+)
+async def toggle_weekly_report(
+    callback: CallbackQuery,
+    callback_data: ExerciseDetailAction,
+    api_client: RepTrackerApi,
+) -> None:
+    try:
+        exercise = await _find_exercise(
+            api_client, callback.from_user.id, callback_data.exercise_id
+        )
+        if exercise is None:
+            await callback.answer(texts.EXERCISE_NOT_FOUND, show_alert=True)
+            return
+        updated = await api_client.set_exercise_weekly_report_enabled(
+            callback.from_user.id,
+            exercise.id,
+            not exercise.weekly_report_enabled,
+        )
+        stats = await api_client.get_exercise_stats(callback.from_user.id, updated.id)
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
+
+    await callback.answer(texts.weekly_report_changed(updated.weekly_report_enabled))
+    if isinstance(callback.message, Message):
+        await show_exercise(callback.message, updated, stats, edit=True)
 
 
 @router.callback_query(

@@ -8,6 +8,7 @@ from api.app.schemas.exercise import (
     ExerciseCreateRequest,
     ExerciseResponse,
     ExerciseUpdateRequest,
+    ExerciseWeeklyReportUpdateRequest,
 )
 from api.app.schemas.exercise_stats import ExerciseStatsResponse
 from api.app.schemas.user import ExternalId, Provider
@@ -20,6 +21,7 @@ from api.app.services.exercise import (
     list_exercises,
     permanently_delete_exercise,
     rename_exercise,
+    set_weekly_report_enabled,
 )
 from api.app.services.exercise_stats import get_exercise_stats
 from api.app.services.user import UserBannedError, UserNotFoundError
@@ -141,6 +143,37 @@ async def patch_exercise(
     except DuplicateExerciseNameError as error:
         raise _duplicate_name_http_error() from error
 
+    return ExerciseResponse.model_validate(exercise)
+
+
+@router.patch(
+    "/{exercise_id}/weekly-report",
+    response_model=ExerciseResponse,
+    responses={
+        status.HTTP_403_FORBIDDEN: {"description": "User is banned"},
+        status.HTTP_404_NOT_FOUND: {"description": "Exercise not found"},
+    },
+)
+async def patch_exercise_weekly_report(
+    exercise_id: int,
+    payload: ExerciseWeeklyReportUpdateRequest,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ExerciseResponse:
+    try:
+        exercise = await set_weekly_report_enabled(
+            session,
+            payload.provider,
+            payload.external_id,
+            exercise_id,
+            payload.weekly_report_enabled,
+        )
+    except (UserNotFoundError, UserBannedError) as error:
+        raise _identity_http_error(error) from error
+    except ExerciseNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exercise not found",
+        ) from error
     return ExerciseResponse.model_validate(exercise)
 
 
