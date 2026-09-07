@@ -99,7 +99,10 @@ def history_days_keyboard(
         )
     builder.button(
         text=texts.BUTTON_BACK,
-        callback_data=ExerciseOpen(exercise_id=exercise_id),
+        callback_data=ExerciseDetailAction(
+            action=ExerciseDetailActionValue.STATISTICS,
+            exercise_id=exercise_id,
+        ),
     )
     builder.adjust(1)
     return builder.as_markup()
@@ -196,7 +199,13 @@ def history_constructor_keyboard(repetitions: list[int]) -> InlineKeyboardMarkup
         _edit_button(texts.BUTTON_REMOVE_SET, HistoryEditActionValue.REMOVE_SET),
         _edit_button(texts.BUTTON_ADD_SET, HistoryEditActionValue.ADD_SET),
     )
-    builder.row(_edit_button(texts.BUTTON_SAVE, HistoryEditActionValue.SAVE))
+    builder.row(
+        _edit_button(
+            texts.BUTTON_SAVE,
+            HistoryEditActionValue.SAVE,
+            style="primary",
+        )
+    )
     builder.row(_edit_button(texts.BUTTON_BACK, HistoryEditActionValue.BACK))
     return builder.as_markup()
 
@@ -241,8 +250,11 @@ def _repetition_button(
 def _edit_button(
     text: str,
     action: HistoryEditActionValue,
+    *,
+    style: str | None = None,
 ) -> InlineKeyboardButton:
     return InlineKeyboardButton(
         text=text,
         callback_data=HistoryEditAction(action=action).pack(),
+        style=style,
     )

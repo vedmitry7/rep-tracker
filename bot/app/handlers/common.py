@@ -75,3 +75,25 @@ async def edit_stored_or_answer(
         except AttributeError:
             pass
     await message.answer(text, reply_markup=reply_markup)
+
+
+async def replace_stored_or_answer(
+    message: Message,
+    text: str,
+    reply_markup: InlineKeyboardMarkup,
+    *,
+    chat_id: int | None,
+    message_id: int | None,
+) -> Message:
+    """Replace a previous bot UI message with a new message after user input."""
+
+    if chat_id is not None and message_id is not None:
+        try:
+            await message.bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except TelegramBadRequest:
+            # The old UI may already have been deleted or be inaccessible.
+            pass
+        except AttributeError:
+            # Lightweight test doubles may not expose a bot client.
+            pass
+    return await message.answer(text, reply_markup=reply_markup)

@@ -36,6 +36,7 @@ def test_summary_and_buttons(language):
     assert "29.08 — 85" not in text
     assert report_keyboard(data).inline_keyboard[0][0].text == (
         "🖼 Сгенерировать карточки" if language == "ru" else "🖼 Generate cards")
+    assert report_keyboard(data).inline_keyboard[0][0].style == "primary"
     token = set_current_language(language)
     try:
         buttons = [

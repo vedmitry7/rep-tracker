@@ -283,3 +283,98 @@ async def test_existing_text_input_still_saves(
     assert saved_context.reps == expected_reps
     assert saved_context.performed_on == performed_on
     assert (await state.get_data())["reps"] == expected_reps
+
+
+@pytest.mark.asyncio
+async def test_text_result_replaces_prompt_with_new_last_bot_message(
+    state: FSMContext,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(results, "Message", SimpleNamespace)
+    performed_on = date(2026, 9, 1)
+    await state.set_state(AddResult.entering_result)
+    await state.set_data(
+        {
+            **results.ResultContext(
+                7,
+                "Подтягивания",
+                date(2026, 9, 1),
+                performed_on,
+                [],
+            ).as_fsm_data(),
+            "ui_chat_id": 100,
+            "ui_message_id": 200,
+        }
+    )
+    bot = SimpleNamespace(delete_message=AsyncMock())
+    message = SimpleNamespace(
+        text="10",
+        from_user=SimpleNamespace(id=42),
+        bot=bot,
+        answer=AsyncMock(
+            return_value=SimpleNamespace(
+                chat=SimpleNamespace(id=100),
+                message_id=202,
+            )
+        ),
+    )
+    api_client = SimpleNamespace(
+        create_exercise_entry=AsyncMock(
+            return_value=ExerciseEntry(
+                id=20,
+                exercise_id=7,
+                reps=[10],
+                performed_on=performed_on,
+            )
+        )
+    )
+
+    await results.save_text_result(message, state, api_client)
+
+    bot.delete_message.assert_awaited_once_with(chat_id=100, message_id=200)
+    message.answer.assert_awaited_once()
+    assert message.answer.await_args.args[0].startswith("✅ Добавлено\n\nПодтягивания")
+    assert await state.get_state() is None
+
+
+@pytest.mark.asyncio
+async def test_invalid_text_result_replaces_prompt_and_tracks_new_ui_message(
+    state: FSMContext,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(results, "Message", SimpleNamespace)
+    await state.set_state(AddResult.entering_result)
+    await state.set_data(
+        {
+            **results.ResultContext(
+                7,
+                "Подтягивания",
+                date(2026, 9, 1),
+                date(2026, 9, 1),
+                [],
+            ).as_fsm_data(),
+            "ui_chat_id": 100,
+            "ui_message_id": 200,
+        }
+    )
+    bot = SimpleNamespace(delete_message=AsyncMock())
+    message = SimpleNamespace(
+        text="abc",
+        from_user=SimpleNamespace(id=42),
+        bot=bot,
+        answer=AsyncMock(
+            return_value=SimpleNamespace(
+                chat=SimpleNamespace(id=100),
+                message_id=202,
+            )
+        ),
+    )
+
+    await results.save_text_result(message, state, SimpleNamespace())
+
+    bot.delete_message.assert_awaited_once_with(chat_id=100, message_id=200)
+    assert "Не понял формат" in message.answer.await_args.args[0]
+    assert "Введи результат" in message.answer.await_args.args[0]
+    assert await state.get_state() == AddResult.entering_result.state
+    data = await state.get_data()
+    assert (data["ui_chat_id"], data["ui_message_id"]) == (100, 202)

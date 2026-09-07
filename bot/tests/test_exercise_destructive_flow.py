@@ -13,6 +13,7 @@ from bot.app.texts import reset_current_language, set_current_language
 class FakeMessage:
     def __init__(self) -> None:
         self.answer = AsyncMock()
+        self.delete = AsyncMock()
 
 
 class FakeCallback:
@@ -63,9 +64,7 @@ async def test_clear_history_confirmation_calls_backend_and_refreshes() -> None:
     api = SimpleNamespace(
         list_exercises=AsyncMock(return_value=[Exercise(id=7, name="Pull-ups")]),
         clear_exercise_history=AsyncMock(),
-        get_exercise_stats=AsyncMock(
-            return_value=ExerciseStats.empty(today=date(2026, 8, 29))
-        ),
+        get_exercise_stats=AsyncMock(return_value=stats()),
     )
 
     await exercises.confirm_clear_history(
@@ -78,13 +77,47 @@ async def test_clear_history_confirmation_calls_backend_and_refreshes() -> None:
     )
 
     api.clear_exercise_history.assert_awaited_once_with(42, 7)
-    assert callback.message.answer.await_args.args[0] == "🛠 Manage exercises"
+    callback.message.delete.assert_awaited_once()
+    assert callback.message.answer.await_args_list[0].args[0] == (
+        "✅ History for Pull-ups cleared\n\n"
+        "Entries removed: 84\nRepetitions removed: 3,421"
+    )
+    assert callback.message.answer.await_args_list[1].args[0] == "🛠 Manage exercises"
+
+
+@pytest.mark.asyncio
+async def test_clear_history_skips_confirmation_when_exercise_has_no_entries() -> None:
+    callback = FakeCallback()
+    api = SimpleNamespace(
+        list_exercises=AsyncMock(return_value=[Exercise(id=7, name="Pull-ups")]),
+        get_exercise_stats=AsyncMock(
+            return_value=ExerciseStats.empty(today=date(2026, 8, 29))
+        ),
+        clear_exercise_history=AsyncMock(),
+    )
+
+    await exercises.request_destructive_exercise_action(
+        callback,
+        ExerciseDetailAction(
+            action=ExerciseDetailActionValue.CLEAR_HISTORY,
+            exercise_id=7,
+        ),
+        api,
+    )
+
+    api.clear_exercise_history.assert_not_awaited()
+    callback.message.delete.assert_awaited_once()
+    assert "already has no entries to clear" in callback.message.answer.await_args_list[0].args[0]
+    assert callback.message.answer.await_args_list[1].args[0] == (
+        "🧹 Clear history\n\nChoose an exercise"
+    )
 
 
 @pytest.mark.asyncio
 async def test_hard_delete_confirmation_returns_to_exercise_list() -> None:
     callback = FakeCallback()
     api = SimpleNamespace(
+        list_exercises=AsyncMock(return_value=[Exercise(id=7, name="Pull-ups")]),
         permanently_delete_exercise=AsyncMock(),
     )
 
@@ -98,4 +131,8 @@ async def test_hard_delete_confirmation_returns_to_exercise_list() -> None:
     )
 
     api.permanently_delete_exercise.assert_awaited_once_with(42, 7)
-    assert callback.message.answer.await_args.args[0] == "🛠 Manage exercises"
+    callback.message.delete.assert_awaited_once()
+    assert callback.message.answer.await_args_list[0].args[0] == (
+        "✅ Pull-ups was permanently deleted"
+    )
+    assert callback.message.answer.await_args_list[1].args[0] == "🛠 Manage exercises"

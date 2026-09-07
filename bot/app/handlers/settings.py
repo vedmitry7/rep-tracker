@@ -83,6 +83,34 @@ async def show_settings(
         reset_current_language(token)
 
 
+async def send_settings_message(
+    message: Message,
+    api_client: RepTrackerApi,
+) -> None:
+    """Send the settings screen as a new message for the /settings command."""
+
+    if message.from_user is None:
+        return
+    try:
+        settings = await api_client.get_user_settings(message.from_user.id)
+    except ApiError as error:
+        await answer_api_error(message, error)
+        return
+    language = getattr(settings, "language", "ru")
+    user_languages.set(message.from_user.id, language)
+    token = set_current_language(language)
+    try:
+        await message.answer(
+            texts.settings(
+                format_timezone(settings.timezone, language),
+                _language_name(language),
+            ),
+            reply_markup=settings_keyboard(),
+        )
+    finally:
+        reset_current_language(token)
+
+
 @router.callback_query(
     SettingsAction.filter(F.action == SettingsActionValue.IMPORT_DATA)
 )

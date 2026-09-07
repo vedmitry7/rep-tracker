@@ -24,6 +24,7 @@ from bot.app.keyboards.history import (
     history_day_keyboard,
     history_days_keyboard,
 )
+from bot.app.keyboards.exercises import ExerciseDetailAction, ExerciseDetailActionValue
 from bot.app.states.history import EditHistoryEntry
 
 
@@ -73,13 +74,18 @@ def test_history_days_keyboard_has_one_button_per_day() -> None:
     assert [button.text for row in markup.inline_keyboard for button in row] == [
         "27.08 — 74",
         "25.08 — 40",
-        "◀️ Назад",
+        "← Назад",
     ]
     day_callbacks = [HistoryDayOpen.unpack(value) for value in callback_values(markup)[:2]]
     assert [(item.exercise_id, item.performed_on) for item in day_callbacks] == [
         (7, "2026-08-27"),
         (7, "2026-08-25"),
     ]
+    back = ExerciseDetailAction.unpack(callback_values(markup)[2])
+    assert (back.action, back.exercise_id) == (
+        ExerciseDetailActionValue.STATISTICS,
+        7,
+    )
 
 
 @pytest.mark.asyncio

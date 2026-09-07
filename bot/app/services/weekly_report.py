@@ -57,5 +57,14 @@ def split_summary(report: dict) -> list[str]:
 
 
 def report_keyboard(report: dict) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
-        text=get_text(report["language"], "BUTTON_GENERATE_CARDS"), callback_data=f"weekly:{report['id']}")]])
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=get_text(report["language"], "BUTTON_GENERATE_CARDS"),
+                    callback_data=f"weekly:{report['id']}",
+                    style="primary",
+                )
+            ]
+        ]
+    )

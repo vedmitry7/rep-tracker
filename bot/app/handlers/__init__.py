@@ -5,9 +5,11 @@ from bot.app.handlers.settings import router as settings_router
 from bot.app.handlers.start import router as start_router
 
 __all__ = [
+    "commands_router",
     "exercises_router",
     "history_router",
     "results_router",
     "settings_router",
     "start_router",
 ]
+from bot.app.handlers.commands import router as commands_router

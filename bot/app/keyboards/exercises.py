@@ -12,16 +12,11 @@ from bot.app.texts import texts
 
 class ExerciseActionValue(StrEnum):
     ADD = "add"
-    CUSTOM = "custom"
     LIST = "list"
 
 
 class ExerciseAction(CallbackData, prefix="exercise_action"):
     action: ExerciseActionValue
-
-
-class ExercisePreset(CallbackData, prefix="exercise_preset"):
-    name: str
 
 
 class ExerciseOpen(CallbackData, prefix="exercise_open"):
@@ -49,33 +44,11 @@ def add_exercise_keyboard() -> InlineKeyboardMarkup:
     builder.button(
         text=texts.BUTTON_ADD_EXERCISE,
         callback_data=ExerciseAction(action=ExerciseActionValue.ADD),
+        style="primary",
     )
     builder.button(
         text=texts.BUTTON_SETTINGS,
         callback_data=SettingsAction(action=SettingsActionValue.OPEN),
-    )
-    builder.adjust(1)
-    return builder.as_markup()
-
-
-def exercise_presets_keyboard(
-    exercises: list[Exercise] | None = None,
-) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    existing_names = {
-        exercise.name.strip().lower() for exercise in (exercises or [])
-    }
-    for name in texts.EXERCISE_PRESETS:
-        if name.strip().lower() in existing_names:
-            continue
-        builder.button(text=name, callback_data=ExercisePreset(name=name))
-    builder.button(
-        text=texts.BUTTON_CUSTOM_EXERCISE,
-        callback_data=ExerciseAction(action=ExerciseActionValue.CUSTOM),
-    )
-    builder.button(
-        text=texts.BUTTON_BACK,
-        callback_data=ExerciseAction(action=ExerciseActionValue.LIST),
     )
     builder.adjust(1)
     return builder.as_markup()
@@ -138,11 +111,11 @@ def exercise_destructive_confirmation_keyboard(
     return builder.as_markup()
 
 
-def custom_exercise_back_keyboard() -> InlineKeyboardMarkup:
+def exercise_name_back_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
         text=texts.BUTTON_BACK,
-        callback_data=ExerciseAction(action=ExerciseActionValue.ADD),
+        callback_data=ExerciseAction(action=ExerciseActionValue.LIST),
     )
     return builder.as_markup()
 
@@ -225,6 +198,7 @@ def exercises_list_keyboard(exercises: list[Exercise]) -> InlineKeyboardMarkup:
     builder.button(
         text=texts.BUTTON_ADD_EXERCISE,
         callback_data=ExerciseAction(action=ExerciseActionValue.ADD),
+        style="primary",
     )
     builder.button(
         text=texts.BUTTON_SETTINGS,

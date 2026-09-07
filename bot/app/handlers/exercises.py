@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
@@ -22,10 +23,9 @@ from bot.app.keyboards.exercises import (
     ExerciseDetailAction,
     ExerciseDetailActionValue,
     ExerciseOpen,
-    ExercisePreset,
-    custom_exercise_back_keyboard,
+    exercise_name_back_keyboard,
     exercise_destructive_confirmation_keyboard,
-    exercise_presets_keyboard,
+    exercise_management_selection_keyboard,
     exercise_screen_keyboard,
     exercise_statistics_keyboard,
     exercises_list_keyboard,
@@ -96,55 +96,7 @@ async def show_exercise(
 
 
 @router.callback_query(ExerciseAction.filter(F.action == ExerciseActionValue.ADD))
-async def choose_exercise(
-    callback: CallbackQuery,
-    state: FSMContext,
-    api_client: RepTrackerApi,
-) -> None:
-    await state.clear()
-    try:
-        exercises = await api_client.list_exercises(callback.from_user.id)
-    except ApiError as error:
-        await answer_api_error(callback, error)
-        return
-    await callback.answer()
-    if isinstance(callback.message, Message):
-        await edit_or_answer(
-            callback.message,
-            texts.CHOOSE_EXERCISE,
-            exercise_presets_keyboard(exercises),
-        )
-
-
-@router.callback_query(ExercisePreset.filter())
-async def create_preset_exercise(
-    callback: CallbackQuery,
-    callback_data: ExercisePreset,
-    api_client: RepTrackerApi,
-    state: FSMContext,
-) -> None:
-    await state.clear()
-    try:
-        exercise = await api_client.create_exercise(
-            callback.from_user.id,
-            callback_data.name,
-        )
-        stats = await api_client.get_exercise_stats(callback.from_user.id, exercise.id)
-    except ResourceConflictError:
-        await callback.answer(texts.DUPLICATE_EXERCISE_NAME, show_alert=True)
-        return
-    except ApiError as error:
-        await answer_api_error(callback, error)
-        return
-
-    await state.clear()
-    await callback.answer(texts.EXERCISE_ADDED)
-    if isinstance(callback.message, Message):
-        await show_exercise(callback.message, exercise, stats, edit=True)
-
-
-@router.callback_query(ExerciseAction.filter(F.action == ExerciseActionValue.CUSTOM))
-async def request_custom_exercise_name(
+async def request_exercise_name(
     callback: CallbackQuery,
     state: FSMContext,
 ) -> None:
@@ -160,7 +112,7 @@ async def request_custom_exercise_name(
         await edit_or_answer(
             callback.message,
             texts.REQUEST_EXERCISE_NAME,
-            custom_exercise_back_keyboard(),
+            exercise_name_back_keyboard(),
         )
 
 
@@ -180,7 +132,7 @@ async def create_custom_exercise(
         await edit_stored_or_answer(
             message,
             f"{texts.EMPTY_EXERCISE_NAME}\n\n{texts.REQUEST_EXERCISE_NAME}",
-            custom_exercise_back_keyboard(),
+            exercise_name_back_keyboard(),
             chat_id=stored_chat_id,
             message_id=stored_message_id,
         )
@@ -192,7 +144,7 @@ async def create_custom_exercise(
                 f"{texts.exercise_name_too_long(MAX_EXERCISE_NAME_LENGTH)}"
                 f"\n\n{texts.REQUEST_EXERCISE_NAME}"
             ),
-            custom_exercise_back_keyboard(),
+            exercise_name_back_keyboard(),
             chat_id=stored_chat_id,
             message_id=stored_message_id,
         )
@@ -207,7 +159,7 @@ async def create_custom_exercise(
         await edit_stored_or_answer(
             message,
             f"{texts.DUPLICATE_EXERCISE_NAME}\n\n{texts.REQUEST_EXERCISE_NAME}",
-            custom_exercise_back_keyboard(),
+            exercise_name_back_keyboard(),
             chat_id=stored_chat_id,
             message_id=stored_message_id,
         )
@@ -389,6 +341,29 @@ async def request_destructive_exercise_action(
         return
 
     if callback_data.action is ExerciseDetailActionValue.CLEAR_HISTORY:
+        if stats.all_time_entries == 0:
+            try:
+                exercises = await api_client.list_exercises(callback.from_user.id)
+            except ApiError as error:
+                await answer_api_error(callback, error)
+                return
+            await callback.answer()
+            if isinstance(callback.message, Message):
+                try:
+                    await callback.message.delete()
+                except TelegramBadRequest:
+                    pass
+                await callback.message.answer(
+                    texts.clear_history_not_needed(exercise.name)
+                )
+                await callback.message.answer(
+                    texts.CLEAR_HISTORY_CHOOSE_EXERCISE,
+                    reply_markup=exercise_management_selection_keyboard(
+                        exercises,
+                        operation=ExerciseDetailActionValue.CLEAR_HISTORY,
+                    ),
+                )
+            return
         text = texts.clear_history_confirmation(
             exercise.name,
             format_number(stats.all_time_entries),
@@ -430,16 +405,36 @@ async def confirm_clear_history(
         if exercise is None:
             await callback.answer(texts.EXERCISE_NOT_FOUND, show_alert=True)
             return
+        stats = await api_client.get_exercise_stats(callback.from_user.id, exercise.id)
+        if stats.all_time_entries == 0:
+            await callback.answer()
+            if isinstance(callback.message, Message):
+                await edit_or_answer(
+                    callback.message,
+                    texts.clear_history_not_needed(exercise.name),
+                    exercise_management_keyboard(),
+                )
+            return
         await api_client.clear_exercise_history(callback.from_user.id, exercise.id)
     except ApiError as error:
         await answer_api_error(callback, error)
         return
-    await callback.answer(texts.HISTORY_CLEARED)
+    await callback.answer()
     if isinstance(callback.message, Message):
-        await edit_or_answer(
-            callback.message,
+        try:
+            await callback.message.delete()
+        except TelegramBadRequest:
+            pass
+        await callback.message.answer(
+            texts.history_cleared(
+                exercise.name,
+                format_number(stats.all_time_entries),
+                format_number(stats.total_reps),
+            )
+        )
+        await callback.message.answer(
             texts.EXERCISE_MANAGEMENT,
-            exercise_management_keyboard(),
+            reply_markup=exercise_management_keyboard(),
         )
 
 
@@ -454,18 +449,30 @@ async def confirm_hard_delete(
     api_client: RepTrackerApi,
 ) -> None:
     try:
+        exercise = await _find_exercise(
+            api_client, callback.from_user.id, callback_data.exercise_id
+        )
+        if exercise is None:
+            await callback.answer(texts.EXERCISE_NOT_FOUND, show_alert=True)
+            return
         await api_client.permanently_delete_exercise(
             callback.from_user.id, callback_data.exercise_id
         )
     except ApiError as error:
         await answer_api_error(callback, error)
         return
-    await callback.answer(texts.EXERCISE_PERMANENTLY_DELETED)
+    await callback.answer()
     if isinstance(callback.message, Message):
-        await edit_or_answer(
-            callback.message,
+        try:
+            await callback.message.delete()
+        except TelegramBadRequest:
+            pass
+        await callback.message.answer(
+            texts.exercise_permanently_deleted(exercise.name)
+        )
+        await callback.message.answer(
             texts.EXERCISE_MANAGEMENT,
-            exercise_management_keyboard(),
+            reply_markup=exercise_management_keyboard(),
         )
 
 

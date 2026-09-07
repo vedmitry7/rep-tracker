@@ -124,7 +124,7 @@ def import_confirmation_keyboard(strategy: str) -> InlineKeyboardMarkup:
     builder.button(
         text=text,
         callback_data=ImportAction(action=action),
-        style=("danger" if strategy == "replace" else None),
+        style=("danger" if strategy == "replace" else "primary"),
     )
     builder.button(
         text=texts.BUTTON_CANCEL_PLAIN,

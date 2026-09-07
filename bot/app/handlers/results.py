@@ -8,8 +8,9 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from bot.app.api.client import ApiError, Exercise, RepTrackerApi
 from bot.app.handlers.common import (
     answer_api_error,
+    api_error_text,
     edit_or_answer,
-    edit_stored_or_answer,
+    replace_stored_or_answer,
 )
 from bot.app.handlers.exercises import show_exercise
 from bot.app.keyboards.exercises import exercise_screen_keyboard
@@ -153,16 +154,16 @@ async def save_text_result(
     state: FSMContext,
     api_client: RepTrackerApi,
 ) -> None:
+    context = await _get_context(message, state)
+    if context is None:
+        return
     try:
         repetitions = parse_result(message.text or "")
     except ResultParseError as error:
-        await message.answer(str(error))
+        await _render_result_input_after_text(message, state, context, str(error))
         return
 
     if message.from_user is None:
-        return
-    context = await _get_context(message, state)
-    if context is None:
         return
     context = replace(context, reps=repetitions)
     await state.update_data(reps=list(repetitions))
@@ -278,7 +279,10 @@ async def enter_date(message: Message, state: FSMContext) -> None:
             today=context.user_today,
         )
     except DateParseError as error:
-        await message.answer(str(error))
+        if isinstance(message, Message):
+            await _render_manual_date_after_text(message, state, str(error))
+        else:
+            await message.answer(str(error))
         return
 
     context = replace(context, performed_on=selected_date)
@@ -424,7 +428,15 @@ async def _save_result(
             performed_on=context.performed_on,
         )
     except ApiError as error:
-        await answer_api_error(event, error)
+        if isinstance(event, Message):
+            await _render_result_input_after_text(
+                event,
+                state,
+                context,
+                api_error_text(error),
+            )
+        else:
+            await answer_api_error(event, error)
         return False
 
     state_data = await state.get_data()
@@ -442,7 +454,7 @@ async def _save_result(
     if isinstance(event, Message):
         chat_id = state_data.get("ui_chat_id")
         message_id = state_data.get("ui_message_id")
-        await edit_stored_or_answer(
+        await replace_stored_or_answer(
             event,
             text,
             markup,
@@ -493,21 +505,41 @@ async def _return_to_previous_screen(
 
     if return_screen == ResultScreen.CONSTRUCTOR:
         await state.set_state(AddResult.constructor)
-        await _render_constructor(event, context)
+        if isinstance(event, Message):
+            await _render_constructor_after_text(event, state, context)
+        else:
+            await _render_constructor(event, context)
     else:
         await state.set_state(AddResult.entering_result)
-        await _render_result_input(event, context)
+        if isinstance(event, Message):
+            await _render_result_input_after_text(event, state, context)
+        else:
+            await _render_result_input(event, context)
 
 
 async def _render_result_input(
     event: Message | CallbackQuery,
     context: ResultContext,
 ) -> None:
-    text = texts.result_input(
-        context.exercise_name,
-        format_result_date(context.performed_on, today=context.user_today),
-    )
+    text = _result_input_text(context)
     await _render(event, text, result_input_keyboard(context.exercise_id))
+
+
+async def _render_result_input_after_text(
+    message: Message,
+    state: FSMContext,
+    context: ResultContext,
+    error: str | None = None,
+) -> None:
+    text = _result_input_text(context)
+    if error is not None:
+        text = f"{error}\n\n{text}"
+    await _replace_stored_ui_after_text(
+        message,
+        state,
+        text,
+        result_input_keyboard(context.exercise_id),
+    )
 
 
 async def _render_constructor(
@@ -526,6 +558,79 @@ async def _render_constructor(
         event,
         text,
         constructor_keyboard(context.exercise_id, context.reps),
+    )
+
+
+async def _render_constructor_after_text(
+    message: Message,
+    state: FSMContext,
+    context: ResultContext,
+) -> None:
+    sets = "\n".join(
+        f"{index}. {value}" for index, value in enumerate(context.reps, start=1)
+    )
+    text = texts.result_constructor(
+        context.exercise_name,
+        format_result_date(context.performed_on, today=context.user_today),
+        sets,
+    )
+    await _replace_stored_ui_after_text(
+        message,
+        state,
+        text,
+        constructor_keyboard(context.exercise_id, context.reps),
+    )
+
+
+async def _render_manual_date_after_text(
+    message: Message,
+    state: FSMContext,
+    error: str,
+) -> None:
+    context = await _get_context(message, state)
+    if context is None:
+        return
+    await _replace_stored_ui_after_text(
+        message,
+        state,
+        f"{error}\n\n{texts.ENTER_DATE}",
+        manual_date_keyboard(context.exercise_id),
+    )
+
+
+async def _replace_stored_ui_after_text(
+    message: Message,
+    state: FSMContext,
+    text: str,
+    reply_markup: InlineKeyboardMarkup,
+) -> None:
+    state_data = await state.get_data()
+    ui_message = await replace_stored_or_answer(
+        message,
+        text,
+        reply_markup,
+        chat_id=(
+            state_data["ui_chat_id"]
+            if isinstance(state_data.get("ui_chat_id"), int)
+            else None
+        ),
+        message_id=(
+            state_data["ui_message_id"]
+            if isinstance(state_data.get("ui_message_id"), int)
+            else None
+        ),
+    )
+    chat = getattr(ui_message, "chat", None)
+    chat_id = getattr(chat, "id", None)
+    message_id = getattr(ui_message, "message_id", None)
+    if isinstance(chat_id, int) and isinstance(message_id, int):
+        await state.update_data(ui_chat_id=chat_id, ui_message_id=message_id)
+
+
+def _result_input_text(context: ResultContext) -> str:
+    return texts.result_input(
+        context.exercise_name,
+        format_result_date(context.performed_on, today=context.user_today),
     )
 
 

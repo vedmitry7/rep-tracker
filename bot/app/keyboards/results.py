@@ -150,7 +150,13 @@ def constructor_keyboard(
         _constructor_button(texts.BUTTON_REMOVE_SET, ConstructorActionValue.REMOVE_SET),
         _constructor_button(texts.BUTTON_ADD_SET, ConstructorActionValue.ADD_SET),
     )
-    builder.row(_constructor_button(texts.BUTTON_ADD, ConstructorActionValue.SAVE))
+    builder.row(
+        _constructor_button(
+            texts.BUTTON_ADD,
+            ConstructorActionValue.SAVE,
+            style="primary",
+        )
+    )
     builder.row(
         _date_button(texts.BUTTON_DATE, ResultScreen.CONSTRUCTOR),
         _constructor_button(texts.BUTTON_BACK_ARROW, ConstructorActionValue.BACK),
@@ -175,10 +181,13 @@ def _callback_button(
 def _constructor_button(
     text: str,
     action: ConstructorActionValue,
+    *,
+    style: str | None = None,
 ) -> InlineKeyboardButton:
     return InlineKeyboardButton(
         text=text,
         callback_data=ConstructorAction(action=action).pack(),
+        style=style,
     )
 
 

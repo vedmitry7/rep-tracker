@@ -12,8 +12,12 @@ WELCOME = (
     "Привет! Здесь можно быстро записывать упражнения и следить "
     "за прогрессом.\n\nСоздай первое упражнение."
 )
-CHOOSE_EXERCISE = "➕ Добавить упражнение"
-EXERCISE_ADDED = "Упражнение добавлено"
+HELP = (
+    "ℹ️ Помощь\n\n"
+    "Выберите упражнение, чтобы добавить результат, посмотреть статистику "
+    "или историю.\n\n"
+    "/menu — упражнения\n/settings — настройки"
+)
 EXERCISE_NOT_FOUND = "Упражнение не найдено."
 REQUEST_EXERCISE_NAME = "Введите название упражнения"
 EMPTY_EXERCISE_NAME = "Название не должно быть пустым. Попробуй ещё раз:"
@@ -41,7 +45,6 @@ ENTRY_DELETED = "Запись удалена"
 DATE_CHANGED = "Дата изменена"
 RESULT_ADDED = "Добавлено"
 HISTORY_CLEARED = "История очищена"
-EXERCISE_PERMANENTLY_DELETED = "Упражнение удалено навсегда"
 
 # API errors
 ACCESS_FORBIDDEN = "Доступ к боту ограничен."
@@ -54,12 +57,11 @@ REQUEST_FAILED = "Не удалось выполнить запрос. Попр�
 # Keyboards
 BUTTON_ADD_EXERCISE = "➕ Добавить упражнение"
 BUTTON_SETTINGS = "⚙️ Настройки"
-BUTTON_CUSTOM_EXERCISE = "✏️ Своё упражнение"
 BUTTON_ADD_RESULT = "➕ Добавить результат"
 BUTTON_STATISTICS = "📊 Статистика"
 BUTTON_HISTORY = "📜 История"
-BUTTON_EXERCISES = "◀️ Упражнения"
-BUTTON_BACK = "◀️ Назад"
+BUTTON_EXERCISES = "← Упражнения"
+BUTTON_BACK = "← Назад"
 BUTTON_BACK_ARROW = "← Назад"
 BUTTON_CONSTRUCTOR = "🎛 Конструктор"
 BUTTON_CHANGE_DATE = "📅 Изменить дату"
@@ -91,13 +93,6 @@ BUTTON_IMPORT = "Импортировать"
 BUTTON_REPLACE_AND_IMPORT = "Заменить и импортировать"
 BUTTON_ENGLISH = "🇬🇧 English"
 BUTTON_RUSSIAN = "🇷🇺 Русский"
-
-EXERCISE_PRESETS = (
-    "Подтягивания",
-    "Отжимания",
-    "Приседания",
-    "Брусья",
-)
 
 # Input validation
 ENTER_RESULT = "Введи результат."
@@ -218,6 +213,22 @@ def clear_history_confirmation(name: str, entries: str, total_reps: str) -> str:
         f"Записей: {entries}\nПовторений: {total_reps}\n\n"
         "Это действие нельзя отменить."
     )
+
+
+def clear_history_not_needed(name: str) -> str:
+    return f"ℹ️ У упражнения «{name}» уже нет записей — очищать нечего."
+
+
+def history_cleared(name: str, entries: str, total_reps: str) -> str:
+    return (
+        f"✅ История упражнения «{name}» очищена\n\n"
+        f"Удалено записей: {entries}\n"
+        f"Удалено повторений: {total_reps}"
+    )
+
+
+def exercise_permanently_deleted(name: str) -> str:
+    return f"✅ Упражнение «{name}» удалено навсегда"
 
 
 def hard_delete_confirmation(name: str, entries: str, total_reps: str) -> str:
@@ -379,7 +390,7 @@ def weekly_report_changed(enabled: bool) -> str:
     return "Недельный отчёт включён" if enabled else "Недельный отчёт выключен"
 
 
-WEEKLY_NO_DATA = "Пока нет данных за полные недели для этой карточки."
+WEEKLY_NO_DATA = "Для этого упражнения пока нет данных за полные недели."
 WEEKLY_CARD_FAILED = "Не удалось отправить одну из карточек. Попробуйте ещё раз из меню упражнения."
 WEEKLY_LABELS = dict(title="📅 Недельный отчёт", period="Период", total="За неделю: {total} {unit}",
                      first="Предыдущей полной недели ещё нет.", previous="Прошлая неделя",

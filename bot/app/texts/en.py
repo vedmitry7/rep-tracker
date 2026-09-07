@@ -7,8 +7,11 @@ WELCOME = (
     "Hi! Here you can quickly log exercises and track your progress."
     "\n\nCreate your first exercise."
 )
-CHOOSE_EXERCISE = "➕ Add exercise"
-EXERCISE_ADDED = "Exercise added"
+HELP = (
+    "ℹ️ Help\n\n"
+    "Choose an exercise to add a result, view statistics, or open history.\n\n"
+    "/menu — exercises\n/settings — settings"
+)
 EXERCISE_NOT_FOUND = "Exercise not found."
 REQUEST_EXERCISE_NAME = "Enter the exercise name"
 EMPTY_EXERCISE_NAME = "The name cannot be empty. Try again:"
@@ -36,7 +39,6 @@ ENTRY_DELETED = "Entry deleted"
 DATE_CHANGED = "Date changed"
 RESULT_ADDED = "Added"
 HISTORY_CLEARED = "History cleared"
-EXERCISE_PERMANENTLY_DELETED = "Exercise permanently deleted"
 
 # API errors
 ACCESS_FORBIDDEN = "Access to the bot is restricted."
@@ -49,12 +51,11 @@ REQUEST_FAILED = "Could not complete the request. Try again later."
 # Keyboards
 BUTTON_ADD_EXERCISE = "➕ Add exercise"
 BUTTON_SETTINGS = "⚙️ Settings"
-BUTTON_CUSTOM_EXERCISE = "✏️ Custom exercise"
 BUTTON_ADD_RESULT = "➕ Add Result"
 BUTTON_STATISTICS = "📊 Statistics"
 BUTTON_HISTORY = "📜 History"
-BUTTON_EXERCISES = "◀️ Exercises"
-BUTTON_BACK = "◀️ Back"
+BUTTON_EXERCISES = "← Exercises"
+BUTTON_BACK = "← Back"
 BUTTON_BACK_ARROW = "← Back"
 BUTTON_CONSTRUCTOR = "🎛 Constructor"
 BUTTON_CHANGE_DATE = "📅 Change date"
@@ -86,13 +87,6 @@ BUTTON_IMPORT = "Import"
 BUTTON_REPLACE_AND_IMPORT = "Replace and import"
 BUTTON_ENGLISH = "🇬🇧 English"
 BUTTON_RUSSIAN = "🇷🇺 Русский"
-
-EXERCISE_PRESETS = (
-    "Pull-ups",
-    "Push-ups",
-    "Squats",
-    "Dips",
-)
 
 # Input validation
 ENTER_RESULT = "Enter a result."
@@ -210,6 +204,22 @@ def clear_history_confirmation(name: str, entries: str, total_reps: str) -> str:
         f"{entries} entries\n{total_reps} reps\n\n"
         "This cannot be undone."
     )
+
+
+def clear_history_not_needed(name: str) -> str:
+    return f"ℹ️ {name} already has no entries to clear."
+
+
+def history_cleared(name: str, entries: str, total_reps: str) -> str:
+    return (
+        f"✅ History for {name} cleared\n\n"
+        f"Entries removed: {entries}\n"
+        f"Repetitions removed: {total_reps}"
+    )
+
+
+def exercise_permanently_deleted(name: str) -> str:
+    return f"✅ {name} was permanently deleted"
 
 
 def hard_delete_confirmation(name: str, entries: str, total_reps: str) -> str:
@@ -369,7 +379,7 @@ def weekly_report_changed(enabled: bool) -> str:
     return "Weekly report enabled" if enabled else "Weekly report disabled"
 
 
-WEEKLY_NO_DATA = "No complete-week data for this card yet."
+WEEKLY_NO_DATA = "This exercise has no data for any complete weeks yet."
 WEEKLY_CARD_FAILED = "Couldn't send one of the cards. Please try again from the exercise menu."
 WEEKLY_LABELS = dict(title="📅 Weekly report", period="Period", total="This week: {total} {unit}",
                      first="No previous complete week yet.", previous="Previous week",

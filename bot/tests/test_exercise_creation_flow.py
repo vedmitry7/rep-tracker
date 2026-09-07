@@ -49,19 +49,20 @@ def patch_message(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_custom_exercise_back_clears_state_and_returns_to_add_screen(
+async def test_add_exercise_opens_name_input_and_back_returns_to_list(
     state: FSMContext,
 ) -> None:
     callback = FakeCallback()
     api = SimpleNamespace(list_exercises=AsyncMock(return_value=[]))
 
-    await exercises.request_custom_exercise_name(callback, state)
+    await exercises.request_exercise_name(callback, state)
     assert await state.get_state() == CreateExercise.waiting_for_name.state
+    assert callback.message.edit_text.await_args.args[0] == "Введите название упражнения"
 
-    await exercises.choose_exercise(callback, state, api)
+    await exercises.list_exercises(callback, api, state)
 
     assert await state.get_state() is None
-    assert callback.message.edit_text.await_args.args[0] == "➕ Добавить упражнение"
+    assert callback.message.edit_text.await_args.args[0] == "🏋️ Repka\n\nУпражнений пока нет"
 
 
 @pytest.mark.asyncio

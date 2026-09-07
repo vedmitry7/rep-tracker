@@ -5,10 +5,8 @@ from bot.app.keyboards.exercises import (
     ExerciseDetailAction,
     ExerciseDetailActionValue,
     ExerciseOpen,
-    ExercisePreset,
     exercise_back_keyboard,
     exercise_destructive_confirmation_keyboard,
-    exercise_presets_keyboard,
     exercise_screen_keyboard,
     exercise_statistics_keyboard,
     exercises_list_keyboard,
@@ -29,36 +27,6 @@ def callback_values(markup: object) -> list[str]:
     ]
 
 
-def test_preset_keyboard_uses_typed_callback_data() -> None:
-    callbacks = callback_values(exercise_presets_keyboard())
-
-    presets = [ExercisePreset.unpack(value).name for value in callbacks[:4]]
-    custom = ExerciseAction.unpack(callbacks[4])
-    back = ExerciseAction.unpack(callbacks[5])
-
-    assert presets == ["Подтягивания", "Отжимания", "Приседания", "Брусья"]
-    assert custom.action == ExerciseActionValue.CUSTOM
-    assert back.action == ExerciseActionValue.LIST
-
-
-def test_preset_keyboard_hides_existing_normalized_names() -> None:
-    markup = exercise_presets_keyboard(
-        [
-            Exercise(id=1, name=" подтягивания "),
-            Exercise(id=2, name="ОТЖИМАНИЯ"),
-            Exercise(id=3, name="Приседания"),
-        ]
-    )
-    callbacks = callback_values(markup)
-
-    presets = [
-        ExercisePreset.unpack(value).name
-        for value in callbacks
-        if value.startswith("exercise_preset:")
-    ]
-    assert presets == ["Брусья"]
-
-
 def test_exercise_list_contains_open_and_add_callbacks() -> None:
     markup = exercises_list_keyboard(
         [
@@ -74,6 +42,7 @@ def test_exercise_list_contains_open_and_add_callbacks() -> None:
     ]
     assert ExerciseAction.unpack(callbacks[2]).action == ExerciseActionValue.ADD
     assert SettingsAction.unpack(callbacks[3]).action == SettingsActionValue.OPEN
+    assert markup.inline_keyboard[2][0].style == "primary"
 
 
 def test_exercise_screen_result_callback_keeps_exercise_id() -> None:
@@ -95,7 +64,7 @@ def test_exercise_screen_result_callback_keeps_exercise_id() -> None:
     assert [button.text for row in markup.inline_keyboard for button in row] == [
         "➕ Добавить результат",
         "📊 Статистика",
-        "◀️ Упражнения",
+        "← Упражнения",
     ]
     assert markup.inline_keyboard[0][0].style == "primary"
 
