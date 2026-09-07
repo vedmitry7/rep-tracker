@@ -12,6 +12,9 @@
 - One Telegram text contains blocks for all non-archived exercises with any
   completed-week history. Exercises with only current-week entries are omitted.
   An entirely empty report is never claimed or sent.
+- Users marked `is_blocked` are excluded both while snapshots are created and
+  while pending deliveries are leased. Existing queued reports therefore never
+  reach a worker after Telegram has refused delivery to that user.
 - History starts with the calendar week of the first entry. Missing weeks after
   that are zero, not missing data. A single completed tracked week has no
   comparison. A zero previous total has an absolute delta but no percentage.

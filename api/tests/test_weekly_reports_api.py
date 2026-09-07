@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select, update
 
 from api.app.core import dates
-from api.app.models import UserIdentity
+from api.app.models import User, UserIdentity
 from api.app.models.weekly_report import WeeklyReport
 
 
@@ -74,6 +74,49 @@ async def test_no_data_no_report(client, monkeypatch):
     identity, _ = await seed(client, monkeypatch, with_data=False)
     await materialize_all(client)
     assert not any(item["external_id"] == identity["external_id"] for item in await lease(client))
+
+
+async def test_blocked_user_never_materializes_or_leases_reports(
+    client,
+    db_session,
+    monkeypatch,
+):
+    identity, _ = await seed(client, monkeypatch)
+    user_id = select(UserIdentity.user_id).where(
+        UserIdentity.provider == identity["provider"],
+        UserIdentity.external_id == identity["external_id"],
+    )
+    await db_session.execute(
+        update(User).where(User.id == user_id.scalar_subquery()).values(is_blocked=True)
+    )
+    await db_session.commit()
+
+    await materialize_all(client)
+
+    assert not any(
+        item["external_id"] == identity["external_id"] for item in await lease(client)
+    )
+
+
+async def test_blocked_user_is_excluded_from_existing_delivery_queue(
+    client,
+    db_session,
+    monkeypatch,
+):
+    identity, _ = await seed(client, monkeypatch)
+    await materialize_all(client)
+    user_id = select(UserIdentity.user_id).where(
+        UserIdentity.provider == identity["provider"],
+        UserIdentity.external_id == identity["external_id"],
+    )
+    await db_session.execute(
+        update(User).where(User.id == user_id.scalar_subquery()).values(is_blocked=True)
+    )
+    await db_session.commit()
+
+    assert not any(
+        item["external_id"] == identity["external_id"] for item in await lease(client)
+    )
 
 
 async def test_disabled_exercise_is_excluded_from_weekly_report(client, monkeypatch):

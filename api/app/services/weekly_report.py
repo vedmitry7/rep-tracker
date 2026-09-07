@@ -125,6 +125,7 @@ async def materialize_reports(session, after_id=0, limit=50):
             UserIdentity.provider == "telegram",
             UserIdentity.id > after_id,
             User.is_banned.is_(False),
+            User.is_blocked.is_(False),
         ).order_by(UserIdentity.id).limit(limit))).all()
         due_users = [(identity, user, start) for identity, user in identities
                      if (start := due_week_start(user.timezone)) is not None]
@@ -171,10 +172,14 @@ async def lease_reports(session, worker_id: str, limit: int):
                 UserIdentity.user_id == WeeklyReport.user_id,
                 UserIdentity.provider == "telegram",
             ),
-        ).where(or_(
+        ).join(User, User.id == WeeklyReport.user_id).where(
+            User.is_blocked.is_(False),
+            or_(
             WeeklyReport.status == "pending",
             WeeklyReport.status == "retry",
-        ), WeeklyReport.next_attempt_at <= func.now()).order_by(
+            ),
+            WeeklyReport.next_attempt_at <= func.now(),
+        ).order_by(
             WeeklyReport.next_attempt_at,
             WeeklyReport.created_at,
         ).with_for_update(skip_locked=True).limit(limit))).all()
