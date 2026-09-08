@@ -108,7 +108,17 @@ async def test_successful_payment_thanks_once_and_duplicate_is_silent() -> None:
             ]
         )
     )
-    await support.successful_support_payment(message, api)
-    await support.successful_support_payment(message, api)
+    bot = SimpleNamespace(send_message=AsyncMock())
+    await support.successful_support_payment(message, api, bot, frozenset({99}))
+    await support.successful_support_payment(message, api, bot, frozenset({99}))
     assert api.complete_support_payment.await_count == 2
     message.answer.assert_awaited_once()
+    bot.send_message.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_payment_support_points_to_direct_contact(state: FSMContext) -> None:
+    message = FakeMessage()
+    await support.payment_support_command(message, state)
+    assert await state.get_state() is None
+    assert "@vedmitry" in message.answer.await_args.args[0]

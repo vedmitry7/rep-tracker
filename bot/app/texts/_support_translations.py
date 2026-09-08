@@ -11,12 +11,12 @@ _COPY = {
         "thanks": "Спасибо за поддержку — {amount} ⭐!",
         "unavailable": "Этот счёт больше недоступен. Откройте /support и создайте новый.",
         "processing": "Платёж получен. Подтверждаем его — если сообщение не придёт, напишите /paysupport.",
-        "contact": "Опишите вопрос или запрос возврата одним сообщением. Мы передадим его в поддержку.",
-        "sent": "Спасибо. Запрос передан в поддержку.",
+        "contact": "По вопросам платежа или запросу возврата напишите @vedmitry. Укажите сумму, примерное время платежа и приложите скриншот чека Telegram.",
+        "sent": "",
         "terms": "Условия добровольной поддержки\n\nRepka бесплатна. Вы можете добровольно поддержать её развитие через Telegram Stars. Поддержка не открывает функции, не влияет на данные или работу бота и не является подпиской. По вопросам платежа или запросу возврата используйте /paysupport. Поддержка Telegram не может решать вопросы по платежам этому боту.",
         "commands": {"support": "Поддержать разработку", "paysupport": "Вопросы и возвраты", "terms": "Условия поддержки"},
     },
-    "es": {"choose": "⭐ Apoyar a Repka\n\nEl apoyo es voluntario y no desbloquea funciones. Elige una cantidad:", "other": "✏️ Otra cantidad", "enter": "Introduce un número entero de Stars entre 1 y {maximum}.", "invalid": "Introduce un número entero de Stars entre 1 y {maximum}.", "title": "Apoyo a Repka", "description": "Apoyo voluntario único al proyecto", "thanks": "¡Gracias por apoyar con {amount} ⭐!", "unavailable": "Esta factura ya no está disponible. Abre /support y crea una nueva.", "processing": "Pago recibido. Lo estamos confirmando; si no llega el mensaje, usa /paysupport.", "contact": "Describe tu pregunta o solicitud de reembolso en un mensaje. La enviaremos a soporte.", "sent": "Gracias. Tu solicitud se ha enviado a soporte.", "terms": "Términos del apoyo voluntario\n\nPuedes apoyar a Repka una vez con Telegram Stars. Es voluntario, no desbloquea funciones ni cambia tus datos o el funcionamiento del bot. Para preguntas o reembolsos usa /paysupport.", "commands": {"support": "Apoyar el proyecto", "paysupport": "Pagos y reembolsos", "terms": "Términos del apoyo"}},
+    "es": {"choose": "⭐ Apoyar a Repka\n\nEl apoyo es voluntario y no desbloquea funciones. Elige una cantidad:", "other": "✏️ Otra cantidad", "enter": "Introduce un número entero de Stars entre 1 y {maximum}.", "invalid": "Introduce un número entero de Stars entre 1 y {maximum}.", "title": "Apoyo a Repka", "description": "Apoyo voluntario único al proyecto", "thanks": "¡Gracias por apoyar con {amount} ⭐!", "unavailable": "Esta factura ya no está disponible. Abre /support y crea una nueva.", "processing": "Pago recibido. Lo estamos confirmando; si no llega el mensaje, usa /paysupport.", "contact": "Para preguntas de pago o reembolsos escribe a @vedmitry. Incluye el importe, la hora aproximada y una captura del recibo de Telegram.", "sent": "", "terms": "Términos del apoyo voluntario\n\nPuedes apoyar a Repka una vez con Telegram Stars. Es voluntario, no desbloquea funciones ni cambia tus datos o el funcionamiento del bot. Para preguntas o reembolsos usa /paysupport.", "commands": {"support": "Apoyar el proyecto", "paysupport": "Pagos y reembolsos", "terms": "Términos del apoyo"}},
     "pt": {"choose": "⭐ Apoiar o Repka\n\nO apoio é voluntário e não desbloqueia recursos. Escolha um valor:", "other": "✏️ Outro valor", "enter": "Digite um número inteiro de Stars entre 1 e {maximum}.", "invalid": "Digite um número inteiro de Stars entre 1 e {maximum}.", "title": "Apoio ao Repka", "description": "Apoio voluntário único ao projeto", "thanks": "Obrigado pelo apoio de {amount} ⭐!", "unavailable": "Esta fatura não está mais disponível. Abra /support e crie uma nova.", "processing": "Pagamento recebido. Estamos confirmando; se a mensagem não chegar, use /paysupport.", "contact": "Descreva sua pergunta ou pedido de reembolso em uma mensagem. Nós o enviaremos ao suporte.", "sent": "Obrigado. Seu pedido foi enviado ao suporte.", "terms": "Termos do apoio voluntário\n\nVocê pode apoiar o Repka uma vez com Telegram Stars. É voluntário, não desbloqueia recursos e não altera seus dados ou o bot. Para dúvidas ou reembolsos use /paysupport.", "commands": {"support": "Apoiar o projeto", "paysupport": "Pagamentos e reembolsos", "terms": "Termos do apoio"}},
     "tr": {"choose": "⭐ Repka'yı destekle\n\nDestek isteğe bağlıdır ve özellik açmaz. Bir miktar seçin:", "other": "✏️ Başka miktar", "enter": "1 ile {maximum} arasında tam Stars sayısı girin.", "invalid": "1 ile {maximum} arasında tam Stars sayısı girin.", "title": "Repka desteği", "description": "Projeye tek seferlik gönüllü destek", "thanks": "{amount} ⭐ desteğiniz için teşekkürler!", "unavailable": "Bu fatura artık kullanılamaz. /support açıp yenisini oluşturun.", "processing": "Ödeme alındı. Onaylıyoruz; mesaj gelmezse /paysupport kullanın.", "contact": "Sorunuzu veya iade isteğinizi tek mesajda yazın. Desteğe ileteceğiz.", "sent": "Teşekkürler. Talebiniz desteğe gönderildi.", "terms": "Gönüllü destek koşulları\n\nRepka'yı Telegram Stars ile bir kez destekleyebilirsiniz. Bu isteğe bağlıdır, özellik açmaz ve verilerinizi veya botun işleyişini değiştirmez. Sorular veya iadeler için /paysupport kullanın.", "commands": {"support": "Projeyi destekle", "paysupport": "Ödemeler ve iadeler", "terms": "Destek koşulları"}},
     "uk": {"choose": "⭐ Підтримати Repka\n\nПідтримка добровільна й не відкриває функцій. Виберіть суму:", "other": "✏️ Інша сума", "enter": "Введіть ціле число Stars від 1 до {maximum}.", "invalid": "Введіть ціле число Stars від 1 до {maximum}.", "title": "Підтримка Repka", "description": "Добровільна одноразова підтримка проєкту", "thanks": "Дякуємо за підтримку — {amount} ⭐!", "unavailable": "Цей рахунок більше недоступний. Відкрийте /support і створіть новий.", "processing": "Платіж отримано. Підтверджуємо його; якщо повідомлення не надійде, напишіть /paysupport.", "contact": "Опишіть запитання або запит на повернення одним повідомленням. Ми передамо його в підтримку.", "sent": "Дякуємо. Запит передано в підтримку.", "terms": "Умови добровільної підтримки\n\nВи можете разово підтримати Repka через Telegram Stars. Це добровільно, не відкриває функцій і не впливає на дані чи роботу бота. Для питань і повернень використовуйте /paysupport.", "commands": {"support": "Підтримати проєкт", "paysupport": "Платежі та повернення", "terms": "Умови підтримки"}},
@@ -48,6 +48,19 @@ _CONTINUE_BUTTONS = {
     "pl": "✓ Zapoznałem się z warunkami", "fr": "✓ J’ai lu les conditions",
 }
 
+_PAYMENT_CONTACTS = {
+    "ru": "По вопросам платежа или запросу возврата напишите @vedmitry. Укажите сумму, примерное время платежа и приложите скриншот чека Telegram.",
+    "es": "Para preguntas de pago o reembolsos escribe a @vedmitry. Incluye el importe, la hora aproximada y una captura del recibo de Telegram.",
+    "pt": "Para dúvidas de pagamento ou reembolso, escreva para @vedmitry. Inclua o valor, o horário aproximado e uma captura do recibo do Telegram.",
+    "tr": "Ödeme soruları veya iade için @vedmitry’ye yazın. Tutarı, yaklaşık zamanı ve Telegram makbuzunun ekran görüntüsünü ekleyin.",
+    "uk": "Для питань щодо платежу або повернення напишіть @vedmitry. Укажіть суму, приблизний час і додайте скриншот чека Telegram.",
+    "id": "Untuk pertanyaan pembayaran atau refund, tulis ke @vedmitry. Sertakan jumlah, perkiraan waktu, dan tangkapan layar tanda terima Telegram.",
+    "hi": "भुगतान या रिफंड के लिए @vedmitry को लिखें। राशि, अनुमानित समय और Telegram रसीद का स्क्रीनशॉट शामिल करें।",
+    "kk": "Төлем не қайтарым мәселелері бойынша @vedmitry-ге жазыңыз. Соманы, шамамен уақытты және Telegram чегінің скриншотын қосыңыз.",
+    "pl": "W sprawie płatności lub zwrotu napisz do @vedmitry. Podaj kwotę, przybliżony czas i dołącz zrzut potwierdzenia z Telegrama.",
+    "fr": "Pour toute question de paiement ou remboursement, écrivez à @vedmitry. Indiquez le montant, l’heure approximative et une capture du reçu Telegram.",
+}
+
 
 def apply_support_translations(namespace: dict[str, object], language: str) -> None:
     copy = _COPY[language]
@@ -58,8 +71,7 @@ def apply_support_translations(namespace: dict[str, object], language: str) -> N
         SUPPORT_INVOICE_DESCRIPTION=copy["description"],
         SUPPORT_PAYMENT_UNAVAILABLE=copy["unavailable"],
         SUPPORT_PAYMENT_PROCESSING=copy["processing"],
-        SUPPORT_PAYMENT_CONTACT=copy["contact"],
-        SUPPORT_REQUEST_SENT=copy["sent"],
+        SUPPORT_PAYMENT_CONTACT=_PAYMENT_CONTACTS[language],
         SUPPORT_TERMS=copy["terms"],
         SUPPORT_TERMS_CONFIRMATION=_TERMS_CONFIRMATION[language],
         BUTTON_SUPPORT_CONTINUE=_CONTINUE_BUTTONS[language],

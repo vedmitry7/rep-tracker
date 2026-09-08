@@ -31,26 +31,8 @@ async def support_command(message: Message, state: FSMContext) -> None:
 
 @router.message(Command("paysupport"))
 async def payment_support_command(message: Message, state: FSMContext) -> None:
-    await state.set_state(Support.entering_payment_question)
-    await message.answer(texts.SUPPORT_PAYMENT_CONTACT)
-
-
-@router.message(Support.entering_payment_question, F.text)
-async def forward_payment_question(
-    message: Message,
-    state: FSMContext,
-    bot: Bot,
-    admin_telegram_ids: frozenset[int],
-) -> None:
     await state.clear()
-    if message.from_user is None:
-        return
-    await notify_administrators(
-        bot,
-        admin_telegram_ids,
-        f"Payment support request from Telegram user {message.from_user.id}: {message.text}",
-    )
-    await message.answer(texts.SUPPORT_REQUEST_SENT)
+    await message.answer(texts.SUPPORT_PAYMENT_CONTACT)
 
 
 @router.message(Command("terms"))
@@ -154,7 +136,12 @@ async def support_pre_checkout(
 
 
 @router.message(F.successful_payment)
-async def successful_support_payment(message: Message, api_client: RepTrackerApi) -> None:
+async def successful_support_payment(
+    message: Message,
+    api_client: RepTrackerApi,
+    bot: Bot,
+    admin_telegram_ids: frozenset[int],
+) -> None:
     if message.from_user is None or message.successful_payment is None:
         return
     payment = message.successful_payment
@@ -173,3 +160,11 @@ async def successful_support_payment(message: Message, api_client: RepTrackerApi
         return
     if result.newly_completed:
         await message.answer(texts.support_thank_you(payment.total_amount))
+        await notify_administrators(
+            bot,
+            admin_telegram_ids,
+            "Voluntary Stars support received\n"
+            f"Telegram user ID: {message.from_user.id}\n"
+            f"Amount: {payment.total_amount} XTR\n"
+            f"Charge ID: {payment.telegram_payment_charge_id}",
+        )

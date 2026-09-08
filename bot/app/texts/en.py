@@ -127,8 +127,10 @@ SUPPORT_INVOICE_TITLE = "Support Repka"
 SUPPORT_INVOICE_DESCRIPTION = "One-time voluntary project support"
 SUPPORT_PAYMENT_UNAVAILABLE = "This invoice is no longer available. Open /support and create a new one."
 SUPPORT_PAYMENT_PROCESSING = "Payment received. We are confirming it; if no message arrives, use /paysupport."
-SUPPORT_PAYMENT_CONTACT = "Describe your payment question or refund request in one message. We will forward it to support."
-SUPPORT_REQUEST_SENT = "Thank you. Your request has been sent to support."
+SUPPORT_PAYMENT_CONTACT = (
+    "For payment questions or a refund request, write to @vedmitry. "
+    "Include the amount, approximate payment time, and a Telegram receipt screenshot."
+)
 SUPPORT_TERMS = (
     "Voluntary support terms\n\n"
     "Repka is free. You can voluntarily support its development with Telegram Stars. "
