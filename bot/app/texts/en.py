@@ -304,21 +304,6 @@ Upload a JSON file with exercises and workouts.
 
 The file must use UTF-8 encoding and be no larger than 1 MB.
 
-<b>File structure and example</b>
-<pre><code>{
-  "version": 1,
-  "exercises": [
-    {
-      "name": "Pull-ups",
-      "days": [
-        {
-          "date": "2026-08-01",
-          "entries": [[10], [8, 7]]
-        }
-      ]
-    }
-  ]
-}</code></pre>
 """
 IMPORT_JSON_ONLY = "Only .json files are supported."
 IMPORT_FILE_TOO_LARGE = "The file is too large. Maximum size is 1 MB."

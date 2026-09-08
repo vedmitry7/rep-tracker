@@ -173,13 +173,6 @@ Sube un archivo JSON con ejercicios y entrenamientos.
 
 El archivo debe usar codificación UTF-8 y no superar 1 MB.
 
-<b>Estructura y ejemplo del archivo</b>
-<pre><code>{
-  "version": 1,
-  "exercises": [
-    {"name": "Dominadas", "days": [{"date": "2026-08-01", "entries": [[10], [8, 7]]}]}
-  ]
-}</code></pre>
 """
 IMPORT_JSON_ONLY = "Solo se admiten archivos .json."
 IMPORT_FILE_TOO_LARGE = "El archivo es demasiado grande. El tamaño máximo es 1 MB."

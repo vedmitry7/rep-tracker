@@ -16,7 +16,8 @@ from bot.app.keyboards.settings import (
     ImportActionValue,
 )
 from bot.app.states.settings import ExportData, ImportData
-from bot.app.texts import reset_current_language, set_current_language
+from bot.app.texts import available_locales, reset_current_language, set_current_language
+from bot.app.texts._import_format import IMPORT_JSON_EXAMPLE
 
 
 DOCUMENT = {
@@ -117,19 +118,28 @@ async def test_json_file_is_previewed_without_importing(state: FSMContext) -> No
 
 
 @pytest.mark.asyncio
-async def test_import_screen_explains_format_and_renders_code_block() -> None:
+@pytest.mark.parametrize("language", [locale.code for locale in available_locales()])
+async def test_import_screen_uses_the_one_canonical_english_json_example(
+    language: str,
+) -> None:
+    token = set_current_language(language)
     callback = FakeCallback()
     state = FSMContext(
         storage=MemoryStorage(),
         key=StorageKey(bot_id=1, chat_id=2, user_id=3),
     )
 
-    await settings.request_import_file(callback, state)
+    try:
+        await settings.request_import_file(callback, state)
+    finally:
+        reset_current_language(token)
 
     args = callback.message.edit_text.await_args
-    assert "exercises" in args.args[0]
-    assert "&lt;pre&gt;" not in args.args[0]
-    assert "<pre><code>" in args.args[0]
+    rendered = args.args[0]
+    assert rendered.endswith(IMPORT_JSON_EXAMPLE)
+    assert rendered.count("<pre><code>") == 1
+    assert '"version"' in rendered
+    assert '"exercises"' in rendered
     assert args.kwargs["parse_mode"] == "HTML"
     assert await state.get_state() == ImportData.waiting_for_file.state
 

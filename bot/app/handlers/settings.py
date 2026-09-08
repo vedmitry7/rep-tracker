@@ -14,6 +14,7 @@ from bot.app.api.client import (
     InvalidRequestError,
     RepTrackerApi,
 )
+from bot.app.texts._import_format import IMPORT_JSON_EXAMPLE
 from bot.app.handlers.common import (
     answer_api_error,
     edit_or_answer,
@@ -133,7 +134,7 @@ async def request_import_file(callback: CallbackQuery, state: FSMContext) -> Non
     await callback.answer()
     await _render(
         callback,
-        texts.IMPORT_SEND_FILE,
+        f"{texts.IMPORT_SEND_FILE}\n\n{IMPORT_JSON_EXAMPLE}",
         settings_back_keyboard(),
         parse_mode=ParseMode.HTML,
     )
