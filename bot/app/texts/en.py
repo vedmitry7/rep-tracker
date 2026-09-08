@@ -131,15 +131,14 @@ SUPPORT_PAYMENT_CONTACT = "Describe your payment question or refund request in o
 SUPPORT_REQUEST_SENT = "Thank you. Your request has been sent to support."
 SUPPORT_TERMS = (
     "Voluntary support terms\n\n"
-    "You may support Repka once with Telegram Stars. Support is voluntary, unlocks no features, "
-    "does not affect your data or how the bot works, and creates no obligation for future payments. "
+    "Repka is free. You can voluntarily support its development with Telegram Stars. "
+    "Support unlocks no features, does not affect your data or how the bot works, and is not a subscription. "
     "For payment questions or a refund request, use /paysupport. Telegram support cannot resolve payments made to this bot."
 )
 SUPPORT_TERMS_CONFIRMATION = (
     "⭐ Support the developer\n\n"
-    "Repka is free. You may send Telegram Stars once as voluntary support for its development.\n\n"
-    "Support unlocks no features, gives no advantages, does not affect your data or how the bot works, "
-    "and creates no obligation for future payments.\n\n"
+    "Repka is free. You can voluntarily support its development with Telegram Stars.\n\n"
+    "Support unlocks no features, gives no advantages, does not affect your data or how the bot works, and is not a subscription.\n\n"
     "For payment questions or a refund request, use /paysupport. Telegram support cannot resolve payments made to this bot.\n\n"
     "Tap the button below to confirm that you have read these terms."
 )

@@ -22,17 +22,17 @@ async def _resolve_user(client: AsyncClient, telegram_user_id: int) -> None:
 
 
 @pytest.mark.asyncio
-async def test_support_invoice_validates_amount_and_is_bound_to_user(client: AsyncClient) -> None:
+async def test_support_invoice_accepts_bot_amount_and_is_bound_to_user(client: AsyncClient) -> None:
     await _resolve_user(client, 101)
     invalid = await client.post(
         "/support-payments/invoices",
-        json={"provider": "telegram", "external_id": "101", "amount": 10_001},
+        json={"provider": "telegram", "external_id": "101", "amount": 0},
     )
     assert invalid.status_code == 422
 
     invoice = await client.post(
         "/support-payments/invoices",
-        json={"provider": "telegram", "external_id": "101", "amount": 50},
+        json={"provider": "telegram", "external_id": "101", "amount": 10_001},
     )
     assert invoice.status_code == 201
     payload = invoice.json()["payload"]
@@ -45,7 +45,7 @@ async def test_support_invoice_validates_amount_and_is_bound_to_user(client: Asy
             "provider": "telegram",
             "external_id": "202",
             "payload": payload,
-            "amount": 50,
+            "amount": 10_001,
             "currency": "XTR",
         },
     )

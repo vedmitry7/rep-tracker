@@ -12,9 +12,9 @@ from bot.app.keyboards.support import (
     support_terms_keyboard,
 )
 from bot.app.states.support import Support
+from bot.app.support import SUPPORT_MAX_CUSTOM_AMOUNT, is_valid_support_amount
 from bot.app.texts import texts
 from bot.app.notifications import notify_administrators
-from shared.support import SUPPORT_MAX_CUSTOM_AMOUNT, is_valid_support_amount
 
 
 router = Router(name=__name__)

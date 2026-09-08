@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.app.models import SupportPayment
 from api.app.services.user import get_allowed_user_by_identity
-from shared.support import SUPPORT_INVOICE_TTL_HOURS, is_valid_support_amount
+
+SUPPORT_INVOICE_TTL_HOURS = 24
 
 
 class InvalidSupportPayment(Exception):
@@ -26,8 +27,6 @@ def _now() -> datetime:
 async def create_invoice(
     session: AsyncSession, provider: str, external_id: str, amount: int
 ) -> SupportPayment:
-    if not is_valid_support_amount(amount):
-        raise InvalidSupportPayment
     async with session.begin():
         await get_allowed_user_by_identity(session, provider, external_id)
         payment = SupportPayment(
@@ -50,7 +49,7 @@ async def _current_payment(
     amount: int,
     currency: str,
 ) -> SupportPayment:
-    if currency != "XTR" or not is_valid_support_amount(amount):
+    if currency != "XTR":
         raise InvalidSupportPayment
     payment = await session.scalar(
         select(SupportPayment)
@@ -104,7 +103,7 @@ async def complete_payment(
 ) -> CompletedSupportPayment:
     async with session.begin():
         await get_allowed_user_by_identity(session, provider, external_id)
-        if currency != "XTR" or not is_valid_support_amount(amount):
+        if currency != "XTR":
             raise InvalidSupportPayment
         existing = await session.scalar(
             select(SupportPayment).where(

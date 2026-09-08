@@ -12,7 +12,6 @@ RUN pip install --no-cache-dir -r /tmp/bot-requirements.txt \
     && useradd --system --gid app --create-home app
 
 COPY --chown=app:app bot ./bot
-COPY --chown=app:app shared ./shared
 
 USER app
 

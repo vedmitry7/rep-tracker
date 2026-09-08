@@ -5,7 +5,7 @@ from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.app.texts import texts
-from shared.support import SUPPORT_PRESET_AMOUNTS
+from bot.app.support import SUPPORT_PRESET_AMOUNTS
 
 
 class SupportActionValue(StrEnum):
