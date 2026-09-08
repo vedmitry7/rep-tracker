@@ -16,7 +16,10 @@ class TimezoneOption:
     labels: dict[str, str]
 
     def label(self, language: str) -> str:
-        return self.labels.get(language, self.labels["en"])
+        # A timezone identifier is preferable to silently showing an English
+        # place name in a non-English UI.  It is also unambiguous and is the
+        # format users are asked to enter on the custom-timezone screen.
+        return self.labels.get(language, self.timezone)
 
 
 @dataclass(frozen=True, slots=True)

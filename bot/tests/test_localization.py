@@ -25,8 +25,24 @@ def catalog_keys(module: object) -> set[str]:
     return {key for key in vars(module) if not key.startswith("_")}
 
 
-def test_english_and_russian_catalogs_have_matching_keys() -> None:
-    assert catalog_keys(en) == catalog_keys(ru)
+def test_all_catalogs_have_matching_keys() -> None:
+    for locale in available_locales():
+        assert catalog_keys(get_catalog(locale.code)) == catalog_keys(en)
+
+
+def test_non_english_catalogs_do_not_inherit_english_ui_copy() -> None:
+    """A complete key set is insufficient when a locale imports ``en`` wholesale."""
+    english_values = vars(en)
+    for locale in available_locales():
+        if locale.code == "en":
+            continue
+        catalog_values = vars(get_catalog(locale.code))
+        inherited = [
+            key
+            for key, value in english_values.items()
+            if not key.startswith("_") and catalog_values[key] is value
+        ]
+        assert inherited == [], f"{locale.code} inherits English UI copy: {inherited}"
 
 
 @pytest.mark.parametrize(

@@ -92,7 +92,10 @@ _current_language: ContextVar[str] = ContextVar(
 
 def _get_value(language: str | None, key: str) -> Any:
     catalog = get_catalog(language)
-    return getattr(catalog, key, getattr(en, key))
+    # Catalog parity is verified at startup.  Do not silently turn a missing
+    # translation into English: that hides an incomplete locale until a user
+    # happens to open the affected screen.
+    return getattr(catalog, key)
 
 
 def get_text(language: str | None, key: str, *args: object, **kwargs: object) -> Any:
