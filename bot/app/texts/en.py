@@ -20,7 +20,7 @@ BOT_DESCRIPTION = (
 )
 
 # Common screens and notifications
-EXERCISES_TITLE = "🏋️ Repka\n\nChoose an exercise"
+EXERCISES_TITLE = "🏋️ Repka\n\nWhat are we training today?"
 NO_EXERCISES = "🏋️ Repka\n\nNo exercises yet"
 WELCOME = (
     "🥬 Hi! I’m Repka.\n\n"
@@ -186,7 +186,7 @@ def statistics(
     last_30_days_reps: str,
     total_reps: str,
     active_days: str,
-    entries: str,
+    average_training_day: str,
     best_day: str | None,
     best_day_reps: str | None,
 ) -> str:
@@ -197,7 +197,7 @@ def statistics(
         f"30 days: {last_30_days_reps}\n"
         f"All time: {total_reps}\n\n"
         f"Training days: {active_days}\n"
-        f"Entries: {entries}"
+        f"Average per training day: {average_training_day}"
     )
     if best_day is not None and best_day_reps is not None:
         value += f"\n\nBest day:\n{best_day} — {best_day_reps}"

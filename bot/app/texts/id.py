@@ -8,7 +8,7 @@ BOT_NAME = 'Repka · Pelacak Latihan'
 BOT_COMMANDS = {'menu': 'Tidak bisa', 'settings': 'Pengaturan', 'help': 'Bantuan'}
 BOT_SHORT_DESCRIPTION = 'Lacak latihan, lihat kemajuan Anda, dan dapatkan laporan mingguan.'
 BOT_DESCRIPTION = '🥬 Repka adalah pelacak olahraga di Telegram.\n\nCatat set dan repetisi dalam satu baris: 16, 4×10, atau 12, 10, 8. Repka menyimpan hasilnya, menjumlahkan repetisi Anda untuk hari, minggu, dan bulan, dan menunjukkan kemajuan untuk setiap latihan.\n\n📊 Pelatihan statistik dan sejarah\n🖼 Laporan mingguan layak dibagikan\n📦 Impor dan ekspor data'
-EXERCISES_TITLE = '🏋️ Repka\n\nPilih latihan'
+EXERCISES_TITLE = '🏋️ Repka\n\nApa yang kita latih hari ini?'
 NO_EXERCISES = '🏋️ Repka\n\nBelum ada latihan'
 WELCOME = '🥬 Hai! Saya Repka.\n\nSaya ingat latihan Anda dan mengubah angka sederhana menjadi kisah yang jelas tentang kemajuan Anda.\n\nMemulainya mudah:\n1. Tambahkan latihan — misalnya Pull-up.\n2. Setelah latihan, kirimkan hasilnya: 16, 4×10, atau 12, 10, 8.\n3. Saya akan menyimpannya dan menghitung statistik Anda.\n\nSeiring waktu, Anda akan melihat riwayat latihan, kemajuan mingguan dan bulanan, serta laporan mingguan yang dapat Anda bagikan.\n\nData Anda dapat diimpor dan diekspor — data tidak pernah terkunci di dalam Repka.\n\n👇 Tambahkan latihan pertama Anda. Hanya membutuhkan waktu beberapa detik.'
 HELP = 'ℹ️ Bantuan\n\nPilih latihan untuk menambahkan hasil, melihat statistik, atau membuka riwayat.\n\n/menu — latihan\n/settings — pengaturan'
@@ -112,8 +112,8 @@ EXERCISE_MANAGEMENT = '🛠 Kelola latihan'
 CLEAR_HISTORY_CHOOSE_EXERCISE = '🧹 Hapus riwayat\n\nPilih latihan'
 DELETE_EXERCISE_CHOOSE_EXERCISE = '🗑 Hapus latihan\n\nPilih latihan'
 
-def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, entries: str, best_day: str | None, best_day_reps: str | None) -> str:
-    value = f'📊 {name}\n\nHari ini: {today_reps}\n7 hari: {last_7_days_reps}\n30 hari: {last_30_days_reps}\nSepanjang waktu: {total_reps}\n\nHari pelatihan: {active_days}\nEntri: {entries}'
+def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
+    value = f'📊 {name}\n\nHari ini: {today_reps}\n7 hari: {last_7_days_reps}\n30 hari: {last_30_days_reps}\nSepanjang waktu: {total_reps}\n\nHari pelatihan: {active_days}\nRata-rata per hari latihan: {average_training_day}'
     if best_day is not None and best_day_reps is not None:
         value += f'\n\nHari terbaik:\n{best_day} — {best_day_reps}'
     return value

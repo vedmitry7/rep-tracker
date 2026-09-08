@@ -4,6 +4,7 @@ from datetime import date
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from bot.app.texts import get_text
+from bot.app.services.date_format import format_user_date
 
 
 TELEGRAM_TEXT_LIMIT = 4096
@@ -12,7 +13,7 @@ TELEGRAM_TEXT_LIMIT = 4096
 def report_blocks(report: dict) -> list[str]:
     language = report["language"]
     labels = get_text(language, "WEEKLY_LABELS")
-    fmt = lambda value: date.fromisoformat(value).strftime("%d.%m")
+    fmt = lambda value: format_user_date(date.fromisoformat(value), language=language)
     blocks = [f"{labels['title']}\n{labels['period']}: {fmt(report['week_start'])} — {fmt(report['week_end'])}"]
     for item in report["exercises"]:
         lines = [f"🏋️ {item['name']}", labels["total"].format(

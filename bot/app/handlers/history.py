@@ -41,6 +41,7 @@ from bot.app.keyboards.history import (
     history_manual_date_keyboard,
 )
 from bot.app.services.date_parser import DateParseError, days_ago, parse_result_date
+from bot.app.services.date_format import format_user_date
 from bot.app.services.exercise_format import format_number, format_reps
 from bot.app.services.result_constructor import (
     ConstructorError,
@@ -131,7 +132,7 @@ def history_day_text(
     total_reps = sum(sum(entry.reps) for entry in entries)
     return texts.history_day(
         exercise.name,
-        performed_on.strftime("%d.%m.%Y"),
+        format_user_date(performed_on),
         format_number(total_reps),
     )
 
@@ -139,7 +140,7 @@ def history_day_text(
 def history_entry_text(exercise: Exercise, entry: ExerciseEntry) -> str:
     return texts.history_entry(
         exercise.name,
-        entry.performed_on.strftime("%d.%m.%Y"),
+        format_user_date(entry.performed_on),
         format_reps(entry.reps),
         format_number(sum(entry.reps)),
     )
@@ -147,7 +148,7 @@ def history_entry_text(exercise: Exercise, entry: ExerciseEntry) -> str:
 
 def delete_confirmation_text(entry: ExerciseEntry) -> str:
     return texts.delete_confirmation(
-        entry.performed_on.strftime("%d.%m.%Y"),
+        format_user_date(entry.performed_on),
         format_reps(entry.reps),
     )
 

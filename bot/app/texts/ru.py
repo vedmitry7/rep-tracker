@@ -26,7 +26,7 @@ BOT_DESCRIPTION = (
 )
 
 # Common screens and notifications
-EXERCISES_TITLE = "🏋️ Repka\n\nВыберите упражнение"
+EXERCISES_TITLE = "🏋️ Repka\n\nЧто тренируем сегодня?"
 NO_EXERCISES = "🏋️ Repka\n\nУпражнений пока нет"
 WELCOME = (
     "🥬 Привет! Я Repka.\n\n"
@@ -43,7 +43,7 @@ WELCOME = (
 )
 HELP = (
     "ℹ️ Помощь\n\n"
-    "Выберите упражнение, чтобы добавить результат, посмотреть статистику "
+    "Выбери упражнение, чтобы добавить результат, посмотреть статистику "
     "или историю.\n\n"
     "/menu — упражнения\n/settings — настройки"
 )
@@ -185,8 +185,8 @@ def exercise_summary(
 
 
 EXERCISE_MANAGEMENT = "🛠 Управление упражнениями"
-CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Очистить историю\n\nВыберите упражнение"
-DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Удалить упражнение\n\nВыберите упражнение"
+CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Очистить историю\n\nВыбери упражнение"
+DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Удалить упражнение\n\nВыбери упражнение"
 
 
 def statistics(
@@ -197,7 +197,7 @@ def statistics(
     last_30_days_reps: str,
     total_reps: str,
     active_days: str,
-    entries: str,
+    average_training_day: str,
     best_day: str | None,
     best_day_reps: str | None,
 ) -> str:
@@ -208,7 +208,7 @@ def statistics(
         f"30 дней: {last_30_days_reps}\n"
         f"За всё время: {total_reps}\n\n"
         f"Тренировочных дней: {active_days}\n"
-        f"Записей: {entries}"
+        f"В среднем за тренировочный день: {average_training_day}"
     )
     if best_day is not None and best_day_reps is not None:
         value += f"\n\nЛучший день:\n{best_day} — {best_day_reps}"

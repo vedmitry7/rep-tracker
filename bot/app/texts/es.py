@@ -3,7 +3,7 @@ from .en import *
 LANGUAGE_CODE = "es"
 LANGUAGE_NAME = "Español"
 LANGUAGE_BUTTON = "🇪🇸 Español"
-EXERCISES_TITLE = "🏋️ Repka\n\nElige un ejercicio"
+EXERCISES_TITLE = "🏋️ Repka\n\n¿Qué entrenamos hoy?"
 NO_EXERCISES = "🏋️ Repka\n\nAún no hay ejercicios"
 BUTTON_SETTINGS = "⚙️ Ajustes"
 BUTTON_ADD_EXERCISE = "➕ Añadir ejercicio"
@@ -96,10 +96,10 @@ DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Eliminar ejercicio\n\nElige un ejercicio
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str,
                last_30_days_reps: str, total_reps: str, active_days: str,
-               entries: str, best_day: str | None, best_day_reps: str | None) -> str:
+               average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
     value = (f"📊 {name}\n\nHoy: {today_reps}\n7 días: {last_7_days_reps}\n"
              f"30 días: {last_30_days_reps}\nTodo el tiempo: {total_reps}\n\n"
-             f"Días de entrenamiento: {active_days}\nEntradas: {entries}")
+             f"Días de entrenamiento: {active_days}\nPromedio por día de entrenamiento: {average_training_day}")
     if best_day is not None and best_day_reps is not None:
         value += f"\n\nMejor día:\n{best_day} — {best_day_reps}"
     return value

@@ -33,7 +33,11 @@ def test_summary_and_buttons(language):
     data = report(language)
     text = summary_text(data)
     assert "Pull-ups" in text and "Squats" in text
-    assert "24.08 — 30.08" in text
+    assert (
+        "24 августа 2026 — 30 августа 2026"
+        if language == "ru"
+        else "Aug 24, 2026 — Aug 30, 2026"
+    ) in text
     assert ("🔴 ▼ 42 (−10,6%)" if language == "ru" else "🔴 ▼ 42 (−10.6%)") in text
     assert "29.08 — 85" not in text
     assert report_keyboard(data).inline_keyboard[0][0].text == (

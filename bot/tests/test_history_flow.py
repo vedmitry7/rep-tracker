@@ -25,6 +25,7 @@ from bot.app.keyboards.history import (
     history_days_keyboard,
 )
 from bot.app.keyboards.exercises import ExerciseDetailAction, ExerciseDetailActionValue
+from bot.app.services.date_format import format_user_date
 from bot.app.states.history import EditHistoryEntry
 
 
@@ -72,8 +73,8 @@ def test_history_days_keyboard_has_one_button_per_day() -> None:
     markup = history_days_keyboard(7, days)
 
     assert [button.text for row in markup.inline_keyboard for button in row] == [
-        "27.08 — 74",
-        "25.08 — 40",
+        "27 августа 2026 — 74",
+        "25 августа 2026 — 40",
         "← Назад",
     ]
     day_callbacks = [HistoryDayOpen.unpack(value) for value in callback_values(markup)[:2]]
@@ -235,7 +236,7 @@ async def test_change_date_today_and_yesterday_patch_performed_on(
         15,
         performed_on=selected,
     )
-    assert selected.strftime("%d.%m.%Y") in callback.message.edit_text.await_args.args[0]
+    assert format_user_date(selected) in callback.message.edit_text.await_args.args[0]
 
 
 @pytest.mark.asyncio
@@ -262,7 +263,7 @@ async def test_manual_date_reuses_parser_and_patches(
         15,
         performed_on=selected,
     )
-    assert "20.08.2026" in message.answer.await_args.args[0]
+    assert "20 августа 2026" in message.answer.await_args.args[0]
 
 
 @pytest.mark.asyncio
@@ -287,7 +288,7 @@ async def test_delete_action_only_shows_confirmation(
 
     api.delete_exercise_entry.assert_not_awaited()
     assert callback.message.edit_text.await_args.args[0] == (
-        "Удалить запись?\n\n27.08.2026\n10 • 9 • 8 • 7"
+        "Удалить запись?\n\n27 августа 2026\n10 • 9 • 8 • 7"
     )
 
 

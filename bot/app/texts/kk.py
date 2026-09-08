@@ -8,7 +8,7 @@ BOT_NAME = "Repka · Жаттығу трекері"
 BOT_COMMANDS = {"menu": "Мәзір", "settings": "Баптаулар", "help": "Көмек"}
 BOT_SHORT_DESCRIPTION = "Жаттығуларды жазып, ілгерілеуді бақылап, апталық есептер алыңыз."
 BOT_DESCRIPTION = "🥬 Repka — Telegram-дағы жаттығу трекері.\n\nЖиындар мен қайталауларды бір жолға жазыңыз, ілгерілеуді бақылаңыз және апталық есептер алыңыз."
-EXERCISES_TITLE = "🏋️ Repka\n\nЖаттығуды таңдаңыз"
+EXERCISES_TITLE = "🏋️ Repka\n\nБүгін нені жаттықтырамыз?"
 NO_EXERCISES = "🏋️ Repka\n\nӘзірге жаттығулар жоқ"
 WELCOME = "🥬 Сәлем! Мен Repka-мен.\n\nМен жаттығуларыңызды сақтап, қарапайым сандарды ілгерілеуіңіздің анық көрінісіне айналдырамын.\n\nЖаттығуды қосып, 16, 4×10 немесе 12, 10, 8 сияқты нәтиже жіберіңіз."
 HELP = "ℹ️ Көмек\n\nНәтиже қосу, статистиканы көру немесе тарихты ашу үшін жаттығуды таңдаңыз.\n\n/menu — жаттығулар\n/settings — баптаулар"
@@ -102,10 +102,10 @@ DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Жаттығуды жою\n\nЖатты�
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str,
                last_30_days_reps: str, total_reps: str, active_days: str,
-               entries: str, best_day: str | None, best_day_reps: str | None) -> str:
+               average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
     value = (f"📊 {name}\n\nБүгін: {today_reps}\n7 күн: {last_7_days_reps}\n"
              f"30 күн: {last_30_days_reps}\nБарлығы: {total_reps}\n\n"
-             f"Жаттығу күндері: {active_days}\nЖазбалар: {entries}")
+             f"Жаттығу күндері: {active_days}\nЖаттығу күніне орташа: {average_training_day}")
     if best_day is not None and best_day_reps is not None:
         value += f"\n\nЕң жақсы күн:\n{best_day} — {best_day_reps}"
     return value

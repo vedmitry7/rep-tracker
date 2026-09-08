@@ -8,7 +8,7 @@ BOT_NAME = 'Repka · Rastreador de treino'
 BOT_COMMANDS = {'menu': 'Cardápio', 'settings': 'Configurações', 'help': 'Ajuda'}
 BOT_SHORT_DESCRIPTION = 'Acompanhe os exercícios, veja seu progresso e receba relatórios semanais.'
 BOT_DESCRIPTION = '🥬 Repka é um rastreador de exercícios no Telegram.\n\nRegistre séries e repetições em uma linha: 16, 4×10 ou 12, 10, 8. Repka salva o resultado, totaliza suas repetições do dia, semana e mês e mostra o progresso de cada exercício.\n\n📊 Estatísticas e histórico de treinamento\n🖼 Relatórios semanais que valem a pena compartilhar\n📦 Importação e exportação de dados'
-EXERCISES_TITLE = '🏋️Repka\n\nEscolha um exercício'
+EXERCISES_TITLE = '🏋️ Repka\n\nO que vamos treinar hoje?'
 NO_EXERCISES = '🏋️Repka\n\nAinda não há exercícios'
 WELCOME = '🥬 Olá! Eu sou Repka.\n\nLembro-me dos seus treinos e transformo números simples em uma história clara do seu progresso.\n\nComeçar é fácil:\n1. Adicione um exercício – por exemplo, Flexões.\n2. Após o treino, envie um resultado: 16, 4×10 ou 12, 10, 8.\n3. Vou salvá-lo e calcular suas estatísticas.\n\nCom o tempo, você verá seu histórico de treino, progresso semanal e mensal e relatórios semanais que você pode compartilhar.\n\nSeus dados podem ser importados e exportados – eles nunca são bloqueados dentro do Repka.\n\n👇 Adicione seu primeiro exercício. Leva apenas alguns segundos.'
 HELP = 'ℹ️ Ajuda\n\nEscolha um exercício para adicionar um resultado, visualizar estatísticas ou abrir o histórico.\n\n/menu — exercícios\n/settings — configurações'
@@ -112,8 +112,8 @@ EXERCISE_MANAGEMENT = '🛠 Gerenciar exercícios'
 CLEAR_HISTORY_CHOOSE_EXERCISE = '🧹 Limpar histórico\n\nEscolha um exercício'
 DELETE_EXERCISE_CHOOSE_EXERCISE = '🗑 Excluir exercício\n\nEscolha um exercício'
 
-def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, entries: str, best_day: str | None, best_day_reps: str | None) -> str:
-    value = f'📊 {name}\n\nHoje: {today_reps}\n7 dias: {last_7_days_reps}\n30 dias: {last_30_days_reps}\nTodos os tempos: {total_reps}\n\nDias de treinamento: {active_days}\nEntradas: {entries}'
+def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
+    value = f'📊 {name}\n\nHoje: {today_reps}\n7 dias: {last_7_days_reps}\n30 dias: {last_30_days_reps}\nTodos os tempos: {total_reps}\n\nDias de treinamento: {active_days}\nMédia por dia de treino: {average_training_day}'
     if best_day is not None and best_day_reps is not None:
         value += f'\n\nMelhor dia:\n{best_day} - {best_day_reps}'
     return value

@@ -36,6 +36,7 @@ from bot.app.services.date_parser import (
     format_result_date,
     parse_result_date,
 )
+from bot.app.services.date_format import format_user_date
 from bot.app.services.result_constructor import (
     ConstructorError,
     add_set,
@@ -446,7 +447,7 @@ async def _save_result(
         context.exercise_name,
         formatted_reps,
         sum(entry.reps),
-        entry.performed_on.strftime("%d.%m.%Y"),
+        format_user_date(entry.performed_on),
     )
     if isinstance(event, CallbackQuery):
         await event.answer(texts.RESULT_ADDED)

@@ -2,6 +2,7 @@ import re
 from datetime import date, timedelta
 
 from bot.app.texts import texts
+from bot.app.services.date_format import format_user_date
 
 
 _SHORT_DATE = re.compile(r"^(\d{1,2})\.(\d{1,2})$")
@@ -51,4 +52,4 @@ def days_ago(days: int, *, today: date) -> date:
 def format_result_date(value: date, *, today: date) -> str:
     if value == today:
         return texts.TODAY
-    return value.strftime("%d.%m.%Y")
+    return format_user_date(value)

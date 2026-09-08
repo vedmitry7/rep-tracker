@@ -8,7 +8,7 @@ BOT_NAME = "Repka · Monitor treningów"
 BOT_COMMANDS = {"menu": "Menu", "settings": "Ustawienia", "help": "Pomoc"}
 BOT_SHORT_DESCRIPTION = "Zapisuj ćwiczenia, śledź postępy i otrzymuj tygodniowe raporty."
 BOT_DESCRIPTION = "🥬 Repka to monitor ćwiczeń w Telegramie.\n\nZapisuj serie i powtórzenia w jednym wierszu, śledź postępy i otrzymuj tygodniowe raporty."
-EXERCISES_TITLE = "🏋️ Repka\n\nWybierz ćwiczenie"
+EXERCISES_TITLE = "🏋️ Repka\n\nCo dziś trenujemy?"
 NO_EXERCISES = "🏋️ Repka\n\nNie ma jeszcze ćwiczeń"
 WELCOME = "🥬 Cześć! Jestem Repka.\n\nZapamiętuję Twoje treningi i zamieniam proste liczby w jasny obraz postępów.\n\nDodaj ćwiczenie i wyślij wynik: 16, 4×10 albo 12, 10, 8."
 HELP = "ℹ️ Pomoc\n\nWybierz ćwiczenie, aby dodać wynik, zobaczyć statystyki lub otworzyć historię.\n\n/menu — ćwiczenia\n/settings — ustawienia"
@@ -76,7 +76,7 @@ def too_many_sets(max_sets: int) -> str: return f"Nie można dodać więcej niż
 def exercise_empty(name: str) -> str: return f"🏋️ {name}\n\n↩️ Ostatnio: —\n\n🔥 Dziś — 0\n📅 7 dni — 0\n🗓 30 dni — 0\n🏆 Razem — 0"
 def exercise_summary(*, name: str, last_reps: str, last_date: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str) -> str: return f"🏋️ {name}\n\n↩️ Ostatnio: {last_reps} · {last_date.lower()}\n\n🔥 Dziś — {today_reps}\n📅 7 dni — {last_7_days_reps}\n🗓 30 dni — {last_30_days_reps}\n🏆 Razem — {total_reps}"
 def statistics(**v: str | None) -> str:
-    value=f"📊 {v['name']}\n\nDziś: {v['today_reps']}\n7 dni: {v['last_7_days_reps']}\n30 dni: {v['last_30_days_reps']}\nŁącznie: {v['total_reps']}\n\nDni treningowe: {v['active_days']}\nWpisy: {v['entries']}"
+    value=f"📊 {v['name']}\n\nDziś: {v['today_reps']}\n7 dni: {v['last_7_days_reps']}\n30 dni: {v['last_30_days_reps']}\nŁącznie: {v['total_reps']}\n\nDni treningowe: {v['active_days']}\nŚrednio na dzień treningowy: {v['average_training_day']}"
     return value if v['best_day'] is None else value+f"\n\nNajlepszy dzień:\n{v['best_day']} — {v['best_day_reps']}"
 def history_days(name: str, *, has_entries: bool) -> str: return f"📜 {name}\n\n{'Wybierz dzień:' if has_entries else 'Nie ma jeszcze wpisów.'}"
 def history_day(name: str, performed_on: str, total_reps: str) -> str: return f"🏋️ {name}\n{performed_on}\nSuma dnia: {total_reps}"

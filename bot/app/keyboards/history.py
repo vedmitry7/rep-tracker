@@ -11,6 +11,7 @@ from bot.app.keyboards.exercises import (
     ExerciseOpen,
 )
 from bot.app.services.exercise_format import format_reps, format_number
+from bot.app.services.date_format import format_user_date
 from bot.app.texts import texts
 
 
@@ -91,7 +92,7 @@ def history_days_keyboard(
     builder = InlineKeyboardBuilder()
     for day in days:
         builder.button(
-            text=f"{day.date.strftime('%d.%m')} — {format_number(day.total_reps)}",
+            text=f"{format_user_date(day.date)} — {format_number(day.total_reps)}",
             callback_data=HistoryDayOpen(
                 exercise_id=exercise_id,
                 performed_on=day.date.isoformat(),

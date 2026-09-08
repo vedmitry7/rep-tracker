@@ -3,7 +3,7 @@ from .en import *
 LANGUAGE_CODE = "hi"
 LANGUAGE_NAME = "Hindi"
 LANGUAGE_BUTTON = "🇮🇳 Hindi"
-EXERCISES_TITLE = "🏋️ Repka\n\nएक व्यायाम चुनें"
+EXERCISES_TITLE = "🏋️ Repka\n\nआज क्या ट्रेन करें?"
 NO_EXERCISES = "🏋️ Repka\n\nअभी कोई व्यायाम नहीं है"
 BUTTON_SETTINGS = "⚙️ सेटिंग्स"
 BUTTON_ADD_EXERCISE = "➕ व्यायाम जोड़ें"
@@ -100,10 +100,10 @@ DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 व्यायाम हटाएँ\n\
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str,
                last_30_days_reps: str, total_reps: str, active_days: str,
-               entries: str, best_day: str | None, best_day_reps: str | None) -> str:
+               average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
     value = (f"📊 {name}\n\nआज: {today_reps}\n7 दिन: {last_7_days_reps}\n"
              f"30 दिन: {last_30_days_reps}\nकुल: {total_reps}\n\n"
-             f"प्रशिक्षण के दिन: {active_days}\nरिकॉर्ड: {entries}")
+             f"प्रशिक्षण के दिन: {active_days}\nप्रति प्रशिक्षण दिन औसत: {average_training_day}")
     if best_day is not None and best_day_reps is not None:
         value += f"\n\nसबसे अच्छा दिन:\n{best_day} — {best_day_reps}"
     return value

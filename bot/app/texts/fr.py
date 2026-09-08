@@ -8,7 +8,7 @@ BOT_NAME = "Repka · Suivi d’entraînement"
 BOT_COMMANDS = {"menu": "Menu", "settings": "Paramètres", "help": "Aide"}
 BOT_SHORT_DESCRIPTION = "Suivez vos exercices, vos progrès et recevez des rapports hebdomadaires."
 BOT_DESCRIPTION = "🥬 Repka est un suivi d’exercices dans Telegram.\n\nEnregistrez vos séries et répétitions sur une ligne, suivez vos progrès et recevez des rapports hebdomadaires."
-EXERCISES_TITLE = "🏋️ Repka\n\nChoisissez un exercice"
+EXERCISES_TITLE = "🏋️ Repka\n\nQu’est-ce qu’on travaille aujourd’hui ?"
 NO_EXERCISES = "🏋️ Repka\n\nAucun exercice pour le moment"
 WELCOME = "🥬 Bonjour ! Je suis Repka.\n\nJe mémorise vos entraînements et transforme de simples chiffres en une vision claire de vos progrès.\n\nAjoutez un exercice et envoyez un résultat : 16, 4×10 ou 12, 10, 8."
 HELP = "ℹ️ Aide\n\nChoisissez un exercice pour ajouter un résultat, voir les statistiques ou ouvrir l’historique.\n\n/menu — exercices\n/settings — paramètres"
@@ -87,7 +87,7 @@ def statistics(**v: str | None) -> str:
         f"📊 {v['name']}\n\nAujourd’hui : {v['today_reps']}\n"
         f"7 jours : {v['last_7_days_reps']}\n30 jours : {v['last_30_days_reps']}\n"
         f"Depuis le début : {v['total_reps']}\n\nJours d’entraînement : {v['active_days']}\n"
-        f"Entrées : {v['entries']}"
+        f"Moyenne par jour d’entraînement : {v['average_training_day']}"
     )
     if v['best_day'] is not None and v['best_day_reps'] is not None:
         value += f"\n\nMeilleur jour :\n{v['best_day']} — {v['best_day_reps']}"

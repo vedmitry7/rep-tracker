@@ -32,6 +32,7 @@ from bot.app.keyboards.exercises import (
 )
 from bot.app.keyboards.settings import exercise_management_keyboard
 from bot.app.services.exercise_format import format_number, format_reps
+from bot.app.services.date_format import format_user_date
 from bot.app.states.exercise import CreateExercise
 from bot.app.texts import texts
 
@@ -64,9 +65,13 @@ def stats_screen_text(exercise: Exercise, stats: ExerciseStats) -> str:
         last_30_days_reps=format_number(stats.last_30_days_reps),
         total_reps=format_number(stats.total_reps),
         active_days=format_number(stats.active_days),
-        entries=format_number(stats.all_time_entries),
+        average_training_day=(
+            format_number(round(stats.total_reps / stats.active_days))
+            if stats.active_days
+            else "—"
+        ),
         best_day=(
-            stats.best_day.date.strftime("%d.%m.%Y")
+            format_user_date(stats.best_day.date)
             if stats.best_day is not None
             else None
         ),
@@ -491,4 +496,4 @@ def _format_last_entry_date(performed_on: date, today: date) -> str:
         return texts.TODAY
     if performed_on == today - timedelta(days=1):
         return texts.YESTERDAY
-    return performed_on.strftime("%d.%m.%Y")
+    return format_user_date(performed_on)

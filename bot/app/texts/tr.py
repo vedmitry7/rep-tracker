@@ -8,7 +8,7 @@ BOT_NAME = 'Repka · Antrenman Takibi'
 BOT_COMMANDS = {'menu': 'Menü', 'settings': 'Ayarlar', 'help': 'Yardım'}
 BOT_SHORT_DESCRIPTION = 'Egzersizleri takip edin, ilerlemenizi görün ve haftalık raporlar alın.'
 BOT_DESCRIPTION = "🥬 Repka, Telegram'da bir egzersiz takipçisidir.\n\nSetleri ve tekrarları tek satırda kaydedin: 16, 4×10 veya 12, 10, 8. Repka sonucu kaydeder, gün, hafta ve ay için tekrar sayınızı toplar ve her egzersiz için ilerlemeyi gösterir.\n\n📊 Antrenman istatistikleri ve geçmişi\n🖼 Paylaşılmaya değer haftalık raporlar\n📦 Veri içe ve dışa aktarma"
-EXERCISES_TITLE = '🏋️ Repka\n\nBir egzersiz seçin'
+EXERCISES_TITLE = '🏋️ Repka\n\nBugün ne çalışıyoruz?'
 NO_EXERCISES = '🏋️ Repka\n\nHenüz egzersiz yok'
 WELCOME = "🥬 Merhaba! Ben Repka.\n\nAntrenmanlarınızı hatırlıyorum ve basit sayıları ilerlemenizin net bir hikayesine dönüştürüyorum.\n\nBaşlamak kolaydır:\n1. Bir egzersiz ekleyin; örneğin, Pull-up'lar.\n2. Antrenmandan sonra sonucu gönderin: 16, 4×10 veya 12, 10, 8.\n3. Bunu kaydedeceğim ve istatistiklerinizi hesaplayacağım.\n\nZamanla antrenman geçmişinizi, haftalık ve aylık ilerlemenizi ve paylaşabileceğiniz haftalık raporları göreceksiniz.\n\nVerileriniz içe ve dışa aktarılabilir; hiçbir zaman Repka'da kilitlenmez.\n\n👇 İlk egzersizinizi ekleyin. Yalnızca birkaç saniye sürer."
 HELP = 'ℹ️ Yardım\n\nSonuç eklemek, istatistikleri görüntülemek veya geçmişi açmak için bir egzersiz seçin.\n\n/menu — alıştırmalar\n/settings — ayarlar'
@@ -112,8 +112,8 @@ EXERCISE_MANAGEMENT = '🛠 Egzersizleri yönet'
 CLEAR_HISTORY_CHOOSE_EXERCISE = '🧹 Geçmişi temizle\n\nBir egzersiz seçin'
 DELETE_EXERCISE_CHOOSE_EXERCISE = '🗑 Egzersizi sil\n\nBir egzersiz seçin'
 
-def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, entries: str, best_day: str | None, best_day_reps: str | None) -> str:
-    value = f'📊 {name}\n\nBugün: {today_reps}\n7 gün: {last_7_days_reps}\n30 gün: {last_30_days_reps}\nTüm zamanlar: {total_reps}\n\nEğitim günleri: {active_days}\nGirişler: {entries}'
+def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
+    value = f'📊 {name}\n\nBugün: {today_reps}\n7 gün: {last_7_days_reps}\n30 gün: {last_30_days_reps}\nTüm zamanlar: {total_reps}\n\nEğitim günleri: {active_days}\nAntrenman günü başına ortalama: {average_training_day}'
     if best_day is not None and best_day_reps is not None:
         value += f'\n\nEn iyi gün:\n{best_day} — {best_day_reps}'
     return value

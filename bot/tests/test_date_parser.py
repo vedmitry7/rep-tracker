@@ -54,4 +54,4 @@ def test_relative_dates_use_local_today(offset: int, expected: date) -> None:
 
 def test_today_has_a_human_readable_label() -> None:
     assert format_result_date(TODAY, today=TODAY) == "Сегодня"
-    assert format_result_date(date(2026, 8, 25), today=TODAY) == "25.08.2026"
+    assert format_result_date(date(2026, 8, 25), today=TODAY) == "25 августа 2026"

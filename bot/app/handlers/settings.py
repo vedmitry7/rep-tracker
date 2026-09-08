@@ -48,6 +48,7 @@ from bot.app.keyboards.settings import (
 )
 from bot.app.localization import user_languages
 from bot.app.services.exercise_format import format_number
+from bot.app.services.date_format import format_user_date
 from bot.app.states.settings import ChangeTimezone, ExportData, ImportData
 from bot.app.texts import (
     current_language,
@@ -686,12 +687,12 @@ def _import_preview_text(preview: ImportPreview) -> str:
         entries=format_number(preview.entries_count),
         total_reps=format_number(preview.total_reps),
         date_from=(
-            preview.date_from.strftime("%d.%m.%Y")
+            format_user_date(preview.date_from)
             if preview.date_from is not None
             else "—"
         ),
         date_to=(
-            preview.date_to.strftime("%d.%m.%Y")
+            format_user_date(preview.date_to)
             if preview.date_to is not None
             else "—"
         ),
@@ -706,12 +707,12 @@ def _new_exercises_import_text(preview: ImportPreview) -> str:
         entries=format_number(preview.entries_count),
         total_reps=format_number(preview.total_reps),
         date_from=(
-            preview.date_from.strftime("%d.%m.%Y")
+            format_user_date(preview.date_from)
             if preview.date_from is not None
             else "—"
         ),
         date_to=(
-            preview.date_to.strftime("%d.%m.%Y")
+            format_user_date(preview.date_to)
             if preview.date_to is not None
             else "—"
         ),
