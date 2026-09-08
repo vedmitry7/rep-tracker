@@ -11,6 +11,8 @@ from bot.app.services.telegram_delivery import send_with_rate_limit_retry
 
 router = Router(name="weekly_reports")
 logger = logging.getLogger(__name__)
+_generating_cards: set[tuple[int, int, str | None]] = set()
+_generating_reports: set[tuple[int, str]] = set()
 
 
 async def _track_weekly_report_open(api_client, user_id: int) -> None:
@@ -20,6 +22,10 @@ async def _track_weekly_report_open(api_client, user_id: int) -> None:
 
 
 async def send_card(message, api_client, user_id, exercise_id, report_id=None):
+    key = (user_id, exercise_id, report_id)
+    if key in _generating_cards:
+        return
+    _generating_cards.add(key)
     try:
         png = await api_client.get_weekly_card(user_id, exercise_id, report_id)
         await send_with_rate_limit_retry(lambda: message.answer_photo(
@@ -29,6 +35,8 @@ async def send_card(message, api_client, user_id, exercise_id, report_id=None):
     except Exception:
         logger.exception("Weekly card failed for exercise %s", exercise_id)
         await message.answer(texts.WEEKLY_CARD_FAILED)
+    finally:
+        _generating_cards.discard(key)
 
 
 @router.callback_query(ExerciseDetailAction.filter(F.action == ExerciseDetailActionValue.WEEKLY_CARD))
@@ -46,12 +54,19 @@ async def report_cards(callback: CallbackQuery, api_client: RepTrackerApi):
     if not isinstance(callback.message, Message):
         return
     report_id = callback.data.split(":", 1)[1]
-    try:
-        report = await api_client.get_weekly_report(callback.from_user.id, report_id)
-    except ApiError as error:
-        await answer_api_error(callback.message, error)
+    key = (callback.from_user.id, report_id)
+    if key in _generating_reports:
         return
-    await _track_weekly_report_open(api_client, callback.from_user.id)
-    for exercise in report["exercises"]:
-        await send_card(callback.message, api_client, callback.from_user.id,
-                        exercise["exercise_id"], report_id)
+    _generating_reports.add(key)
+    try:
+        try:
+            report = await api_client.get_weekly_report(callback.from_user.id, report_id)
+        except ApiError as error:
+            await answer_api_error(callback.message, error)
+            return
+        await _track_weekly_report_open(api_client, callback.from_user.id)
+        for exercise in report["exercises"]:
+            await send_card(callback.message, api_client, callback.from_user.id,
+                            exercise["exercise_id"], report_id)
+    finally:
+        _generating_reports.discard(key)

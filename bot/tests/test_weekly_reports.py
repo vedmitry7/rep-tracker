@@ -1,3 +1,4 @@
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -8,6 +9,7 @@ from aiogram.types import Message
 
 from bot.app.api.client import RepTrackerApi, UnexpectedApiError, ResourceNotFoundError
 from bot.app.handlers.weekly_reports import exercise_weekly_card, report_cards
+from bot.app.handlers import weekly_reports as weekly_reports_module
 from bot.app.keyboards.exercises import (
     ExerciseDetailAction,
     ExerciseDetailActionValue,
@@ -136,6 +138,29 @@ async def test_exercise_card_and_no_data():
     api.get_weekly_card.side_effect = ResourceNotFoundError()
     await exercise_weekly_card(cb, data, api)
     cb.message.answer.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_card_generation_is_not_started_twice_for_the_same_exercise():
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def get_card(*_args):
+        started.set()
+        await release.wait()
+        return b"png"
+
+    cb = callback()
+    api = SimpleNamespace(get_weekly_card=AsyncMock(side_effect=get_card))
+    data = ExerciseDetailAction(action=ExerciseDetailActionValue.WEEKLY_CARD, exercise_id=8)
+    first = asyncio.create_task(exercise_weekly_card(cb, data, api))
+    await started.wait()
+    await exercise_weekly_card(cb, data, api)
+    release.set()
+    await first
+
+    api.get_weekly_card.assert_awaited_once_with(123, 8, None)
+    assert not weekly_reports_module._generating_cards
 
 
 @pytest.mark.asyncio

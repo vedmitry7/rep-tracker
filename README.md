@@ -45,6 +45,9 @@ The compact JSON import format is documented in
 Weekly delivery, card rendering and local runtime notes are documented in
 [docs/weekly-reports.md](docs/weekly-reports.md).
 
+Bot flood protection, group settings, and card-generation deduplication are
+documented in [docs/abuse-protection.md](docs/abuse-protection.md).
+
 ## Tech Stack
 
 - Python 3.11+

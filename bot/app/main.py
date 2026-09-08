@@ -19,6 +19,7 @@ from bot.app.handlers import (
 from bot.app.localization import LocalizationMiddleware
 from bot.app.notifications import notify_administrators
 from bot.app.handlers.weekly_reports import router as weekly_reports_router
+from bot.app.protection import MAX_CONCURRENT_UPDATES, PerUserRateLimitMiddleware
 from bot.app.workers.weekly_reports import run_worker
 
 
@@ -38,6 +39,7 @@ async def main() -> None:
     settings = get_settings()
     bot = Bot(token=settings.telegram_bot_token.get_secret_value())
     dispatcher = Dispatcher(storage=MemoryStorage())
+    dispatcher.update.outer_middleware(PerUserRateLimitMiddleware())
     dispatcher.update.outer_middleware(LocalizationMiddleware())
     dispatcher.include_router(admin_router)
     dispatcher.include_router(start_router)
@@ -61,6 +63,7 @@ async def main() -> None:
                     bot,
                     api_client=api_client,
                     default_timezone=settings.default_timezone,
+                    tasks_concurrency_limit=MAX_CONCURRENT_UPDATES,
                 )
             finally:
                 if worker is not None:
