@@ -243,3 +243,6 @@ WEEKLY_LABELS = dict(title="📅 साप्ताहिक रिपोर्�
 
 def weekly_reps_unit(total: int) -> str:
     return "दोहराव" if total == 1 else "दोहराव"
+
+from ._support_translations import apply_support_translations as _apply_support_translations
+_apply_support_translations(globals(), LANGUAGE_CODE)

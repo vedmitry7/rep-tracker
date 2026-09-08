@@ -225,3 +225,6 @@ WEEKLY_LABELS = dict(title='📅 Haftalık rapor', period='Dönem', total='Bu ha
 
 def weekly_reps_unit(total: int) -> str:
     return 'temsilci' if total == 1 else 'tekrarlar'
+
+from ._support_translations import apply_support_translations as _apply_support_translations
+_apply_support_translations(globals(), LANGUAGE_CODE)

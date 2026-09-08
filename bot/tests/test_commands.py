@@ -84,6 +84,7 @@ async def test_register_commands_sets_default_and_localized_menus() -> None:
         "menu",
         "settings",
         "help",
+        "support",
     ]
     assert calls[0].args[0][0].description == get_catalog("en").BOT_COMMANDS["menu"]
     assert calls[0].kwargs == {}
@@ -95,6 +96,7 @@ async def test_register_commands_sets_default_and_localized_menus() -> None:
             "menu",
             "settings",
             "help",
+            "support",
         ]
         assert call.args[0][0].description == get_catalog(locale.code).BOT_COMMANDS["menu"]
         assert call.kwargs == {"language_code": locale.code}

@@ -4,6 +4,7 @@ from bot.app.handlers.history import router as history_router
 from bot.app.handlers.results import router as results_router
 from bot.app.handlers.settings import router as settings_router
 from bot.app.handlers.start import router as start_router
+from bot.app.handlers.support import router as support_router
 
 __all__ = [
     "admin_router",
@@ -13,5 +14,6 @@ __all__ = [
     "results_router",
     "settings_router",
     "start_router",
+    "support_router",
 ]
 from bot.app.handlers.commands import router as commands_router

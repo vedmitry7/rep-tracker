@@ -245,3 +245,6 @@ WEEKLY_LABELS = dict(title="📅 Апталық есеп", period="Кезең", 
 
 def weekly_reps_unit(total: int) -> str:
     return "қайталау" if total == 1 else "қайталау"
+
+from ._support_translations import apply_support_translations as _apply_support_translations
+_apply_support_translations(globals(), LANGUAGE_CODE)

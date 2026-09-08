@@ -15,6 +15,7 @@ from bot.app.handlers import (
     settings_router,
     start_router,
     commands_router,
+    support_router,
 )
 from bot.app.localization import LocalizationMiddleware
 from bot.app.notifications import notify_administrators
@@ -44,6 +45,7 @@ async def main() -> None:
     dispatcher.include_router(admin_router)
     dispatcher.include_router(start_router)
     dispatcher.include_router(commands_router)
+    dispatcher.include_router(support_router)
     dispatcher.include_router(weekly_reports_router)
     dispatcher.include_router(settings_router)
     dispatcher.include_router(exercises_router)
@@ -63,6 +65,7 @@ async def main() -> None:
                     bot,
                     api_client=api_client,
                     default_timezone=settings.default_timezone,
+                    admin_telegram_ids=settings.admin_telegram_ids,
                     tasks_concurrency_limit=MAX_CONCURRENT_UPDATES,
                 )
             finally:

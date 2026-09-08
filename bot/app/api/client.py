@@ -114,6 +114,15 @@ class ExportDocument(BaseModel):
     exercises: list[dict[str, object]]
 
 
+class SupportInvoice(BaseModel):
+    payload: str
+    amount: int
+
+
+class SupportPaymentCompletion(BaseModel):
+    newly_completed: bool
+
+
 class ApiError(Exception):
     """Base exception safe for handlers to map to a user-facing message."""
 
@@ -244,6 +253,84 @@ class RepTrackerApi:
             "POST",
             "/analytics/blocked",
             params=self._identity(telegram_user_id),
+            expected_statuses={204},
+        )
+
+    async def create_support_invoice(
+        self, telegram_user_id: int, amount: int
+    ) -> SupportInvoice:
+        response = await self._request(
+            "POST",
+            "/support-payments/invoices",
+            json={**self._identity(telegram_user_id), "amount": amount},
+            expected_statuses={201},
+        )
+        try:
+            return SupportInvoice.model_validate(response.json())
+        except (ValueError, ValidationError) as error:
+            logger.exception("Backend returned an invalid support invoice")
+            raise UnexpectedApiError from error
+
+    async def check_support_payment(
+        self,
+        telegram_user_id: int,
+        payload: str,
+        amount: int,
+        currency: str,
+    ) -> bool:
+        response = await self._request(
+            "POST",
+            "/support-payments/check",
+            json={
+                **self._identity(telegram_user_id),
+                "payload": payload,
+                "amount": amount,
+                "currency": currency,
+            },
+            expected_statuses={200},
+        )
+        try:
+            return bool(response.json()["valid"])
+        except (KeyError, TypeError, ValueError) as error:
+            logger.exception("Backend returned an invalid support payment check")
+            raise UnexpectedApiError from error
+
+    async def complete_support_payment(
+        self,
+        telegram_user_id: int,
+        payload: str,
+        amount: int,
+        currency: str,
+        telegram_payment_charge_id: str,
+    ) -> SupportPaymentCompletion:
+        response = await self._request(
+            "POST",
+            "/support-payments/complete",
+            json={
+                **self._identity(telegram_user_id),
+                "payload": payload,
+                "amount": amount,
+                "currency": currency,
+                "telegram_payment_charge_id": telegram_payment_charge_id,
+            },
+            expected_statuses={200},
+        )
+        try:
+            return SupportPaymentCompletion.model_validate(response.json())
+        except (ValueError, ValidationError) as error:
+            logger.exception("Backend returned an invalid support payment completion")
+            raise UnexpectedApiError from error
+
+    async def mark_support_payment_refunded(
+        self, telegram_payment_charge_id: str, refunded_at: datetime
+    ) -> None:
+        await self._request(
+            "POST",
+            "/support-payments/refund",
+            json={
+                "telegram_payment_charge_id": telegram_payment_charge_id,
+                "refunded_at": refunded_at.isoformat(),
+            },
             expected_statuses={204},
         )
 

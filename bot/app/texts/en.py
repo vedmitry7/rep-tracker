@@ -8,6 +8,7 @@ BOT_COMMANDS = {
     "menu": "Menu",
     "settings": "Settings",
     "help": "Help",
+    "support": "Support the developer",
 }
 BOT_SHORT_DESCRIPTION = "Track exercises, see your progress, and get weekly reports."
 BOT_DESCRIPTION = (
@@ -115,6 +116,49 @@ BUTTON_IMPORT_REPLACE = "♻️ Replace"
 BUTTON_IMPORT = "Import"
 BUTTON_REPLACE_AND_IMPORT = "Replace and import"
 BUTTON_EXPORT = "📤 Export"
+BUTTON_OTHER_AMOUNT = "✏️ Other amount"
+BUTTON_SUPPORT_CONTINUE = "✓ I have read the terms"
+
+SUPPORT_CHOOSE_AMOUNT = (
+    "⭐ Support Repka\n\n"
+    "Support is voluntary and does not unlock features. Choose an amount:"
+)
+SUPPORT_INVOICE_TITLE = "Support Repka"
+SUPPORT_INVOICE_DESCRIPTION = "One-time voluntary project support"
+SUPPORT_PAYMENT_UNAVAILABLE = "This invoice is no longer available. Open /support and create a new one."
+SUPPORT_PAYMENT_PROCESSING = "Payment received. We are confirming it; if no message arrives, use /paysupport."
+SUPPORT_PAYMENT_CONTACT = "Describe your payment question or refund request in one message. We will forward it to support."
+SUPPORT_REQUEST_SENT = "Thank you. Your request has been sent to support."
+SUPPORT_TERMS = (
+    "Voluntary support terms\n\n"
+    "You may support Repka once with Telegram Stars. Support is voluntary, unlocks no features, "
+    "does not affect your data or how the bot works, and creates no obligation for future payments. "
+    "For payment questions or a refund request, use /paysupport. Telegram support cannot resolve payments made to this bot."
+)
+SUPPORT_TERMS_CONFIRMATION = (
+    "⭐ Support the developer\n\n"
+    "Repka is free. You may send Telegram Stars once as voluntary support for its development.\n\n"
+    "Support unlocks no features, gives no advantages, does not affect your data or how the bot works, "
+    "and creates no obligation for future payments.\n\n"
+    "For payment questions or a refund request, use /paysupport. Telegram support cannot resolve payments made to this bot.\n\n"
+    "Tap the button below to confirm that you have read these terms."
+)
+
+
+def support_amount_button(amount: int) -> str:
+    return f"{amount} ⭐"
+
+
+def support_enter_amount(maximum: int) -> str:
+    return f"Enter a whole number of Stars from 1 to {maximum}."
+
+
+def support_invalid_amount(maximum: int) -> str:
+    return f"Enter a whole number of Stars from 1 to {maximum}."
+
+
+def support_thank_you(amount: int) -> str:
+    return f"Thank you for supporting Repka with {amount} ⭐!"
 
 # Input validation
 ENTER_RESULT = "Enter a result."

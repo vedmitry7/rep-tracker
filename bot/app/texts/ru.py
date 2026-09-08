@@ -467,3 +467,6 @@ def weekly_reps_unit(total: int) -> str:
     if 2 <= total % 10 <= 4:
         return "повторения"
     return "повторений"
+
+from ._support_translations import apply_support_translations as _apply_support_translations
+_apply_support_translations(globals(), LANGUAGE_CODE)

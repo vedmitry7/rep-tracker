@@ -255,3 +255,6 @@ ENTER_DATE_REQUIRED = "Introduce una fecha."
 FUTURE_DATE = "No se puede seleccionar una fecha futura."
 SET_NOT_FOUND = "No se encontró la serie."
 LAST_SET_REQUIRED = "Debe quedar al menos una serie."
+
+from ._support_translations import apply_support_translations as _apply_support_translations
+_apply_support_translations(globals(), LANGUAGE_CODE)

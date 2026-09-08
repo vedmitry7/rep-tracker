@@ -225,3 +225,6 @@ WEEKLY_LABELS = dict(title='📅 Laporan mingguan', period='Titik', total='Mingg
 
 def weekly_reps_unit(total: int) -> str:
     return 'perwakilan' if total == 1 else 'repetisi'
+
+from ._support_translations import apply_support_translations as _apply_support_translations
+_apply_support_translations(globals(), LANGUAGE_CODE)

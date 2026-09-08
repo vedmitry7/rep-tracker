@@ -225,3 +225,6 @@ WEEKLY_LABELS = dict(title='📅 Relatório semanal', period='Período', total='
 
 def weekly_reps_unit(total: int) -> str:
     return 'representante' if total == 1 else 'repetições'
+
+from ._support_translations import apply_support_translations as _apply_support_translations
+_apply_support_translations(globals(), LANGUAGE_CODE)

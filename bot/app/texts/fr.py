@@ -230,3 +230,6 @@ ENTER_DATE_REQUIRED = "Saisissez une date."
 FUTURE_DATE = "Une date future ne peut pas être sélectionnée."
 SET_NOT_FOUND = "Série introuvable."
 LAST_SET_REQUIRED = "Au moins une série doit rester."
+
+from ._support_translations import apply_support_translations as _apply_support_translations
+_apply_support_translations(globals(), LANGUAGE_CODE)
