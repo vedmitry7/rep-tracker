@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r /tmp/api-requirements.txt \
 
 COPY --chown=app:app alembic.ini ./alembic.ini
 COPY --chown=app:app api ./api
+COPY --chown=app:app shared ./shared
 
 USER app
 
