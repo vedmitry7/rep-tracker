@@ -16,7 +16,6 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .brand-mark { color: #0c1116; background: linear-gradient(135deg, #70c9ff, #8be3cc); font-weight: 900; }
 .icon-button { font-size: 21px; line-height: 1; }
 .icon-button:hover { background: #293342; }
-.menu-wrap { position: relative; }.menu-button { font-size: 25px; font-weight: 800; }.exercise-menu { position: absolute; z-index: 4; top: 45px; right: 0; width: 166px; overflow: hidden; border: 1px solid #394755; border-radius: 12px; background: #202731; box-shadow: 0 13px 28px rgba(0, 0, 0, .32); }.exercise-menu button { width: 100%; border: 0; color: #eef5fb; background: transparent; padding: 12px 13px; text-align: left; }.exercise-menu button:hover { background: #2b3644; }
 .intro { padding: 13px 5px 26px; }
 .intro.compact { padding-bottom: 28px; }
 .eyebrow { margin: 0 0 7px; color: #83cfff; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; }
