@@ -96,8 +96,18 @@ def exercise_summary(*, name: str, last_reps: str, last_date: str, today_reps: s
 
 
 EXERCISE_MANAGEMENT = "🛠 Жаттығуларды басқару"
+BUTTON_RENAME_EXERCISE = "✏️ Жаттығу атауын өзгерту"
+RENAME_EXERCISE_CHOOSE_EXERCISE = "✏️ Жаттығу атауын өзгерту\n\nЖаттығуды таңдаңыз"
 CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Тарихты тазалау\n\nЖаттығуды таңдаңыз"
 DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Жаттығуды жою\n\nЖаттығуды таңдаңыз"
+
+
+def rename_exercise_request(name: str) -> str:
+    return f"✏️ {name} атауын өзгерту\n\nЖаңа атауды енгізіңіз"
+
+
+def exercise_renamed(name: str) -> str:
+    return f"✅ Жаттығудың атауы өзгертілді: {name}"
 
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str,

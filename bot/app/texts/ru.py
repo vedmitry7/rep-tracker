@@ -106,6 +106,7 @@ BUTTON_SAVE = "✅ Сохранить"
 BUTTON_EDIT = "✏️ Изменить"
 BUTTON_DELETE = "🗑 Удалить"
 BUTTON_CLEAR_HISTORY = "🧹 Очистить историю"
+BUTTON_RENAME_EXERCISE = "✏️ Переименовать упражнение"
 BUTTON_DELETE_EXERCISE = "🗑 Удалить упражнение"
 BUTTON_CONFIRM_CLEAR_HISTORY = "🧹 Очистить историю"
 BUTTON_DELETE_PERMANENTLY = "🗑 Удалить навсегда"
@@ -185,8 +186,17 @@ def exercise_summary(
 
 
 EXERCISE_MANAGEMENT = "🛠 Управление упражнениями"
-CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Очистить историю\n\nВыбери упражнение"
-DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Удалить упражнение\n\nВыбери упражнение"
+RENAME_EXERCISE_CHOOSE_EXERCISE = "✏️ Переименовать упражнение\n\nВыберите упражнение"
+CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Очистить историю\n\nВыберите упражнение"
+DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Удалить упражнение\n\nВыберите упражнение"
+
+
+def rename_exercise_request(name: str) -> str:
+    return f"✏️ Переименовать «{name}»\n\nВведите новое название"
+
+
+def exercise_renamed(name: str) -> str:
+    return f"✅ Упражнение переименовано: «{name}»"
 
 
 def statistics(

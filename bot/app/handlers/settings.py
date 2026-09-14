@@ -13,6 +13,7 @@ from bot.app.api.client import (
     ImportPreview,
     InvalidRequestError,
     RepTrackerApi,
+    ResourceConflictError,
 )
 from bot.app.texts._import_format import IMPORT_JSON_EXAMPLE
 from bot.app.handlers.common import (
@@ -21,8 +22,10 @@ from bot.app.handlers.common import (
     edit_stored_or_answer,
 )
 from bot.app.keyboards.exercises import (
+    ExerciseDetailAction,
     ExerciseDetailActionValue,
     add_exercise_keyboard,
+    exercise_management_back_keyboard,
     exercise_management_selection_keyboard,
     exercises_list_keyboard,
 )
@@ -49,7 +52,12 @@ from bot.app.keyboards.settings import (
 from bot.app.localization import user_languages
 from bot.app.services.exercise_format import format_number
 from bot.app.services.date_format import format_user_date
-from bot.app.states.settings import ChangeTimezone, ExportData, ImportData
+from bot.app.states.settings import (
+    ChangeTimezone,
+    ExportData,
+    ImportData,
+    RenameExercise,
+)
 from bot.app.texts import (
     current_language,
     locale_name,
@@ -438,7 +446,11 @@ async def show_exercise_management(
 @router.callback_query(
     SettingsAction.filter(
         F.action.in_(
-            {SettingsActionValue.CLEAR_HISTORY, SettingsActionValue.HARD_DELETE}
+            {
+                SettingsActionValue.RENAME_EXERCISE,
+                SettingsActionValue.CLEAR_HISTORY,
+                SettingsActionValue.HARD_DELETE,
+            }
         )
     )
 )
@@ -454,22 +466,138 @@ async def choose_managed_exercise(
     except ApiError as error:
         await answer_api_error(callback, error)
         return
-    is_clear = callback_data.action is SettingsActionValue.CLEAR_HISTORY
-    text = (
-        texts.CLEAR_HISTORY_CHOOSE_EXERCISE
-        if is_clear
-        else texts.DELETE_EXERCISE_CHOOSE_EXERCISE
-    )
-    operation = (
-        ExerciseDetailActionValue.CLEAR_HISTORY
-        if is_clear
-        else ExerciseDetailActionValue.HARD_DELETE
-    )
+    if callback_data.action is SettingsActionValue.RENAME_EXERCISE:
+        text = texts.RENAME_EXERCISE_CHOOSE_EXERCISE
+        operation = ExerciseDetailActionValue.RENAME
+    elif callback_data.action is SettingsActionValue.CLEAR_HISTORY:
+        text = texts.CLEAR_HISTORY_CHOOSE_EXERCISE
+        operation = ExerciseDetailActionValue.CLEAR_HISTORY
+    else:
+        text = texts.DELETE_EXERCISE_CHOOSE_EXERCISE
+        operation = ExerciseDetailActionValue.HARD_DELETE
     await callback.answer()
     await _render(
         callback,
         text,
         exercise_management_selection_keyboard(exercises, operation=operation),
+    )
+
+
+@router.callback_query(
+    ExerciseDetailAction.filter(F.action == ExerciseDetailActionValue.RENAME)
+)
+async def request_renamed_exercise_name(
+    callback: CallbackQuery,
+    callback_data: ExerciseDetailAction,
+    state: FSMContext,
+    api_client: RepTrackerApi,
+) -> None:
+    try:
+        exercises = await api_client.list_exercises(callback.from_user.id)
+    except ApiError as error:
+        await answer_api_error(callback, error)
+        return
+
+    exercise = next(
+        (item for item in exercises if item.id == callback_data.exercise_id),
+        None,
+    )
+    if exercise is None:
+        await callback.answer(texts.EXERCISE_NOT_FOUND, show_alert=True)
+        return
+
+    await state.clear()
+    await state.set_state(RenameExercise.waiting_for_name)
+    if isinstance(callback.message, Message):
+        chat = getattr(callback.message, "chat", None)
+        chat_id = getattr(chat, "id", None)
+        message_id = getattr(callback.message, "message_id", None)
+        if isinstance(chat_id, int) and isinstance(message_id, int):
+            await state.update_data(
+                ui_chat_id=chat_id,
+                ui_message_id=message_id,
+            )
+    await state.update_data(
+        exercise_id=exercise.id,
+        exercise_name=exercise.name,
+    )
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await edit_or_answer(
+            callback.message,
+            texts.rename_exercise_request(exercise.name),
+            exercise_management_back_keyboard(),
+        )
+
+
+@router.message(RenameExercise.waiting_for_name)
+async def rename_selected_exercise(
+    message: Message,
+    state: FSMContext,
+    api_client: RepTrackerApi,
+) -> None:
+    data = await state.get_data()
+    exercise_id = data.get("exercise_id")
+    exercise_name = data.get("exercise_name")
+    chat_id = data.get("ui_chat_id")
+    message_id = data.get("ui_message_id")
+    stored_chat_id = chat_id if isinstance(chat_id, int) else None
+    stored_message_id = message_id if isinstance(message_id, int) else None
+
+    if not isinstance(exercise_id, int) or not isinstance(exercise_name, str):
+        await state.clear()
+        await message.answer(texts.INPUT_FINISHED)
+        return
+
+    name = (message.text or "").strip()
+    prompt = texts.rename_exercise_request(exercise_name)
+    if not name:
+        await edit_stored_or_answer(
+            message,
+            f"{texts.EMPTY_EXERCISE_NAME}\n\n{prompt}",
+            exercise_management_back_keyboard(),
+            chat_id=stored_chat_id,
+            message_id=stored_message_id,
+        )
+        return
+    if len(name) > 255:
+        await edit_stored_or_answer(
+            message,
+            f"{texts.exercise_name_too_long(255)}\n\n{prompt}",
+            exercise_management_back_keyboard(),
+            chat_id=stored_chat_id,
+            message_id=stored_message_id,
+        )
+        return
+    if message.from_user is None:
+        return
+
+    try:
+        exercise = await api_client.rename_exercise(
+            message.from_user.id,
+            exercise_id,
+            name,
+        )
+    except ResourceConflictError:
+        await edit_stored_or_answer(
+            message,
+            f"{texts.DUPLICATE_EXERCISE_NAME}\n\n{prompt}",
+            exercise_management_back_keyboard(),
+            chat_id=stored_chat_id,
+            message_id=stored_message_id,
+        )
+        return
+    except ApiError as error:
+        await answer_api_error(message, error)
+        return
+
+    await state.clear()
+    await edit_stored_or_answer(
+        message,
+        texts.exercise_renamed(exercise.name),
+        exercise_management_keyboard(),
+        chat_id=stored_chat_id,
+        message_id=stored_message_id,
     )
 
 

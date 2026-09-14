@@ -78,8 +78,18 @@ def exercise_summary(**v: str) -> str:
 
 
 EXERCISE_MANAGEMENT = "🛠 Gérer les exercices"
+BUTTON_RENAME_EXERCISE = "✏️ Renommer l’exercice"
+RENAME_EXERCISE_CHOOSE_EXERCISE = "✏️ Renommer l’exercice\n\nChoisissez un exercice"
 CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Effacer l’historique\n\nChoisissez un exercice"
 DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Supprimer un exercice\n\nChoisissez un exercice"
+
+
+def rename_exercise_request(name: str) -> str:
+    return f"✏️ Renommer {name}\n\nSaisissez un nouveau nom"
+
+
+def exercise_renamed(name: str) -> str:
+    return f"✅ Exercice renommé : {name}"
 
 
 def statistics(**v: str | None) -> str:

@@ -94,8 +94,18 @@ def exercise_summary(*, name: str, last_reps: str, last_date: str, today_reps: s
 
 
 EXERCISE_MANAGEMENT = "🛠 व्यायाम प्रबंधित करें"
+BUTTON_RENAME_EXERCISE = "✏️ व्यायाम का नाम बदलें"
+RENAME_EXERCISE_CHOOSE_EXERCISE = "✏️ व्यायाम का नाम बदलें\n\nएक व्यायाम चुनें"
 CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 इतिहास साफ़ करें\n\nएक व्यायाम चुनें"
 DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 व्यायाम हटाएँ\n\nएक व्यायाम चुनें"
+
+
+def rename_exercise_request(name: str) -> str:
+    return f"✏️ {name} का नाम बदलें\n\nनया नाम दर्ज करें"
+
+
+def exercise_renamed(name: str) -> str:
+    return f"✅ व्यायाम का नाम बदला गया: {name}"
 
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str,

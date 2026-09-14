@@ -206,6 +206,7 @@ async def test_exercise_management_submenu(state: FSMContext) -> None:
         for button in row
     ]
     assert actions == [
+        SettingsActionValue.RENAME_EXERCISE,
         SettingsActionValue.CLEAR_HISTORY,
         SettingsActionValue.HARD_DELETE,
         SettingsActionValue.OPEN,

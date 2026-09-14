@@ -161,6 +161,24 @@ async def test_create_exercise_sends_identity_and_name() -> None:
 
 
 @pytest.mark.asyncio
+async def test_rename_exercise_sends_identity_and_name() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "PATCH"
+        assert request.url.path == "/exercises/9"
+        assert json.loads(request.content) == {
+            "provider": "telegram",
+            "external_id": "777",
+            "name": "Подтягивания",
+        }
+        return httpx.Response(200, json={"id": 9, "name": "Подтягивания"})
+
+    exercise = await build_api(handler).rename_exercise(777, 9, "Подтягивания")
+
+    assert exercise.id == 9
+    assert exercise.name == "Подтягивания"
+
+
+@pytest.mark.asyncio
 async def test_update_exercise_weekly_report_setting() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "PATCH"

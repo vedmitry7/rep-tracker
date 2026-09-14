@@ -109,8 +109,17 @@ def exercise_empty(name: str) -> str:
 def exercise_summary(*, name: str, last_reps: str, last_date: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str) -> str:
     return f'🏋️ {name}\n\n↩️ Останні: {last_reps} · {last_date.lower()}\n\n🔥 Сьогодні — {today_reps}\n📅 7 днів — {last_7_days_reps}\n🗓 30 днів — {last_30_days_reps}\n🏆 Всього — {total_reps}'
 EXERCISE_MANAGEMENT = '🛠 Керуйте вправами'
+BUTTON_RENAME_EXERCISE = '✏️ Перейменувати вправу'
+RENAME_EXERCISE_CHOOSE_EXERCISE = '✏️ Перейменувати вправу\n\nВиберіть вправу'
 CLEAR_HISTORY_CHOOSE_EXERCISE = '🧹 Очистити історію\n\nВиберіть вправу'
 DELETE_EXERCISE_CHOOSE_EXERCISE = '🗑 Видалити вправу\n\nВиберіть вправу'
+
+def rename_exercise_request(name: str) -> str:
+    return f'✏️ Перейменувати {name}\n\nВведіть нову назву'
+
+
+def exercise_renamed(name: str) -> str:
+    return f'✅ Вправу перейменовано: {name}'
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
     value = f'📊 {name}\n\nСьогодні: {today_reps}\n7 днів: {last_7_days_reps}\n30 днів: {last_30_days_reps}\nЗа весь час: {total_reps}\n\nДні тренувань: {active_days}\nУ середньому за тренувальний день: {average_training_day}'

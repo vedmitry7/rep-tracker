@@ -18,6 +18,7 @@ class SettingsActionValue(StrEnum):
     IMPORT_DATA = "import_data"
     EXPORT_DATA = "export_data"
     EXERCISE_MANAGEMENT = "exercise_management"
+    RENAME_EXERCISE = "rename_exercise"
     CLEAR_HISTORY = "clear_history"
     HARD_DELETE = "hard_delete"
     HOME = "home"
@@ -97,6 +98,10 @@ def settings_keyboard() -> InlineKeyboardMarkup:
 
 def exercise_management_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    builder.button(
+        text=texts.BUTTON_RENAME_EXERCISE,
+        callback_data=SettingsAction(action=SettingsActionValue.RENAME_EXERCISE),
+    )
     builder.button(
         text=texts.BUTTON_CLEAR_HISTORY,
         callback_data=SettingsAction(action=SettingsActionValue.CLEAR_HISTORY),
