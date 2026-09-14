@@ -1,10 +1,12 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { api } from "./api";
+import repkaLogo from "./assets/repka-logo.png";
 import type { Exercise, ExerciseEntry, ExerciseStats, HistoryDay, Settings } from "./types";
 
 type Route = "home" | "new-exercise" | "exercise" | "new-entry" | "exercise-settings" | "settings" | "weeks" | "results" | "edit-entry";
 
 type AppRoute = { name: Route; exerciseId?: number; entryId?: number };
+type ExerciseSummary = Exercise & { stats: ExerciseStats };
 
 const languageOptions: Array<{ value: Settings["language"]; label: string }> = [
   { value: "en", label: "English" }, { value: "ru", label: "Русский" }, { value: "es", label: "Español" },
@@ -123,19 +125,21 @@ function App() {
 }
 
 function HomePage({ open, add, settings }: { open: (id: number) => void; add: () => void; settings: () => void }) {
-  const [exercises, setExercises] = useState<Exercise[]>();
+  const [exercises, setExercises] = useState<ExerciseSummary[]>();
   const [error, setError] = useState<string>();
   const load = useCallback(async () => {
     setError(undefined);
-    try { setExercises(await api.exercises()); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load exercises."); }
+    try {
+      const activeExercises = (await api.exercises()).filter((exercise) => !exercise.is_archived);
+      setExercises(await Promise.all(activeExercises.map(async (exercise) => ({ ...exercise, stats: await api.stats(exercise.id) }))));
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load exercises."); }
   }, []);
   useEffect(() => { void load(); }, [load]);
   return <main className="app-shell">
-    <Header title="Your training" action={<button className="icon-button" aria-label="Global settings" onClick={settings}>⚙</button>} />
-    <section className="intro"><p className="eyebrow">REP TRACKER</p><h2>Keep the streak going.</h2><p>Log sets in seconds and see progress over time.</p></section>
+    <header className="topbar home-topbar"><div className="home-brand"><img src={repkaLogo} alt="" /><h1>Repka</h1></div><button className="icon-button" aria-label="Global settings" onClick={settings}>⚙</button></header>
     {error ? <ErrorNotice message={error} retry={load} /> : !exercises ? <Loading /> : exercises.length === 0 ? <EmptyState onAdd={add} /> : <section className="exercise-list">
-      {exercises.filter((exercise) => !exercise.is_archived).map((exercise) => <button className="exercise-card" key={exercise.id} onClick={() => open(exercise.id)}>
-        <span className="exercise-icon">↗</span><span className="exercise-card-copy"><strong>{exercise.name}</strong><small>{exercise.weekly_report_enabled ? "Weekly report on" : "Track your next session"}</small></span><span className="chevron">›</span>
+      {exercises.map((exercise) => <button className="exercise-card" key={exercise.id} onClick={() => open(exercise.id)}>
+        <span className="exercise-card-copy"><strong>{exercise.name}</strong><span className="exercise-metrics"><span><small>Today</small><b>{exercise.stats.today_reps.toLocaleString()}</b></span><span><small>Last</small><b>{exercise.stats.last_entry ? formatSets(exercise.stats.last_entry.reps) : "No results yet"}</b></span><span><small>7 days</small><b>{exercise.stats.last_7_days_reps.toLocaleString()}</b></span></span></span><span className="chevron">›</span>
       </button>)}
     </section>}
     <button className="primary-button floating-button" onClick={add}><span>＋</span> Add exercise</button>

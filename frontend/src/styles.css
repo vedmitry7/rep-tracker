@@ -7,6 +7,10 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .app-shell { width: min(100%, 560px); min-height: 100vh; margin: 0 auto; padding: 14px 16px 112px; }
 .topbar { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; min-height: 48px; margin-bottom: 18px; }
 .topbar h1 { overflow: hidden; margin: 0; color: #f8faff; font-size: 18px; font-weight: 700; letter-spacing: -.25px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.home-topbar { grid-template-columns: 1fr 42px; margin-bottom: 12px; }
+.home-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.home-brand img { width: 24px; height: 34px; object-fit: contain; }
+.home-topbar h1 { min-width: 0; text-align: left; font-size: 20px; letter-spacing: -.45px; }
 .topbar-space { width: 42px; }
 .brand-mark, .icon-button { display: grid; width: 38px; height: 38px; place-items: center; border: 0; border-radius: 12px; color: #ecf7ff; background: #1a2029; }
 .brand-mark { color: #0c1116; background: linear-gradient(135deg, #70c9ff, #8be3cc); font-weight: 900; }
@@ -18,13 +22,17 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .eyebrow { margin: 0 0 7px; color: #83cfff; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; }
 .intro h2 { max-width: 340px; margin: 0; color: #fff; font-size: clamp(29px, 8vw, 38px); line-height: 1.03; letter-spacing: -1.3px; }
 .intro p:not(.eyebrow) { max-width: 330px; margin: 10px 0 0; color: #a9b2c0; font-size: 15px; line-height: 1.45; }
-.exercise-list { display: grid; gap: 10px; }
-.exercise-card { display: grid; grid-template-columns: 42px 1fr 20px; width: 100%; padding: 13px; align-items: center; gap: 10px; border: 1px solid #252c37; border-radius: 18px; color: inherit; background: linear-gradient(120deg, #181d25, #151a22); text-align: left; transition: transform .18s ease, border-color .18s ease; }
+.exercise-list { display: grid; gap: 9px; }
+.exercise-card { display: grid; grid-template-columns: minmax(0, 1fr) 20px; width: 100%; padding: 14px 13px 13px 16px; align-items: center; gap: 10px; border: 1px solid #252c37; border-radius: 16px; color: inherit; background: linear-gradient(120deg, #181d25, #151a22); text-align: left; transition: transform .18s ease, border-color .18s ease; }
 .exercise-card:hover { border-color: #4a657e; transform: translateY(-1px); }
-.exercise-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; color: #9ce0ff; background: #203140; font-size: 23px; transform: rotate(45deg); }
-.exercise-card-copy { display: grid; gap: 3px; min-width: 0; }
+.exercise-card-copy { display: grid; gap: 10px; min-width: 0; }
 .exercise-card strong { overflow: hidden; color: #f6f8fc; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
-.exercise-card small, .muted, .hint { color: #8d98a8; font-size: 13px; }
+.exercise-metrics { display: grid; grid-template-columns: 70px minmax(0, 1fr) 70px; gap: 8px; }
+.exercise-metrics > span { display: grid; gap: 2px; min-width: 0; }
+.exercise-metrics small { color: #8d98a8; font-size: 11px; }
+.muted, .hint { color: #8d98a8; font-size: 13px; }
+.exercise-metrics b { overflow: hidden; color: #d8e5ed; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.exercise-metrics > span:first-child b, .exercise-metrics > span:last-child b { color: #9edcf8; }
 .chevron { color: #8ecfff; font-size: 28px; font-weight: 200; }
 .primary-button, .secondary-button, .danger-button { display: flex; min-height: 52px; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 16px; font-weight: 750; transition: filter .18s ease, transform .18s ease; }
 .primary-button { width: 100%; color: #081116; background: linear-gradient(135deg, #76cdfd, #78dfc5); box-shadow: 0 8px 25px rgba(92, 194, 244, .18); }
