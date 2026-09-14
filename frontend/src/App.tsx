@@ -79,7 +79,7 @@ function formatResultMoment(entry: ExerciseEntry, today: string, timezone: strin
 
 function Header({ title, back, action }: { title: string; back?: () => void; action?: React.ReactNode }) {
   return <header className="topbar">
-    {back ? <button className="icon-button" aria-label="Go back" onClick={back}>‹</button> : <span className="brand-mark">R</span>}
+    {back ? <button className="icon-button back-button" aria-label="Go back" onClick={back}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7" /></svg></button> : <span className="brand-mark">R</span>}
     <h1>{title}</h1>
     {action ?? <span className="topbar-space" />}
   </header>;
@@ -136,13 +136,13 @@ function HomePage({ open, add, settings }: { open: (id: number) => void; add: ()
   }, []);
   useEffect(() => { void load(); }, [load]);
   return <main className="app-shell">
-    <header className="topbar home-topbar"><div className="home-brand"><img src={repkaLogo} alt="" /><h1>Repka</h1></div><button className="icon-button" aria-label="Global settings" onClick={settings}>⚙</button></header>
+    <header className="topbar home-topbar"><div className="home-brand"><img src={repkaLogo} alt="" /><h1>Repka</h1></div><button className="icon-button settings-button" aria-label="Global settings" onClick={settings}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></button></header>
     {error ? <ErrorNotice message={error} retry={load} /> : !exercises ? <Loading /> : exercises.length === 0 ? <EmptyState onAdd={add} /> : <section className="exercise-list">
       {exercises.map((exercise) => <button className="exercise-card" key={exercise.id} onClick={() => open(exercise.id)}>
         <span className="exercise-card-copy"><strong>{exercise.name}</strong><span className="exercise-metrics"><span><small>Today</small><b>{exercise.stats.today_reps.toLocaleString()}</b></span><span><small>Last</small><b>{exercise.stats.last_entry ? formatSets(exercise.stats.last_entry.reps) : "No results yet"}</b></span><span><small>7 days</small><b>{exercise.stats.last_7_days_reps.toLocaleString()}</b></span></span></span><span className="chevron">›</span>
       </button>)}
     </section>}
-    <button className="primary-button floating-button" onClick={add}><span>＋</span> Add exercise</button>
+    <button className="primary-button floating-button" onClick={add}><span>+</span> New exercise</button>
   </main>;
 }
 
@@ -153,27 +153,27 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 function NewExercisePage({ back, done }: { back: () => void; done: () => void }) {
   const [name, setName] = useState(""); const [error, setError] = useState<string>(); const [saving, setSaving] = useState(false);
   const submit = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { await api.createExercise(name.trim()); done(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not create exercise."); } finally { setSaving(false); } };
-  return <main className="app-shell"><Header title="New exercise" back={back} /><form className="screen-form" onSubmit={submit}><div className="intro compact"><p className="eyebrow">YOUR PROGRAM</p><h2>What are you training?</h2><p>You can rename it any time.</p></div><label>Exercise name<input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Push-ups" maxLength={255} /></label>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={!name.trim() || saving}>{saving ? "Creating…" : "Create exercise"}</button></form></main>;
+  return <main className="app-shell"><Header title="New exercise" back={back} /><form className="screen-form new-exercise-form" onSubmit={submit}><label>Exercise name<input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Exercise name" maxLength={255} /></label>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={!name.trim() || saving}>{saving ? "Creating…" : "Create exercise"}</button></form></main>;
 }
 
 function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResults, edit }: { exerciseId: number; back: () => void; addEntry: () => void; settings: () => void; allWeeks: () => void; allResults: () => void; edit: (entryId: number) => void }) {
   const [exercise, setExercise] = useState<Exercise>(); const [stats, setStats] = useState<ExerciseStats>(); const [entries, setEntries] = useState<ExerciseEntry[]>(); const [history, setHistory] = useState<HistoryDay[]>(); const [timezone, setTimezone] = useState<string>(); const [error, setError] = useState<string>();
-  const load = useCallback(async () => { setError(undefined); try { const [all, nextStats, nextEntries, nextHistory, userSettings] = await Promise.all([api.exercises(), api.stats(exerciseId), api.entries(exerciseId), api.history(exerciseId), api.settings()]); setExercise(all.find((item) => item.id === exerciseId)); setStats(nextStats); setEntries(nextEntries); setHistory(nextHistory); setTimezone(userSettings.timezone); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load the exercise."); } }, [exerciseId]);
+  const [period, setPeriod] = useState<ChartPeriod>("7d");
+  const load = useCallback(async () => { setError(undefined); try { const [all, nextStats, nextEntries, nextHistory, userSettings] = await Promise.all([api.exercises(), api.stats(exerciseId), api.entries(exerciseId), fetchAllHistory(exerciseId), api.settings()]); setExercise(all.find((item) => item.id === exerciseId)); setStats(nextStats); setEntries(nextEntries); setHistory(nextHistory); setTimezone(userSettings.timezone); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load the exercise."); } }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
   if (error) return <main className="app-shell"><Header title="Exercise" back={back} /><ErrorNotice message={error} retry={load} /></main>;
   if (!exercise || !stats || !entries || !history || !timezone) return <main className="app-shell"><Header title="Exercise" back={back} /><Loading /></main>;
   return <main className="app-shell">
-    <Header title={exercise.name} back={back} action={<button className="icon-button" aria-label="Exercise settings" onClick={settings}>⚙</button>} />
-    <section className="exercise-overview"><div className="today-hero"><div className="today-primary"><p>TODAY</p><strong>{stats.today_reps.toLocaleString()} <small>reps</small></strong></div><div className="today-details"><CompactMetric label="7 days" value={stats.last_7_days_reps} /><CompactMetric label="30 days" value={stats.last_30_days_reps} /><CompactMetric label="All time" value={stats.total_reps} /></div><div className="card-last-result"><p>LAST RESULT</p>{stats.last_entry ? <strong>{formatSets(stats.last_entry.reps)} <span>· {formatResultMoment(stats.last_entry, stats.today, timezone)}</span></strong> : <span>No results yet</span>}</div></div><button className="primary-button overview-add-button" onClick={addEntry}><span>＋</span> Add result</button></section>
-    <LastSevenDays days={history} today={stats.today} />
+    <Header title={exercise.name} back={back} action={<button className="icon-button settings-button" aria-label="Exercise settings" onClick={settings}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></button>} />
+    <section className="exercise-overview"><div className="today-hero"><strong>{stats.today_reps.toLocaleString()}</strong><p>Today</p>{stats.last_entry && <span>{formatSets(stats.last_entry.reps)} <i>·</i> {formatResultMoment(stats.last_entry, stats.today, timezone)}</span>}</div><div className="period-tabs">{(["7d", "30d", "all"] as ChartPeriod[]).map((item) => <button type="button" key={item} className={period === item ? "is-active" : ""} onClick={() => setPeriod(item)}>{item === "7d" ? "7 days" : item === "30d" ? "30 days" : "All time"}</button>)}</div><button className="primary-button overview-add-button" onClick={addEntry}>+ Add result</button></section>
+    <LastSevenDays days={history} today={stats.today} period={period} />
     <WeeklyProgress days={history} today={stats.today} onShowAll={allWeeks} />
     <section className="panel results-panel"><div className="section-heading"><h3>Recent results</h3><button className="text-button" onClick={allResults}>All results</button></div>{entries.length === 0 ? <p className="muted">No results yet. Log your first set.</p> : <RecentResults entries={entries.slice(0, 5)} timezone={timezone} onSelect={edit} />}</section>
   </main>;
 }
 
-function CompactMetric({ label, value }: { label: string; value: number }) { return <div className="compact-metric"><small>{label}</small><strong>{value.toLocaleString()}</strong></div>; }
-
 type Week = { start: string; end: string; total: number };
+type ChartPeriod = "7d" | "30d" | "all";
 
 function isoDate(value: Date) {
   const month = String(value.getMonth() + 1).padStart(2, "0");
@@ -202,31 +202,73 @@ function buildWeeks(days: HistoryDay[], today: string, minimumWeeks = 1) {
   });
 }
 
-function LastSevenDays({ days, today }: { days: HistoryDay[]; today: string }) {
+type ActivityDatum = { key: string; label: string; detail: string; total: number; isToday?: boolean };
+
+function formatMonth(value: Date) {
+  return new Intl.DateTimeFormat(undefined, { month: "short", year: "2-digit" }).format(value);
+}
+
+function buildDailyActivity(days: HistoryDay[], today: string, count: number): ActivityDatum[] {
   const totals = new Map(days.map((day) => [day.date, day.total_reps]));
   const end = new Date(`${today}T12:00:00`);
-  const chartDays = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(end); date.setDate(date.getDate() - (6 - index));
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(end); date.setDate(date.getDate() - (count - index - 1));
     const dateString = isoDate(date);
-    return { date: dateString, label: new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date), total: totals.get(dateString) ?? 0, isToday: dateString === today };
+    const label = count === 7
+      ? new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date)
+      : new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(date);
+    return { key: dateString, label, detail: formatDate(dateString), total: totals.get(dateString) ?? 0, isToday: dateString === today };
   });
+}
+
+function buildMonthlyActivity(days: HistoryDay[], today: string): ActivityDatum[] {
+  const totals = new Map<string, number>();
+  days.forEach((day) => { const key = day.date.slice(0, 7); totals.set(key, (totals.get(key) ?? 0) + day.total_reps); });
+  const firstDate = days.length ? new Date(`${days.reduce((oldest, day) => day.date < oldest ? day.date : oldest, today)}T12:00:00`) : new Date(`${today}T12:00:00`);
+  const cursor = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+  const last = new Date(`${today}T12:00:00`); last.setDate(1);
+  const result: ActivityDatum[] = [];
+  while (cursor <= last) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+    const label = formatMonth(cursor);
+    result.push({ key, label, detail: label, total: totals.get(key) ?? 0 });
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return result;
+}
+
+function axisIndexes(length: number, maximum = 4) {
+  if (length <= maximum) return new Set(Array.from({ length }, (_, index) => index));
+  return new Set(Array.from({ length: maximum }, (_, index) => Math.round(index * (length - 1) / (maximum - 1))));
+}
+
+function LastSevenDays({ days, today, period }: { days: HistoryDay[]; today: string; period: ChartPeriod }) {
+  const chartDays = period === "all" ? buildMonthlyActivity(days, today) : buildDailyActivity(days, today, period === "7d" ? 7 : 30);
+  const [selectedKey, setSelectedKey] = useState<string>();
+  const selected = chartDays.find((day) => day.key === selectedKey) ?? chartDays.at(-1);
   const max = Math.max(...chartDays.map((day) => day.total), 1);
-  return <section className="seven-days"><div className="section-heading"><h3>Last 7 days</h3></div><div className="daily-bars">{chartDays.map((day) => <div className={`daily-bar ${day.total > 0 ? "has-activity" : ""} ${day.isToday ? "is-today" : ""}`} key={day.date}><strong>{day.total}</strong><div className="bar-track">{day.total > 0 && <i style={{ height: `${Math.max((day.total / max) * 100, 9)}%` }} />}</div><span>{day.label}</span></div>)}</div></section>;
+  const title = period === "7d" ? "Last 7 days" : period === "30d" ? "Last 30 days" : "All time";
+  const visibleAxis = period === "7d" ? new Set(chartDays.map((_, index) => index)) : axisIndexes(chartDays.length);
+  return <section className="seven-days"><div className="section-label">{title}</div><div className={`daily-bars activity-${period}`}>{chartDays.map((day, index) => <button type="button" className={`daily-bar ${day.total > 0 ? "has-activity" : ""} ${day.isToday ? "is-today" : ""} ${visibleAxis.has(index) ? "has-axis" : ""} ${selected?.key === day.key ? "is-selected" : ""}`} key={day.key} onClick={() => setSelectedKey(day.key)} aria-label={`${day.detail}: ${day.total.toLocaleString()} reps`}>{period === "7d" && <strong>{day.total}</strong>}<div className="bar-track">{day.total > 0 && <i style={{ height: `${Math.max((day.total / max) * 100, 6)}%` }} />}</div>{visibleAxis.has(index) && <span>{period === "7d" ? day.label : day.label}</span>}</button>)}</div>{period !== "7d" && selected && <p className="activity-detail" aria-live="polite">{selected.detail} <b>{selected.total.toLocaleString()} reps</b></p>}</section>;
 }
 
 function WeeklyProgress({ days, today, onShowAll }: { days: HistoryDay[]; today: string; onShowAll: () => void }) {
   const weeks = buildWeeks(days, today, 4).slice(0, 4);
   const [current, previous] = weeks;
-  const delta = current.total - previous.total;
-  const percent = previous.total > 0 ? Math.round((delta / previous.total) * 100) : null;
-  const max = Math.max(...weeks.map((week) => week.total), 1);
+  const percent = previous.total > 0 ? Math.round(((current.total - previous.total) / previous.total) * 100) : null;
   if (!days.length) return <section className="panel"><div className="section-heading"><h3>Weekly progress</h3><button className="text-button" onClick={onShowAll}>All weeks</button></div><div className="chart-empty">Your weekly progress will appear after the first result.</div></section>;
-  return <section className="weekly-progress"><div className="section-heading"><h3>Weekly progress</h3><button className="text-button" onClick={onShowAll}>All weeks</button></div><div className="week-hero"><div className="week-hero-total"><p>THIS WEEK</p><strong>{current.total.toLocaleString()} <small>reps</small></strong></div>{previous.total === 0 ? <div className="week-comparison neutral"><strong>First tracked week</strong></div> : <div className={`week-comparison ${delta >= 0 ? "positive" : "negative"}`}><strong>{delta >= 0 ? "↑" : "↓"} {Math.abs(delta).toLocaleString()} <small>reps</small> {percent !== null && `(${delta >= 0 ? "+" : ""}${percent}%)`}</strong><span>vs last week</span></div>}</div><div className="week-list">{weeks.slice(1).map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 2]} current={false} max={max} />)}</div><div className="week-footer"><div><small>Best week</small><strong>{Math.max(...weeks.map((week) => week.total)).toLocaleString()} reps</strong></div><div><small>Average</small><strong>{Math.round(weeks.reduce((sum, week) => sum + week.total, 0) / weeks.length).toLocaleString()} reps</strong></div></div></section>;
+  return <section className="weekly-progress"><div className="section-heading"><h3>Weekly progress</h3><button className="text-button" onClick={onShowAll}>All weeks</button></div><div className="week-hero"><div className="week-hero-total"><p>THIS WEEK</p><strong>{current.total.toLocaleString()} <small>reps</small></strong></div>{percent === null ? <div className="week-comparison neutral"><strong>First tracked week</strong></div> : <div className={`week-comparison ${percent >= 0 ? "positive" : "negative"}`}><strong>{percent >= 0 ? "+" : ""}{percent}%</strong><span>vs previous week</span></div>}</div><div className="week-list">{weeks.slice(1).map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 2]} current={false} />)}</div><div className="week-footer"><div><small>Best week</small><strong>{Math.max(...weeks.map((week) => week.total)).toLocaleString()} reps</strong></div><div><small>Average</small><strong>{Math.round(weeks.reduce((sum, week) => sum + week.total, 0) / weeks.length).toLocaleString()} reps</strong></div></div></section>;
 }
 
-function WeekRow({ week, older, current, max }: { week: Week; older?: Week; current: boolean; max: number }) {
+function formatWeekRange(start: string, end: string) {
+  const startDate = new Date(`${start}T12:00:00`); const endDate = new Date(`${end}T12:00:00`);
+  const month = new Intl.DateTimeFormat(undefined, { month: "short" });
+  return startDate.getMonth() === endDate.getMonth() ? `${startDate.getDate()}–${endDate.getDate()} ${month.format(endDate)}` : `${startDate.getDate()} ${month.format(startDate)} – ${endDate.getDate()} ${month.format(endDate)}`;
+}
+
+function WeekRow({ week, older, current }: { week: Week; older?: Week; current: boolean }) {
   const change = older && older.total > 0 ? Math.round(((week.total - older.total) / older.total) * 100) : null;
-  return <div className={`week-row ${current ? "current" : ""}`}><div className="week-label"><strong>{current ? "Current week" : `${formatDate(week.start)} – ${formatDate(week.end)}`}</strong><span>{week.total.toLocaleString()} reps</span></div><div className="week-bar"><i style={{ width: `${(week.total / max) * 100}%` }} /></div><b className={change === null ? "neutral" : change >= 0 ? "positive" : "negative"}>{change === null ? "—" : `${change >= 0 ? "+" : ""}${change}%`}</b></div>;
+  return <div className={`week-row ${current ? "current" : ""}`}><div className="week-label"><strong>{formatWeekRange(week.start, week.end)}</strong></div><span className="week-total">{week.total.toLocaleString()} reps</span><b className={change === null ? "neutral" : change >= 0 ? "positive" : "negative"}>{change === null ? "—" : `${change >= 0 ? "+" : ""}${change}%`}</b></div>;
 }
 
 function RecentResults({ entries, timezone, onSelect }: { entries: ExerciseEntry[]; timezone: string; onSelect: (entryId: number) => void }) {
@@ -274,8 +316,8 @@ function WeeksPage({ exerciseId, back }: { exerciseId: number; back: () => void 
   const load = useCallback(async () => { setError(undefined); try { const [history, settings] = await Promise.all([fetchAllHistory(exerciseId), api.settings()]); setDays(history); setToday(settings.today); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load weekly history."); } }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
   if (!days || !today) return <main className="app-shell"><Header title="All weeks" back={back} />{error ? <ErrorNotice message={error} retry={load} /> : <Loading />}</main>;
-  const weeks = buildWeeks(days, today); const max = Math.max(...weeks.map((week) => week.total), 1);
-  return <main className="app-shell"><Header title="All weeks" back={back} />{!days.length ? <section className="panel"><div className="chart-empty">No weekly history yet.</div></section> : <section className="weekly-progress full-history"><div className="section-heading"><h3>Weekly history</h3><span>{weeks.length} weeks</span></div><div className="week-list">{weeks.map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 1]} current={index === 0} max={max} />)}</div></section>}</main>;
+  const weeks = buildWeeks(days, today);
+  return <main className="app-shell"><Header title="All weeks" back={back} />{!days.length ? <section className="panel"><div className="chart-empty">No weekly history yet.</div></section> : <section className="weekly-progress full-history"><div className="section-heading"><h3>Weekly history</h3><span>{weeks.length} weeks</span></div><div className="week-list">{weeks.map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 1]} current={index === 0} />)}</div></section>}</main>;
 }
 
 function ResultsPage({ exerciseId, back, edit }: { exerciseId: number; back: () => void; edit: (entryId: number) => void }) {
