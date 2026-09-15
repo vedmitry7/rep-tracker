@@ -6,7 +6,7 @@ import type { Exercise, ExerciseEntry, ExerciseStats, HistoryDay, Settings } fro
 type Route = "home" | "new-exercise" | "exercise" | "new-entry" | "exercise-settings" | "settings" | "weeks" | "results" | "edit-entry";
 
 type AppRoute = { name: Route; exerciseId?: number; entryId?: number };
-type ExerciseSummary = Exercise & { stats: ExerciseStats };
+type ExerciseSummary = Exercise & { stats: ExerciseStats; history: HistoryDay[] };
 
 const languageOptions: Array<{ value: Settings["language"]; label: string }> = [
   { value: "en", label: "English" }, { value: "ru", label: "Русский" }, { value: "es", label: "Español" },
@@ -77,6 +77,19 @@ function formatResultMoment(entry: ExerciseEntry, today: string, timezone: strin
   return `${performedOn}, ${formatTime(entry.created_at, timezone)}`;
 }
 
+function relativeEntryTime(value: string) {
+  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+  const minutes = Math.floor(elapsed / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days}d ago`;
+  return formatDate(value.slice(0, 10));
+}
+
 function Header({ title, back, action }: { title: string; back?: () => void; action?: React.ReactNode }) {
   return <header className="topbar">
     {back ? <button className="icon-button back-button" aria-label="Go back" onClick={back}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7" /></svg></button> : <span className="brand-mark">R</span>}
@@ -131,19 +144,67 @@ function HomePage({ open, add, settings }: { open: (id: number) => void; add: ()
     setError(undefined);
     try {
       const activeExercises = (await api.exercises()).filter((exercise) => !exercise.is_archived);
-      setExercises(await Promise.all(activeExercises.map(async (exercise) => ({ ...exercise, stats: await api.stats(exercise.id) }))));
+      setExercises(await Promise.all(activeExercises.map(async (exercise) => {
+        const [stats, history] = await Promise.all([api.stats(exercise.id), api.history(exercise.id, 7)]);
+        return { ...exercise, stats, history };
+      })));
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load exercises."); }
   }, []);
   useEffect(() => { void load(); }, [load]);
   return <main className="app-shell">
-    <header className="topbar home-topbar"><div className="home-brand"><img src={repkaLogo} alt="" /><h1>Repka</h1></div><button className="icon-button settings-button" aria-label="Global settings" onClick={settings}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></button></header>
-    {error ? <ErrorNotice message={error} retry={load} /> : !exercises ? <Loading /> : exercises.length === 0 ? <EmptyState onAdd={add} /> : <section className="exercise-list">
-      {exercises.map((exercise) => <button className="exercise-card" key={exercise.id} onClick={() => open(exercise.id)}>
-        <span className="exercise-card-copy"><strong>{exercise.name}</strong><span className="exercise-metrics"><span><small>Today</small><b>{exercise.stats.today_reps.toLocaleString()}</b></span><span><small>Last</small><b>{exercise.stats.last_entry ? formatSets(exercise.stats.last_entry.reps) : "No results yet"}</b></span><span><small>7 days</small><b>{exercise.stats.last_7_days_reps.toLocaleString()}</b></span></span></span><span className="chevron">›</span>
-      </button>)}
+    <header className="topbar home-topbar"><div className="home-brand"><img src={repkaLogo} alt="" /><h1>Repka</h1></div><button className="icon-button home-settings-button" aria-label="Global settings" onClick={settings}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg></button></header>
+    {error ? <ErrorNotice message={error} retry={load} /> : !exercises ? <Loading /> : exercises.length === 0 ? <EmptyState onAdd={add} /> : <section className="exercise-list" aria-label="Exercises">
+      {exercises.map((exercise) => <HomeExerciseCard key={exercise.id} exercise={exercise} open={open} addEntry={(id) => navigate({ name: "new-entry", exerciseId: id })} />)}
     </section>}
     <button className="primary-button floating-button" onClick={add}><span>+</span> New exercise</button>
   </main>;
+}
+
+function recentDates(today: string) {
+  const end = new Date(`${today}T12:00:00`);
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(end);
+    date.setDate(date.getDate() - (6 - index));
+    return isoDate(date);
+  });
+}
+
+function HomeExerciseCard({ exercise, open, addEntry }: { exercise: ExerciseSummary; open: (id: number) => void; addEntry: (id: number) => void }) {
+  const days = recentDates(exercise.stats.today);
+  const totals = new Map(exercise.history.map((day) => [day.date, day.total_reps]));
+  const values = days.map((day) => totals.get(day) ?? 0);
+  const latest = exercise.stats.last_entry;
+
+  return <article className="home-exercise-card">
+    <button className="home-exercise-open" onClick={() => open(exercise.id)} aria-label={`Open ${exercise.name}`}>
+      <span className="home-exercise-summary">
+        <strong>{exercise.name}</strong>
+        {latest ? <span className="home-exercise-last"><span>{formatSets(latest.reps)}</span><i>·</i><span>{relativeEntryTime(latest.created_at)}</span></span> : <span className="home-exercise-last is-empty">No results yet</span>}
+      </span>
+      <span className={`home-today-total ${exercise.stats.today_reps > 0 ? "has-reps" : ""}`}>
+        <b>{exercise.stats.today_reps > 0 ? exercise.stats.today_reps.toLocaleString() : "—"}</b>
+        <small>Today</small>
+      </span>
+    </button>
+    <HomeActivityBars days={days} values={values} today={exercise.stats.today} />
+    <button className="home-quick-add" onClick={() => addEntry(exercise.id)} aria-label={`Add result for ${exercise.name}`}><span>+</span></button>
+  </article>;
+}
+
+function HomeActivityBars({ days, values, today }: { days: string[]; values: number[]; today: string }) {
+  const maximum = Math.max(...values, 1);
+  return <div className="home-activity-bars" aria-label="Last seven days activity">
+    {days.map((day, index) => {
+      const value = values[index];
+      const active = value > 0;
+      const isToday = day === today;
+      const label = new Intl.DateTimeFormat(undefined, { weekday: "narrow" }).format(new Date(`${day}T12:00:00`));
+      return <span className={`home-activity-day ${active ? "has-activity" : ""} ${isToday ? "is-today" : ""}`} key={day}>
+        <i style={{ height: `${active ? Math.max(3, (value / maximum) * 32) : 2}px` }} />
+        <small>{label}</small>
+      </span>;
+    })}
+  </div>;
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
@@ -163,12 +224,19 @@ function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResul
   useEffect(() => { void load(); }, [load]);
   if (error) return <main className="app-shell"><Header title="Exercise" back={back} /><ErrorNotice message={error} retry={load} /></main>;
   if (!exercise || !stats || !entries || !history || !timezone) return <main className="app-shell"><Header title="Exercise" back={back} /><Loading /></main>;
-  return <main className="app-shell">
+  return <main className="app-shell exercise-page">
     <Header title={exercise.name} back={back} action={<button className="icon-button settings-button" aria-label="Exercise settings" onClick={settings}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></button>} />
-    <section className="exercise-overview"><div className="today-hero"><strong>{stats.today_reps.toLocaleString()}</strong><p>Today</p>{stats.last_entry && <span>{formatSets(stats.last_entry.reps)} <i>·</i> {formatResultMoment(stats.last_entry, stats.today, timezone)}</span>}</div><div className="period-tabs">{(["7d", "30d", "all"] as ChartPeriod[]).map((item) => <button type="button" key={item} className={period === item ? "is-active" : ""} onClick={() => setPeriod(item)}>{item === "7d" ? "7 days" : item === "30d" ? "30 days" : "All time"}</button>)}</div><button className="primary-button overview-add-button" onClick={addEntry}>+ Add result</button></section>
-    <LastSevenDays days={history} today={stats.today} period={period} />
+    <section className="dashboard-card today-card">
+      <div className="dashboard-label">Today</div>
+      <div className="today-card-content">
+        <div><strong>{stats.today_reps > 0 ? stats.today_reps.toLocaleString() : "—"}</strong><small>{stats.today_reps > 0 ? "reps" : "No results yet"}</small></div>
+        {stats.last_entry && <div className="latest-result"><span>Latest</span><b>{formatSets(stats.last_entry.reps)}</b><small>{relativeEntryTime(stats.last_entry.created_at)}</small></div>}
+      </div>
+    </section>
+    <button className="primary-button overview-add-button" onClick={addEntry}>+ Add result</button>
+    <LastSevenDays days={history} today={stats.today} period={period} setPeriod={setPeriod} />
     <WeeklyProgress days={history} today={stats.today} onShowAll={allWeeks} />
-    <section className="panel results-panel"><div className="section-heading"><h3>Recent results</h3><button className="text-button" onClick={allResults}>All results</button></div>{entries.length === 0 ? <p className="muted">No results yet. Log your first set.</p> : <RecentResults entries={entries.slice(0, 5)} timezone={timezone} onSelect={edit} />}</section>
+    <section className="dashboard-card results-panel"><div className="section-heading"><h3>Recent results</h3></div>{entries.length === 0 ? <p className="muted">No results yet. Log your first set.</p> : <><RecentResults entries={entries.slice(0, 5)} timezone={timezone} onSelect={edit} /><div className="results-footer"><button className="text-button" onClick={allResults}>All results →</button></div></>}</section>
   </main>;
 }
 
@@ -216,7 +284,7 @@ function buildDailyActivity(days: HistoryDay[], today: string, count: number): A
     const dateString = isoDate(date);
     const label = count === 7
       ? new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date)
-      : new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(date);
+      : new Intl.DateTimeFormat(undefined, { day: "numeric" }).format(date);
     return { key: dateString, label, detail: formatDate(dateString), total: totals.get(dateString) ?? 0, isToday: dateString === today };
   });
 }
@@ -242,22 +310,23 @@ function axisIndexes(length: number, maximum = 4) {
   return new Set(Array.from({ length: maximum }, (_, index) => Math.round(index * (length - 1) / (maximum - 1))));
 }
 
-function LastSevenDays({ days, today, period }: { days: HistoryDay[]; today: string; period: ChartPeriod }) {
+function LastSevenDays({ days, today, period, setPeriod }: { days: HistoryDay[]; today: string; period: ChartPeriod; setPeriod: (period: ChartPeriod) => void }) {
   const chartDays = period === "all" ? buildMonthlyActivity(days, today) : buildDailyActivity(days, today, period === "7d" ? 7 : 30);
   const [selectedKey, setSelectedKey] = useState<string>();
-  const selected = chartDays.find((day) => day.key === selectedKey) ?? chartDays.at(-1);
+  const selected = chartDays.find((day) => day.key === selectedKey);
   const max = Math.max(...chartDays.map((day) => day.total), 1);
-  const title = period === "7d" ? "Last 7 days" : period === "30d" ? "Last 30 days" : "All time";
+  const periodTotal = chartDays.reduce((sum, day) => sum + day.total, 0);
   const visibleAxis = period === "7d" ? new Set(chartDays.map((_, index) => index)) : axisIndexes(chartDays.length);
-  return <section className="seven-days"><div className="section-label">{title}</div><div className={`daily-bars activity-${period}`}>{chartDays.map((day, index) => <button type="button" className={`daily-bar ${day.total > 0 ? "has-activity" : ""} ${day.isToday ? "is-today" : ""} ${visibleAxis.has(index) ? "has-axis" : ""} ${selected?.key === day.key ? "is-selected" : ""}`} key={day.key} onClick={() => setSelectedKey(day.key)} aria-label={`${day.detail}: ${day.total.toLocaleString()} reps`}>{period === "7d" && <strong>{day.total}</strong>}<div className="bar-track">{day.total > 0 && <i style={{ height: `${Math.max((day.total / max) * 100, 6)}%` }} />}</div>{visibleAxis.has(index) && <span>{period === "7d" ? day.label : day.label}</span>}</button>)}</div>{period !== "7d" && selected && <p className="activity-detail" aria-live="polite">{selected.detail} <b>{selected.total.toLocaleString()} reps</b></p>}</section>;
+  return <section className="dashboard-card progress-card"><div className="progress-card-header"><div><div className="dashboard-label">Progress</div><div className="progress-period-total"><strong>{periodTotal.toLocaleString()}</strong><span>reps</span></div></div><div className="period-tabs">{(["7d", "30d", "all"] as ChartPeriod[]).map((item) => <button type="button" key={item} className={period === item ? "is-active" : ""} onClick={() => { setSelectedKey(undefined); setPeriod(item); }}>{item === "all" ? "All" : item}</button>)}</div></div><div className={`daily-bars activity-${period}`}>{chartDays.map((day, index) => <button type="button" className={`daily-bar ${day.total > 0 ? "has-activity" : ""} ${visibleAxis.has(index) ? "has-axis" : ""} ${selected?.key === day.key ? "is-selected" : ""}`} key={day.key} onClick={() => setSelectedKey(day.key)} aria-label={`${day.detail}: ${day.total.toLocaleString()} reps`} aria-pressed={selected?.key === day.key}>{period === "7d" && <strong>{day.total}</strong>}<div className="bar-track"><i style={{ height: day.total > 0 ? `${Math.max((day.total / max) * 100, 6)}%` : "2px" }} /></div>{visibleAxis.has(index) && <span>{day.label}</span>}</button>)}</div><p className="activity-detail" aria-live="polite">{selected && <>{selected.detail} <b>{selected.total.toLocaleString()} reps</b></>}</p></section>;
 }
 
 function WeeklyProgress({ days, today, onShowAll }: { days: HistoryDay[]; today: string; onShowAll: () => void }) {
-  const weeks = buildWeeks(days, today, 4).slice(0, 4);
+  const weeks = buildWeeks(days, today, 5).slice(0, 5);
   const [current, previous] = weeks;
   const percent = previous.total > 0 ? Math.round(((current.total - previous.total) / previous.total) * 100) : null;
-  if (!days.length) return <section className="panel"><div className="section-heading"><h3>Weekly progress</h3><button className="text-button" onClick={onShowAll}>All weeks</button></div><div className="chart-empty">Your weekly progress will appear after the first result.</div></section>;
-  return <section className="weekly-progress"><div className="section-heading"><h3>Weekly progress</h3><button className="text-button" onClick={onShowAll}>All weeks</button></div><div className="week-hero"><div className="week-hero-total"><p>THIS WEEK</p><strong>{current.total.toLocaleString()} <small>reps</small></strong></div>{percent === null ? <div className="week-comparison neutral"><strong>First tracked week</strong></div> : <div className={`week-comparison ${percent >= 0 ? "positive" : "negative"}`}><strong>{percent >= 0 ? "+" : ""}{percent}%</strong><span>vs previous week</span></div>}</div><div className="week-list">{weeks.slice(1).map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 2]} current={false} />)}</div><div className="week-footer"><div><small>Best week</small><strong>{Math.max(...weeks.map((week) => week.total)).toLocaleString()} reps</strong></div><div><small>Average</small><strong>{Math.round(weeks.reduce((sum, week) => sum + week.total, 0) / weeks.length).toLocaleString()} reps</strong></div></div></section>;
+  const maximum = Math.max(...weeks.map((week) => week.total), 1);
+  if (!days.length) return <section className="dashboard-card weekly-progress"><div className="section-heading"><h3>Weekly progress</h3><button className="text-button" onClick={onShowAll}>All weeks →</button></div><div className="chart-empty">Your weekly progress will appear after the first result.</div></section>;
+  return <section className="dashboard-card weekly-progress"><div className="section-heading"><h3>Weekly progress</h3></div><div className="week-summary"><div className="week-summary-main"><span>{formatWeekRange(current.start, current.end)}</span><div className="week-summary-total"><strong>{current.total.toLocaleString()}</strong><small>reps</small></div></div>{percent !== null && <div className="week-summary-change"><strong className={percent >= 0 ? "positive" : "negative"}>{percent >= 0 ? "+" : ""}{percent}%</strong><span>vs last week</span></div>}</div><div className="week-list">{weeks.slice(1).map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 2]} maximum={maximum} />)}</div><div className="week-footer"><div className="week-footer-stats"><div><small>Best</small><strong>{Math.max(...weeks.map((week) => week.total)).toLocaleString()}</strong></div><div><small>Avg</small><strong>{Math.round(weeks.reduce((sum, week) => sum + week.total, 0) / weeks.length).toLocaleString()}</strong></div></div><button className="text-button" onClick={onShowAll}>All weeks →</button></div></section>;
 }
 
 function formatWeekRange(start: string, end: string) {
@@ -266,16 +335,18 @@ function formatWeekRange(start: string, end: string) {
   return startDate.getMonth() === endDate.getMonth() ? `${startDate.getDate()}–${endDate.getDate()} ${month.format(endDate)}` : `${startDate.getDate()} ${month.format(startDate)} – ${endDate.getDate()} ${month.format(endDate)}`;
 }
 
-function WeekRow({ week, older, current }: { week: Week; older?: Week; current: boolean }) {
+function WeekRow({ week, older, maximum }: { week: Week; older?: Week; maximum: number }) {
   const change = older && older.total > 0 ? Math.round(((week.total - older.total) / older.total) * 100) : null;
-  return <div className={`week-row ${current ? "current" : ""}`}><div className="week-label"><strong>{formatWeekRange(week.start, week.end)}</strong></div><span className="week-total">{week.total.toLocaleString()} reps</span><b className={change === null ? "neutral" : change >= 0 ? "positive" : "negative"}>{change === null ? "—" : `${change >= 0 ? "+" : ""}${change}%`}</b></div>;
+  const barWidth = week.total > 0 ? Math.max(4, Math.round((week.total / maximum) * 100)) : 0;
+  const changeLabel = change === null ? "—" : `${change >= 0 ? "+" : ""}${change}%`;
+  return <div className="week-row"><div className="week-label"><strong>{formatWeekRange(week.start, week.end)}</strong></div><div className="week-bar" aria-hidden="true"><i style={{ width: `${barWidth}%` }} /></div><span className="week-total">{week.total.toLocaleString()}</span><b className={`week-change ${change === null ? "neutral" : change >= 0 ? "positive" : "negative"}`}>{changeLabel}</b></div>;
 }
 
 function RecentResults({ entries, timezone, onSelect }: { entries: ExerciseEntry[]; timezone: string; onSelect: (entryId: number) => void }) {
   const groups = entries.reduce<Array<{ date: string; entries: ExerciseEntry[] }>>((result, entry) => {
     const group = result.at(-1); if (group?.date === entry.performed_on) group.entries.push(entry); else result.push({ date: entry.performed_on, entries: [entry] }); return result;
   }, []);
-  return <div className="result-list">{groups.map((group) => <section className="result-day" key={group.date}><h4>{formatDate(group.date)} <span>{group.entries.reduce((sum, entry) => sum + totalReps(entry), 0)} reps</span></h4>{group.entries.map((entry) => <button className="result-row result-button" key={entry.id} onClick={() => onSelect(entry.id)}><div><strong>{entry.reps.join(" + ")}</strong><small>Added at {formatTime(entry.created_at, timezone)}</small></div><b>{totalReps(entry)} <small>reps</small></b><span className="result-chevron">›</span></button>)}</section>)}</div>;
+  return <div className="result-list">{groups.map((group) => { const total = group.entries.reduce((sum, entry) => sum + totalReps(entry), 0); return <section className="result-day" key={group.date}><h4><span className="result-date">{formatDate(group.date)}</span><span className="result-day-total"><strong>{total.toLocaleString()}</strong> reps</span></h4>{group.entries.map((entry) => <button className="result-row result-button" key={entry.id} onClick={() => onSelect(entry.id)} aria-label={`Open result: ${formatSets(entry.reps)}, ${totalReps(entry).toLocaleString()} reps`}><div><strong>{formatSets(entry.reps)}</strong><small>{formatTime(entry.created_at, timezone)}</small></div><b>{totalReps(entry).toLocaleString()} <small>reps</small></b><span className="result-chevron" aria-hidden="true">›</span></button>)}</section>; })}</div>;
 }
 
 async function fetchAllEntries(exerciseId: number) {
@@ -317,7 +388,8 @@ function WeeksPage({ exerciseId, back }: { exerciseId: number; back: () => void 
   useEffect(() => { void load(); }, [load]);
   if (!days || !today) return <main className="app-shell"><Header title="All weeks" back={back} />{error ? <ErrorNotice message={error} retry={load} /> : <Loading />}</main>;
   const weeks = buildWeeks(days, today);
-  return <main className="app-shell"><Header title="All weeks" back={back} />{!days.length ? <section className="panel"><div className="chart-empty">No weekly history yet.</div></section> : <section className="weekly-progress full-history"><div className="section-heading"><h3>Weekly history</h3><span>{weeks.length} weeks</span></div><div className="week-list">{weeks.map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 1]} current={index === 0} />)}</div></section>}</main>;
+  const maximum = Math.max(...weeks.map((week) => week.total), 1);
+  return <main className="app-shell detail-list-page"><Header title="All weeks" back={back} />{!days.length ? <section className="dashboard-card"><div className="chart-empty">No weekly history yet.</div></section> : <section className="dashboard-card weekly-progress full-history"><div className="section-heading"><h3>Weekly history</h3><span>{weeks.length} weeks</span></div><div className="week-list">{weeks.map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 1]} maximum={maximum} />)}</div></section>}</main>;
 }
 
 function ResultsPage({ exerciseId, back, edit }: { exerciseId: number; back: () => void; edit: (entryId: number) => void }) {
@@ -325,7 +397,7 @@ function ResultsPage({ exerciseId, back, edit }: { exerciseId: number; back: () 
   const load = useCallback(async () => { setError(undefined); try { const [allEntries, settings] = await Promise.all([fetchAllEntries(exerciseId), api.settings()]); setEntries(allEntries); setTimezone(settings.timezone); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load results."); } }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
   if (!entries || !timezone) return <main className="app-shell"><Header title="All results" back={back} />{error ? <ErrorNotice message={error} retry={load} /> : <Loading />}</main>;
-  return <main className="app-shell"><Header title="All results" back={back} /><section className="panel results-panel"><div className="section-heading"><h3>Training history</h3><span>{entries.length} results</span></div>{entries.length ? <RecentResults entries={entries} timezone={timezone} onSelect={edit} /> : <p className="muted">No results yet.</p>}</section></main>;
+  return <main className="app-shell detail-list-page"><Header title="All results" back={back} /><section className="dashboard-card results-panel"><div className="section-heading"><h3>Training history</h3><span>{entries.length} results</span></div>{entries.length ? <RecentResults entries={entries} timezone={timezone} onSelect={edit} /> : <p className="muted">No results yet.</p>}</section></main>;
 }
 
 function EntryEditorPage({ exerciseId, entryId, back, done }: { exerciseId: number; entryId?: number; back: () => void; done: () => void }) {

@@ -16,6 +16,9 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .home-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .home-brand img { width: 32px; height: 32px; object-fit: contain; }
 .home-topbar h1 { text-align: left; font-size: 20px; font-weight: 600; letter-spacing: -.55px; }
+.icon-button.home-settings-button { width: 32px; height: 32px; margin-right: -2px; border-radius: 10px; color: #71717a; }
+.icon-button.home-settings-button svg { width: 20px; height: 20px; stroke-width: 1.8; }
+.home-settings-button:hover { background: #18181b; }
 .icon-button, .brand-mark { display: grid; width: 28px; height: 28px; place-items: center; border: 0; color: #a1a1aa; background: transparent; padding: 2px; }
 .icon-button:hover { color: #e4e4e7; }
 .icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -28,13 +31,38 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .primary-button:hover { background: #818cf8; }
 .primary-button:active { transform: scale(.98); }
 .primary-button span { font-size: 19px; font-weight: 400; }
-.floating-button { position: static; justify-content: flex-start; min-height: 44px; margin-top: 2px; padding: 0; color: #71717a; background: transparent; font-size: 14px; font-weight: 400; }
-.floating-button:hover { color: #d4d4d8; background: transparent; }.floating-button span { margin-right: 7px; }
+.floating-button { min-height: 50px; margin-top: 12px; border: 1px dashed #27272a; border-radius: 16px; color: #71717a; background: transparent; font-size: 14px; font-weight: 400; }
+.floating-button:hover { border-color: #3f3f46; color: #d4d4d8; background: transparent; }.floating-button span { margin-right: 3px; }
 
-.exercise-list { border-top: 1px solid rgba(39, 39, 42, .7); }
-.exercise-card { display: grid; grid-template-columns: minmax(0, 1fr) 18px; width: 100%; align-items: center; gap: 8px; border: 0; border-bottom: 1px solid rgba(39, 39, 42, .7); color: inherit; background: transparent; padding: 16px 0; text-align: left; transition: opacity .18s ease; }
-.exercise-card:active { opacity: .65; }.exercise-card-copy { display: grid; gap: 8px; min-width: 0; }.exercise-card strong { overflow: hidden; color: #f4f4f5; font-size: 15px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.exercise-metrics { display: grid; grid-template-columns: 64px minmax(0, 1fr) 58px; gap: 8px; }.exercise-metrics > span { display: grid; min-width: 0; gap: 1px; }.exercise-metrics small { color: #52525b; font-size: 10px; }.exercise-metrics b { overflow: hidden; color: #a1a1aa; font-family: "DM Mono", monospace; font-size: 12px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }.exercise-metrics > span:first-child b, .exercise-metrics > span:last-child b { color: #818cf8; }.chevron { color: #3f3f46; font-size: 20px; font-weight: 300; }
+/* The home screen is intentionally glanceable: each exercise is a compact
+   seven-day progress card, while the detailed dashboard stays one tap away. */
+.exercise-list { display: grid; gap: 12px; border: 0; }
+.home-exercise-card { position: relative; overflow: hidden; border-radius: 16px; background: #111; padding: 16px 16px 14px; transition: background .18s ease, transform .18s ease; }
+.home-exercise-card:hover { background: #161616; }
+.home-exercise-card:has(.home-exercise-open:active) { transform: scale(.99); }
+.home-exercise-open { display: flex; width: 100%; align-items: flex-start; justify-content: space-between; gap: 16px; border: 0; color: inherit; background: transparent; padding: 0; text-align: left; }
+.home-exercise-summary { display: grid; min-width: 0; gap: 5px; padding-right: 4px; }
+.home-exercise-summary > strong { overflow: hidden; color: #f4f4f5; font-size: 16px; font-weight: 600; letter-spacing: -.15px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.home-exercise-last { display: flex; min-width: 0; align-items: center; color: #a1a1aa; font-size: 13px; line-height: 1.2; }
+.home-exercise-last span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-exercise-last i { flex: 0 0 auto; color: #3f3f46; font-style: normal; padding: 0 7px; }
+.home-exercise-last span:last-child { color: #71717a; }
+.home-exercise-last.is-empty { color: #52525b; }
+.home-today-total { display: grid; flex: 0 0 auto; justify-items: end; gap: 3px; color: #3f3f46; font-family: "DM Mono", monospace; }
+.home-today-total b { font-size: 34px; font-weight: 500; letter-spacing: -1.8px; line-height: .9; font-variant-numeric: tabular-nums; }
+.home-today-total small { margin-right: 15px; color: #52525b; font-family: inherit; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.home-today-total.has-reps { color: #a5b4fc; }
+.home-today-total.has-reps small { color: #6366f1; }
+.home-quick-add { position: absolute; top: 47px; right: 10px; display: grid; width: 30px; height: 28px; place-items: center; border: 0; border-radius: 9px; color: #71717a; background: transparent; padding: 0; font-family: "DM Mono", monospace; font-size: 18px; font-weight: 400; line-height: 1; transition: color .18s ease, background .18s ease; }
+.home-quick-add:hover { color: #e4e4e7; background: #27272a; }
+.home-quick-add:focus-visible, .home-exercise-open:focus-visible { outline: 1px solid #a5b4fc; outline-offset: 3px; }
+.home-activity-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: end; gap: 3px; height: 52px; margin-top: 13px; }
+.home-activity-day { display: grid; min-width: 0; grid-template-rows: 32px 11px; align-items: end; justify-items: center; gap: 4px; }
+.home-activity-day i { display: block; width: 100%; min-height: 2px; border-radius: 2px; background: #27272a; transition: height .2s ease; }
+.home-activity-day.has-activity i { background: #3f3f46; }
+.home-activity-day.is-today i { background: #818cf8; }
+.home-activity-day small { color: #52525b; font-family: "DM Mono", monospace; font-size: 9px; line-height: 1; }
+.home-activity-day.is-today small { color: #818cf8; }
 
 .empty-state { padding: 64px 16px; color: #52525b; text-align: center; }.empty-orb { display: none; }.empty-state h3 { margin: 0 0 7px; color: #a1a1aa; font-size: 15px; font-weight: 500; }.empty-state p { margin: 0 0 22px; font-size: 14px; }.empty-state .primary-button { max-width: 210px; margin: auto; }
 .loading { padding: 56px 12px; color: #52525b; font-size: 14px; text-align: center; }.loading::before { display: block; width: 20px; height: 20px; margin: 0 auto 12px; border: 2px solid #27272a; border-top-color: #818cf8; border-radius: 50%; content: ""; animation: spin .75s linear infinite; } @keyframes spin { to { transform: rotate(1turn); } }
@@ -63,7 +91,7 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 /* Activity periods share the same visual language but have deliberately different density. */
 .daily-bar { border: 0; background: transparent; padding: 0; cursor: pointer; }
 .daily-bar:focus-visible { outline: 1px solid #a5b4fc; outline-offset: 3px; }
-.daily-bar.is-selected .bar-track { outline: 1px solid rgba(165, 180, 252, .75); outline-offset: 1px; }
+.daily-bar.is-selected .bar-track i { background: #6366f1; }
 .daily-bars.activity-30d { grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 2px; height: 96px; }
 .daily-bars.activity-all { grid-template-columns: repeat(auto-fit, minmax(11px, 1fr)); gap: 4px; height: 96px; }
 .activity-30d .daily-bar, .activity-all .daily-bar { grid-template-rows: 1fr 13px; gap: 6px; }
@@ -75,21 +103,120 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .activity-detail { min-height: 18px; margin: 10px 0 0; color: #71717a; font-family: "DM Mono", monospace; font-size: 11px; text-align: center; }
 .activity-detail b { color: #d4d4d8; font-weight: 400; }
 
-/* The 30-day chart is a single, continuous timeline, not thirty dark cells. */
-.daily-bars.activity-30d { position: relative; }
-.daily-bars.activity-30d::after { position: absolute; right: 0; bottom: 19px; left: 0; z-index: 0; height: 1px; background: #27272a; content: ""; pointer-events: none; }
-.activity-30d .bar-track { z-index: 1; background: transparent; }
-.activity-30d .daily-bar.is-selected .bar-track, .activity-30d .daily-bar.is-today .bar-track { outline: 0; }
-.activity-30d .daily-bar.is-selected .bar-track i { box-shadow: 0 0 0 1px #a5b4fc; }
-.activity-30d .daily-bar.is-selected:not(.has-activity)::after { position: absolute; right: 0; bottom: 0; left: 0; z-index: 2; height: 2px; border-radius: 2px; background: #f4f4f5; content: ""; }
-
-/* Thirty days always mean thirty equal 8px columns. Axis labels are out of flow. */
-.daily-bars.activity-30d { grid-template-columns: repeat(30, 8px); justify-content: space-between; gap: 0; }
-.activity-30d .daily-bar { position: relative; display: block; height: 77px; align-self: start; }
-.activity-30d .bar-track { height: 77px; }
-.activity-30d .daily-bar span { position: absolute; top: 84px; left: 50%; transform: translateX(-50%); }
+/* Thirty days use the same columns as the seven-day view, only denser. */
 
 .week-row { grid-template-columns: minmax(0, 1fr) 72px 44px; gap: 8px; }
 .week-label { min-width: 0; }
 .week-total { color: #d4d4d8; font-family: "DM Mono", monospace; font-size: 11px; text-align: right; white-space: nowrap; }
 .week-row b { min-width: 0; }
+
+/* Exercise detail screens use the same card hierarchy as the updated home.
+   The dense data stays readable without turning into a wall of separators. */
+.exercise-page .topbar, .detail-list-page .topbar { margin-bottom: 16px; }
+.dashboard-card { margin-top: 12px; border: 0; border-radius: 16px; background: #111; padding: 16px; }
+.dashboard-label { margin: 0 0 10px; color: #a1a1aa; font-family: "DM Mono", monospace; font-size: 11px; font-weight: 400; letter-spacing: .13em; text-transform: uppercase; }
+.today-card { margin-top: 0; }
+.today-card-content { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.today-card-content > div:first-child { display: grid; gap: 5px; }
+.today-card-content > div:first-child strong { color: #a5b4fc; font-family: "DM Mono", monospace; font-size: 56px; font-weight: 500; letter-spacing: -3px; line-height: .85; font-variant-numeric: tabular-nums; }
+.today-card-content > div:first-child small { color: #a1a1aa; font-family: "DM Mono", monospace; font-size: 12px; }
+.latest-result { display: grid; justify-items: end; gap: 4px; padding-bottom: 1px; text-align: right; }
+.latest-result > span { color: #a1a1aa; font-family: "DM Mono", monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.latest-result b { color: #e4e4e7; font-family: "DM Mono", monospace; font-size: 16px; font-weight: 500; }
+.latest-result small { color: #a1a1aa; font-size: 13px; }
+.overview-add-button { min-height: 46px; margin-top: 12px; border-radius: 14px; font-size: 14px; }
+.progress-card { margin-top: 12px; }
+.progress-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.progress-card-header .dashboard-label { margin: 0; }
+.progress-period-total { display: flex; align-items: baseline; gap: 5px; margin-top: 3px; }
+.progress-period-total strong { color: #f4f4f5; font-family: "DM Mono", monospace; font-size: 22px; font-weight: 500; letter-spacing: -1px; line-height: 1; font-variant-numeric: tabular-nums; }
+.progress-period-total span { color: #71717a; font-size: 11px; }
+.progress-card .period-tabs { gap: 2px; margin: -3px -4px 0 0; }
+.progress-card .period-tabs button { border-radius: 7px; padding: 5px 9px; font-size: 12px; }
+.progress-card .daily-bars { height: 58px; gap: 4px; }
+.progress-card .daily-bar { grid-template-rows: 1fr 10px; gap: 4px; }
+.progress-card .daily-bar strong { display: none; }
+.progress-card .bar-track { padding: 0; background: transparent; }
+.progress-card .bar-track i { border-radius: 2px 2px 0 0; background: #27272a; }
+.progress-card .daily-bar.has-activity .bar-track i { background: #3f3f46; }
+.progress-card .daily-bar.is-selected .bar-track i { background: #6366f1; }
+.progress-card .daily-bar span { color: #71717a; font-size: 9px; }
+.dashboard-card.weekly-progress { margin-top: 12px; padding: 16px; }
+.dashboard-card .section-heading h3 { color: #a1a1aa; font-size: 11px; }
+.dashboard-card .section-heading span, .dashboard-card .text-button { color: #a1a1aa; font-size: 12px; }
+.dashboard-card .week-hero { display: block; margin: 12px 0 14px; }
+.dashboard-card .week-hero-total { display: block; }
+.dashboard-card .week-hero p { display: block; margin: 0 0 4px; color: #71717a; font-size: 12px; }
+.dashboard-card .week-hero-total > strong { color: #f4f4f5; font-size: 42px; letter-spacing: -2px; }
+.dashboard-card .week-hero-total > strong small { font-size: 14px; }
+.dashboard-card .week-comparison { display: flex; margin-top: 3px; }
+.dashboard-card .week-comparison > strong { font-size: 13px; }
+.dashboard-card .week-list { border-top-color: rgba(39, 39, 42, .65); }
+.dashboard-card .week-row { grid-template-columns: minmax(0, 1fr) 70px 42px; gap: 8px; padding: 10px 0; }
+.dashboard-card .week-label strong { color: #a1a1aa; font-size: 12px; }
+.dashboard-card .week-footer { margin-top: 10px; border-top: 1px solid rgba(39, 39, 42, .6); padding-top: 10px; }
+.dashboard-card .week-footer div { display: grid; gap: 2px; }
+.dashboard-card .week-footer small { color: #a1a1aa; font-family: "DM Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.dashboard-card .week-footer strong { color: #e4e4e7; font-size: 14px; }
+.dashboard-card.results-panel { margin-top: 12px; margin-bottom: 0; }
+.dashboard-card .result-list { gap: 20px; margin-top: 14px; }
+.dashboard-card .result-day h4 { padding-bottom: 9px; }
+.dashboard-card .result-row { padding: 11px 0; }
+.results-footer { display: flex; justify-content: flex-end; margin-top: 4px; border-top: 1px solid rgba(39, 39, 42, .6); padding-top: 11px; }
+.detail-list-page .dashboard-card { margin-top: 0; }
+.detail-list-page .full-history .week-row { grid-template-columns: minmax(0, 1fr) 70px 42px; }
+
+@media (max-width: 350px) {
+  .today-card-content > div:first-child strong { font-size: 48px; }
+  .dashboard-card .week-row { grid-template-columns: minmax(0, 1fr) 62px 38px; gap: 5px; }
+}
+
+/* Weekly total and its comparison are separate, stable columns. */
+.dashboard-card .week-summary { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 12px 0 14px; }
+.dashboard-card .week-summary-main { display: grid; min-width: 0; gap: 4px; }
+.dashboard-card .week-summary-main > span { color: #a1a1aa; font-size: 13px; }
+.dashboard-card .week-summary-total { display: flex; align-items: baseline; gap: 8px; }
+.dashboard-card .week-summary-total strong { color: #f4f4f5; font-family: "DM Mono", monospace; font-size: 42px; font-weight: 500; letter-spacing: -2px; line-height: 1; font-variant-numeric: tabular-nums; }
+.dashboard-card .week-summary-total small { color: #a1a1aa; font-size: 14px; }
+.dashboard-card .week-summary-change { display: grid; flex: 0 0 auto; justify-items: end; gap: 3px; padding-bottom: 3px; text-align: right; }
+.dashboard-card .week-summary-change strong { font-family: "DM Mono", monospace; font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.dashboard-card .week-summary-change span { color: #a1a1aa; font-size: 12px; white-space: nowrap; }
+.dashboard-card .week-list { display: grid; gap: 0; margin-top: 16px; border-top: 1px solid rgba(39, 39, 42, .65); }
+.dashboard-card .week-row { grid-template-columns: minmax(112px, 1.35fr) minmax(54px, 1fr) 34px 44px; align-items: center; gap: 8px; min-height: 54px; border-bottom: 1px solid rgba(39, 39, 42, .5); padding: 13px 0; }
+.detail-list-page .full-history .week-row { grid-template-columns: minmax(112px, 1.35fr) minmax(54px, 1fr) 34px 44px; }
+.dashboard-card .week-row:last-child { border-bottom: 0; }
+.dashboard-card .week-label { min-width: 0; }
+.dashboard-card .week-label strong { display: block; overflow: hidden; color: #d4d4d8; font-size: 13px; white-space: nowrap; line-height: 1.2; text-overflow: ellipsis; }
+.dashboard-card .week-bar { display: block; min-width: 0; height: 4px; margin: 0; }
+.dashboard-card .week-bar i { background: #4f46e5; }
+.dashboard-card .week-total { color: #e4e4e7; font-size: 13px; font-variant-numeric: tabular-nums; }
+.dashboard-card .week-change { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dashboard-card .week-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.dashboard-card .week-footer .week-footer-stats { display: flex; gap: 16px; }
+.dashboard-card .week-footer .week-footer-stats > div { display: grid; gap: 2px; }
+.dashboard-card .week-footer .text-button { margin: 0; padding: 3px 0; font-size: 12px; white-space: nowrap; }
+.dashboard-card .result-day h4 { align-items: center; color: #f4f4f5; font-size: 15px; font-weight: 500; }
+.dashboard-card .result-day h4 .result-date { color: inherit; }
+.dashboard-card .result-day h4 .result-day-total { display: flex; align-items: baseline; gap: 4px; color: #a1a1aa; font-family: "DM Sans", system-ui, sans-serif; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.dashboard-card .result-day h4 .result-day-total strong { color: #f4f4f5; font-family: "DM Mono", monospace; font-size: 19px; font-weight: 500; letter-spacing: -.6px; font-variant-numeric: tabular-nums; }
+.dashboard-card .result-row strong { color: #a1a1aa; font-size: 13px; font-weight: 400; }
+.dashboard-card .result-row small { color: #52525b; font-size: 11px; }
+.dashboard-card .result-row b { color: #a1a1aa; font-size: 13px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.dashboard-card .result-row b small { color: #71717a; font-size: 11px; }
+.dashboard-card .result-chevron { color: #52525b; }
+
+/* Thirty-day labels must never widen the page. */
+.progress-card { min-width: 0; overflow: hidden; }
+.progress-card .daily-bars { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; }
+.progress-card .daily-bars.activity-30d { grid-template-columns: repeat(30, minmax(0, 1fr)); justify-content: stretch; gap: 2px; }
+.progress-card .activity-30d .daily-bar { display: grid; height: 58px; }
+.progress-card .activity-30d .bar-track { height: 42px; }
+.progress-card .activity-30d .daily-bar span { position: static; overflow: hidden; max-width: 100%; transform: none; color: #71717a; font-size: 8px; line-height: 1; text-overflow: clip; white-space: nowrap; }
+.progress-card .activity-detail { color: #a1a1aa; font-size: 12px; }
+.progress-card .activity-detail b { color: #e4e4e7; }
+
+@media (max-width: 350px) {
+  .dashboard-card .week-row { grid-template-columns: minmax(94px, 1.3fr) minmax(44px, 1fr) 31px 40px; gap: 6px; min-height: 52px; padding: 12px 0; }
+  .detail-list-page .full-history .week-row { grid-template-columns: minmax(94px, 1.3fr) minmax(44px, 1fr) 31px 40px; }
+  .dashboard-card .week-change { font-size: 11px; }
+}
