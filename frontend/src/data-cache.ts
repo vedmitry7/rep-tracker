@@ -5,10 +5,10 @@ export type ExerciseSummary = Exercise & { stats: ExerciseStats; history: Histor
 export type ExerciseDetail = {
   exercise: Exercise;
   stats: ExerciseStats;
-  entries: ExerciseEntry[];
   history: HistoryDay[];
   timezone: string;
 };
+export type ResultsHistory = { days: HistoryDay[]; hasMore: boolean };
 
 type CacheSlot<T> = { value?: T; updatedAt: number; pending?: Promise<T> };
 
@@ -34,6 +34,8 @@ class AppDataCache {
   private details = new Map<number, CacheSlot<ExerciseDetail>>();
   private fullHistories = new Map<number, CacheSlot<HistoryDay[]>>();
   private fullEntries = new Map<number, CacheSlot<ExerciseEntry[]>>();
+  private entriesByDay = new Map<string, CacheSlot<ExerciseEntry[]>>();
+  private resultsHistories = new Map<number, CacheSlot<ResultsHistory>>();
 
   resolveUser() {
     if (!this.resolvedUser) {
@@ -49,6 +51,16 @@ class AppDataCache {
   peekDetail(exerciseId: number) { return this.details.get(exerciseId)?.value; }
   peekFullHistory(exerciseId: number) { return this.fullHistories.get(exerciseId)?.value; }
   peekFullEntries(exerciseId: number) { return this.fullEntries.get(exerciseId)?.value; }
+  peekResultsHistory(exerciseId: number) { return this.resultsHistories.get(exerciseId)?.value; }
+  peekSettings() { return this.settings.value; }
+  peekEntry(exerciseId: number, entryId: number) {
+    for (const [key, slot] of this.entriesByDay) {
+      if (!key.startsWith(`${exerciseId}:`)) continue;
+      const entry = slot.value?.find((item) => item.id === entryId);
+      if (entry) return entry;
+    }
+    return this.fullEntries.get(exerciseId)?.value?.find((item) => item.id === entryId);
+  }
   peekExercise(exerciseId: number) {
     return this.details.get(exerciseId)?.value?.exercise
       ?? this.exercises.value?.find((exercise) => exercise.id === exerciseId)
@@ -68,16 +80,15 @@ class AppDataCache {
   async loadDetail(exerciseId: number, force = false) {
     const slot = this.getSlot(this.details, exerciseId);
     return this.load(slot, DETAIL_TTL, force, async () => {
-      const [exercises, stats, entries, history, settings] = await Promise.all([
+      const [exercises, stats, history, settings] = await Promise.all([
         this.loadExercises(force),
         api.stats(exerciseId),
-        api.entries(exerciseId),
         api.history(exerciseId, 35),
         this.loadSettings(force),
       ]);
       const exercise = exercises.find((item) => item.id === exerciseId);
       if (!exercise) throw new Error("Exercise not found.");
-      return { exercise, stats, entries, history, timezone: settings.timezone };
+      return { exercise, stats, history, timezone: settings.timezone };
     });
   }
 
@@ -95,6 +106,25 @@ class AppDataCache {
     );
   }
 
+  async loadResultsHistory(exerciseId: number, limit: number, force = false) {
+    const slot = this.getSlot(this.resultsHistories, exerciseId);
+    return this.load(slot, FULL_HISTORY_TTL, force, async () => {
+      const days = await api.history(exerciseId, limit);
+      return { days, hasMore: days.length === limit };
+    });
+  }
+
+  saveResultsHistory(exerciseId: number, history: ResultsHistory) {
+    this.resultsHistories.set(exerciseId, { value: history, updatedAt: Date.now() });
+  }
+
+  async loadEntriesForDay(exerciseId: number, date: string, force = false) {
+    const slot = this.getSlot(this.entriesByDay, `${exerciseId}:${date}`);
+    return this.load(slot, FULL_HISTORY_TTL, force, () =>
+      fetchAll((limit, offset) => api.entriesForDay(exerciseId, date, limit, offset)),
+    );
+  }
+
   async loadSettings(force = false) {
     return this.load(this.settings, SETTINGS_TTL, force, () => api.settings());
   }
@@ -109,6 +139,10 @@ class AppDataCache {
     this.details.get(exerciseId) && (this.details.get(exerciseId)!.updatedAt = 0);
     this.fullHistories.get(exerciseId) && (this.fullHistories.get(exerciseId)!.updatedAt = 0);
     this.fullEntries.get(exerciseId) && (this.fullEntries.get(exerciseId)!.updatedAt = 0);
+    this.resultsHistories.get(exerciseId) && (this.resultsHistories.get(exerciseId)!.updatedAt = 0);
+    for (const [key, slot] of this.entriesByDay) {
+      if (key.startsWith(`${exerciseId}:`)) slot.updatedAt = 0;
+    }
   }
 
   invalidateExercises() {
@@ -117,7 +151,7 @@ class AppDataCache {
     this.details.forEach((slot) => { slot.updatedAt = 0; });
   }
 
-  private getSlot<T>(slots: Map<number, CacheSlot<T>>, key: number) {
+  private getSlot<K, T>(slots: Map<K, CacheSlot<T>>, key: K) {
     let slot = slots.get(key);
     if (!slot) {
       slot = { updatedAt: 0 };

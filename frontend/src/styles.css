@@ -224,6 +224,24 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .dashboard-card .result-row b small { color: #71717a; font-size: 11px; }
 .dashboard-card .result-chevron { color: #52525b; }
 
+/* History is paged by training day. A closed row remains compact while an
+   expanded row exposes only that day's individual results. */
+.result-day-total small { color: #71717a; font-family: "DM Sans", system-ui, sans-serif; font-size: 11px; font-weight: 400; }
+.result-loading, .result-load-error { margin: 11px 0 0; color: #71717a; font-size: 12px; }
+.result-load-error { color: #fca5a5; }
+.history-day-list { display: grid; margin-top: 14px; border-top: 1px solid rgba(39, 39, 42, .6); }
+.history-day { border-bottom: 1px solid rgba(39, 39, 42, .6); }
+.history-day-toggle { display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; width: 100%; align-items: center; gap: 9px; border: 0; color: inherit; background: transparent; padding: 14px 0; text-align: left; }
+.history-day-toggle:hover { color: #f4f4f5; }
+.history-day-date { overflow: hidden; color: #d4d4d8; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.history-day-toggle .result-day-total { justify-self: end; }
+.history-day-chevron { color: #71717a; font-size: 18px; line-height: 1; transition: transform .2s ease; }
+.history-day.is-expanded .history-day-chevron { transform: rotate(180deg); }
+.history-day-entries { margin: -2px 0 4px; border-top: 1px solid rgba(39, 39, 42, .45); }
+.history-day-entries .result-row:last-child { border-bottom: 0; }
+.history-day-entries .result-loading, .history-day-entries .result-load-error { margin: 12px 0 14px; }
+@media (prefers-reduced-motion: reduce) { .history-day-chevron { transition: none; } }
+
 /* Thirty-day labels must never widen the page. */
 .progress-card { min-width: 0; overflow: hidden; }
 .progress-card .daily-bars { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; }

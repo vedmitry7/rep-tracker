@@ -42,6 +42,7 @@ export const api = {
   archiveExercise: (id: number) => request<void>(`/exercises/${id}`, { method: "DELETE" }, ownedQuery()),
   stats: (id: number) => request<ExerciseStats>(`/exercises/${id}/stats`, {}, ownedQuery()),
   entries: (id: number, limit = 20, offset = 0) => request<ExerciseEntry[]>(`/exercises/${id}/entries`, {}, { ...ownedQuery(), limit, offset }),
+  entriesForDay: (id: number, date: string, limit = 100, offset = 0) => request<ExerciseEntry[]>(`/exercises/${id}/entries`, {}, { ...ownedQuery(), from: date, to: date, limit, offset }),
   history: (id: number, limit = 100, offset = 0) => request<HistoryDay[]>(`/exercises/${id}/history-days`, {}, { ...ownedQuery(), limit, offset }),
   createEntry: (exercise_id: number, reps: number[], performed_on: string) => request<ExerciseEntry>("/exercise-entries", { method: "POST", body: JSON.stringify(ownedBody({ exercise_id, reps, performed_on })) }),
   updateEntry: (id: number, reps: number[], performed_on: string) => request<ExerciseEntry>(`/exercise-entries/${id}`, { method: "PATCH", body: JSON.stringify(ownedBody({ reps, performed_on })) }),

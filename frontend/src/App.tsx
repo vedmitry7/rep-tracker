@@ -256,6 +256,9 @@ function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResul
   const [detail, setDetail] = useState<ExerciseDetail | undefined>(() => appDataCache.peekDetail(exerciseId));
   const [history, setHistory] = useState<HistoryDay[]>();
   const [loadingFullHistory, setLoadingFullHistory] = useState(false);
+  const [recentEntries, setRecentEntries] = useState<Record<string, ExerciseEntry[]>>({});
+  const [loadingRecentDays, setLoadingRecentDays] = useState<string[]>([]);
+  const [recentError, setRecentError] = useState<string>();
   const [error, setError] = useState<string>();
   const [period, setPeriod] = useState<ChartPeriod>("7d");
   const load = useCallback(async (force = false) => { setError(undefined); try { setDetail(await appDataCache.loadDetail(exerciseId, force)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load the exercise."); } }, [exerciseId]);
@@ -263,8 +266,24 @@ function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResul
   useEffect(() => {
     setDetail(appDataCache.peekDetail(exerciseId));
     setHistory(undefined);
+    setRecentEntries({});
+    setLoadingRecentDays([]);
+    setRecentError(undefined);
     setPeriod("7d");
   }, [exerciseId]);
+  useEffect(() => {
+    if (!detail || detail.exercise.id !== exerciseId) return;
+    const dates = detail.history.slice(0, 3).map((day) => day.date);
+    let current = true;
+    setRecentEntries({});
+    setRecentError(undefined);
+    setLoadingRecentDays(dates);
+    void Promise.all(dates.map(async (date) => [date, await appDataCache.loadEntriesForDay(exerciseId, date)] as const))
+      .then((dayEntries) => { if (current) setRecentEntries(Object.fromEntries(dayEntries)); })
+      .catch((reason) => { if (current) setRecentError(reason instanceof Error ? reason.message : "Could not load recent results."); })
+      .finally(() => { if (current) setLoadingRecentDays([]); });
+    return () => { current = false; };
+  }, [detail, exerciseId]);
   const loadFullHistory = useCallback(async () => {
     setLoadingFullHistory(true);
     try { setHistory(await appDataCache.loadFullHistory(exerciseId)); }
@@ -279,6 +298,7 @@ function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResul
   if (error && !visibleDetail) return <main className="app-shell"><Header title="Exercise" back={back} /><ErrorNotice message={error} retry={() => load(true)} /></main>;
   if (!visibleDetail) return <main className="app-shell"><Header title="Exercise" back={back} /><Loading /></main>;
   const exerciseHistory = period === "all" && history ? history : visibleDetail.history;
+  const recentDays = visibleDetail.history.slice(0, 3);
   return <main className="app-shell exercise-page">
     <Header title={visibleDetail.exercise.name} back={back} action={<button className="icon-button settings-button" aria-label="Exercise settings" onClick={settings}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></button>} />
     <section className="dashboard-card today-card">
@@ -291,7 +311,7 @@ function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResul
     <button className="primary-button overview-add-button" onClick={addEntry}>+ Add result</button>
     <LastSevenDays days={exerciseHistory} today={visibleDetail.stats.today} period={period} setPeriod={changePeriod} loadingAll={loadingFullHistory} />
     <WeeklyProgress days={exerciseHistory} today={visibleDetail.stats.today} onShowAll={allWeeks} />
-    <section className="dashboard-card results-panel"><div className="section-heading"><h3>Recent results</h3></div>{visibleDetail.entries.length === 0 ? <p className="muted">No results yet. Log your first set.</p> : <><RecentResults entries={visibleDetail.entries.slice(0, 5)} timezone={visibleDetail.timezone} onSelect={edit} /><div className="results-footer"><button className="text-button" onClick={allResults}>All results →</button></div></>}</section>
+    <section className="dashboard-card results-panel"><div className="section-heading"><h3>Recent results</h3></div>{recentDays.length === 0 ? <p className="muted">No results yet. Log your first set.</p> : <><RecentResults days={recentDays} entriesByDate={recentEntries} loadingDates={loadingRecentDays} timezone={visibleDetail.timezone} onSelect={edit} />{recentError && <p className="result-load-error">{recentError}</p>}<div className="results-footer"><button className="text-button" onClick={allResults}>All results →</button></div></>}</section>
   </main>;
 }
 
@@ -397,11 +417,28 @@ function WeekRow({ week, older, maximum }: { week: Week; older?: Week; maximum: 
   return <div className="week-row"><div className="week-label"><strong>{formatWeekRange(week.start, week.end)}</strong></div><div className="week-bar" aria-hidden="true"><i style={{ width: `${barWidth}%` }} /></div><span className="week-total">{week.total.toLocaleString()}</span><b className={`week-change ${change === null ? "neutral" : change >= 0 ? "positive" : "negative"}`}>{changeLabel}</b></div>;
 }
 
-function RecentResults({ entries, timezone, onSelect }: { entries: ExerciseEntry[]; timezone: string; onSelect: (entryId: number) => void }) {
-  const groups = entries.reduce<Array<{ date: string; entries: ExerciseEntry[] }>>((result, entry) => {
-    const group = result.at(-1); if (group?.date === entry.performed_on) group.entries.push(entry); else result.push({ date: entry.performed_on, entries: [entry] }); return result;
-  }, []);
-  return <div className="result-list">{groups.map((group) => { const total = group.entries.reduce((sum, entry) => sum + totalReps(entry), 0); return <section className="result-day" key={group.date}><h4><span className="result-date">{formatDate(group.date)}</span><span className="result-day-total"><strong>{total.toLocaleString()}</strong> reps</span></h4>{group.entries.map((entry) => <button className="result-row result-button" key={entry.id} onClick={() => onSelect(entry.id)} aria-label={`Open result: ${formatSets(entry.reps)}, ${totalReps(entry).toLocaleString()} reps`}><div><strong>{formatSets(entry.reps)}</strong><small>{formatTime(entry.created_at, timezone)}</small></div><b>{totalReps(entry).toLocaleString()} <small>reps</small></b><span className="result-chevron" aria-hidden="true">›</span></button>)}</section>; })}</div>;
+function ResultRows({ entries, timezone, onSelect }: { entries: ExerciseEntry[]; timezone: string; onSelect: (entryId: number) => void }) {
+  return <>{entries.map((entry) => <button className="result-row result-button" key={entry.id} onClick={() => onSelect(entry.id)} aria-label={`Open result: ${formatSets(entry.reps)}, ${totalReps(entry).toLocaleString()} reps`}><div><strong>{formatSets(entry.reps)}</strong><small>{formatTime(entry.created_at, timezone)}</small></div><b>{totalReps(entry).toLocaleString()} <small>reps</small></b><span className="result-chevron" aria-hidden="true">›</span></button>)}</>;
+}
+
+function DayTotal({ day }: { day: HistoryDay }) {
+  return <span className="result-day-total"><strong>{day.total_reps.toLocaleString()}</strong> reps <small>· {day.entries_count} {day.entries_count === 1 ? "result" : "results"}</small></span>;
+}
+
+function RecentResults({ days, entriesByDate, loadingDates, timezone, onSelect }: { days: HistoryDay[]; entriesByDate: Record<string, ExerciseEntry[]>; loadingDates: string[]; timezone: string; onSelect: (entryId: number) => void }) {
+  return <div className="result-list">{days.map((day) => <section className="result-day" key={day.date}><h4><span className="result-date">{formatDate(day.date)}</span><DayTotal day={day} /></h4>{loadingDates.includes(day.date) ? <p className="result-loading">Loading results…</p> : <ResultRows entries={entriesByDate[day.date] ?? []} timezone={timezone} onSelect={onSelect} />}</section>)}</div>;
+}
+
+function HistoryDays({ days, expandedDate, entriesByDate, loadingDates, errors, timezone, onSelect, onToggle }: { days: HistoryDay[]; expandedDate?: string; entriesByDate: Record<string, ExerciseEntry[]>; loadingDates: string[]; errors: Record<string, string>; timezone: string; onSelect: (entryId: number) => void; onToggle: (date: string) => void }) {
+  return <div className="history-day-list">{days.map((day) => {
+    const expanded = day.date === expandedDate;
+    return <section className={`history-day ${expanded ? "is-expanded" : ""}`} key={day.date}>
+      <button className="history-day-toggle" onClick={() => onToggle(day.date)} aria-expanded={expanded}>
+        <span className="history-day-date">{formatDate(day.date)}</span><DayTotal day={day} /><span className="history-day-chevron" aria-hidden="true">⌄</span>
+      </button>
+      {expanded && <div className="history-day-entries">{loadingDates.includes(day.date) ? <p className="result-loading">Loading results…</p> : errors[day.date] ? <p className="result-load-error">{errors[day.date]}</p> : <ResultRows entries={entriesByDate[day.date] ?? []} timezone={timezone} onSelect={onSelect} />}</div>}
+    </section>;
+  })}</div>;
 }
 
 // Keep the frontend grammar aligned with bot.app.services.result_parser:
@@ -428,7 +465,7 @@ function parseQuickResult(value: string): number[] {
 }
 
 function WeeksPage({ exerciseId, back }: { exerciseId: number; back: () => void }) {
-  const [days, setDays] = useState<HistoryDay[] | undefined>(() => appDataCache.peekFullHistory(exerciseId)); const [today, setToday] = useState<string>(); const [error, setError] = useState<string>();
+  const [days, setDays] = useState<HistoryDay[] | undefined>(() => appDataCache.peekFullHistory(exerciseId)); const [today, setToday] = useState<string | undefined>(() => appDataCache.peekSettings()?.today); const [error, setError] = useState<string>();
   const load = useCallback(async (force = false) => { setError(undefined); try { const [history, settings] = await Promise.all([appDataCache.loadFullHistory(exerciseId, force), appDataCache.loadSettings(force)]); setDays(history); setToday(settings.today); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load weekly history."); } }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
   if (!days || !today) return <main className="app-shell"><Header title="All weeks" back={back} />{error ? <ErrorNotice message={error} retry={() => load(true)} /> : <Loading />}</main>;
@@ -437,12 +474,51 @@ function WeeksPage({ exerciseId, back }: { exerciseId: number; back: () => void 
   return <main className="app-shell detail-list-page"><Header title="All weeks" back={back} />{!days.length ? <section className="dashboard-card"><div className="chart-empty">No weekly history yet.</div></section> : <section className="dashboard-card weekly-progress full-history"><div className="section-heading"><h3>Weekly history</h3><span>{weeks.length} weeks</span></div><div className="week-list">{weeks.map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 1]} maximum={maximum} />)}</div></section>}</main>;
 }
 
+const HISTORY_DAYS_PAGE_SIZE = 20;
+
 function ResultsPage({ exerciseId, back, edit }: { exerciseId: number; back: () => void; edit: (entryId: number) => void }) {
-  const [entries, setEntries] = useState<ExerciseEntry[] | undefined>(() => appDataCache.peekFullEntries(exerciseId)); const [timezone, setTimezone] = useState<string>(); const [error, setError] = useState<string>();
-  const load = useCallback(async (force = false) => { setError(undefined); try { const [allEntries, settings] = await Promise.all([appDataCache.loadFullEntries(exerciseId, force), appDataCache.loadSettings(force)]); setEntries(allEntries); setTimezone(settings.timezone); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load results."); } }, [exerciseId]);
+  const [days, setDays] = useState<HistoryDay[] | undefined>(() => appDataCache.peekResultsHistory(exerciseId)?.days);
+  const [timezone, setTimezone] = useState<string | undefined>(() => appDataCache.peekSettings()?.timezone);
+  const [hasMore, setHasMore] = useState(() => appDataCache.peekResultsHistory(exerciseId)?.hasMore ?? false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [expandedDate, setExpandedDate] = useState<string>();
+  const [entriesByDate, setEntriesByDate] = useState<Record<string, ExerciseEntry[]>>({});
+  const [loadingDates, setLoadingDates] = useState<string[]>([]);
+  const [dayErrors, setDayErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string>();
+  const load = useCallback(async (force = false) => {
+    setError(undefined);
+    try {
+      const [history, settings] = await Promise.all([appDataCache.loadResultsHistory(exerciseId, HISTORY_DAYS_PAGE_SIZE, force), appDataCache.loadSettings(force)]);
+      setDays(history.days); setTimezone(settings.timezone); setHasMore(history.hasMore);
+      setExpandedDate(undefined); setEntriesByDate({}); setLoadingDates([]); setDayErrors({});
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load results."); }
+  }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
-  if (!entries || !timezone) return <main className="app-shell"><Header title="All results" back={back} />{error ? <ErrorNotice message={error} retry={() => load(true)} /> : <Loading />}</main>;
-  return <main className="app-shell detail-list-page"><Header title="All results" back={back} /><section className="dashboard-card results-panel"><div className="section-heading"><h3>Training history</h3><span>{entries.length} results</span></div>{entries.length ? <RecentResults entries={entries} timezone={timezone} onSelect={edit} /> : <p className="muted">No results yet.</p>}</section></main>;
+  const loadMore = async () => {
+    if (!days || loadingMore) return;
+    setLoadingMore(true); setError(undefined);
+    try {
+      const nextDays = await api.history(exerciseId, HISTORY_DAYS_PAGE_SIZE, days.length);
+      const history = { days: [...days, ...nextDays], hasMore: nextDays.length === HISTORY_DAYS_PAGE_SIZE };
+      setDays(history.days); setHasMore(history.hasMore); appDataCache.saveResultsHistory(exerciseId, history);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load more days."); }
+    finally { setLoadingMore(false); }
+  };
+  const toggleDay = async (date: string) => {
+    if (expandedDate === date) { setExpandedDate(undefined); return; }
+    setExpandedDate(date);
+    if (entriesByDate[date] || loadingDates.includes(date)) return;
+    setLoadingDates((current) => [...current, date]);
+    setDayErrors((current) => { const { [date]: _, ...rest } = current; return rest; });
+    try {
+      const entries = await appDataCache.loadEntriesForDay(exerciseId, date);
+      setEntriesByDate((current) => ({ ...current, [date]: entries }));
+    } catch (reason) { setDayErrors((current) => ({ ...current, [date]: reason instanceof Error ? reason.message : "Could not load results for this day." })); }
+    finally { setLoadingDates((current) => current.filter((item) => item !== date)); }
+  };
+  if (!days || !timezone) return <main className="app-shell"><Header title="All results" back={back} />{error ? <ErrorNotice message={error} retry={() => load(true)} /> : <Loading />}</main>;
+  return <main className="app-shell detail-list-page"><Header title="All results" back={back} /><section className="dashboard-card results-panel"><div className="section-heading"><h3>Training history</h3>{days.length > 0 && <span>{days.length} {days.length === 1 ? "day" : "days"}</span>}</div>{days.length ? <><HistoryDays days={days} expandedDate={expandedDate} entriesByDate={entriesByDate} loadingDates={loadingDates} errors={dayErrors} timezone={timezone} onSelect={edit} onToggle={toggleDay} />{error && <ErrorNotice message={error} retry={loadMore} />}{hasMore && <div className="results-footer"><button className="text-button" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load more"}</button></div>}</> : <p className="muted">No results yet.</p>}</section></main>;
 }
 
 function EntryEditorPage({ exerciseId, entryId, back, done }: { exerciseId: number; entryId?: number; back: () => void; done: () => void }) {
@@ -452,7 +528,7 @@ function EntryEditorPage({ exerciseId, entryId, back, done }: { exerciseId: numb
   const syncSets = (next: number[]) => { setReps(next); setQuickInput(formatSets(next)); setQuickError(undefined); };
   useEffect(() => {
     if (!isEditing) return;
-    void (async () => { try { const [settings, detail] = await Promise.all([appDataCache.loadSettings(), appDataCache.loadDetail(exerciseId)]); setToday(settings.today); setExerciseName(detail.exercise.name); const entry = (await appDataCache.loadFullEntries(exerciseId)).find((item) => item.id === entryId); if (!entry) throw new Error("Result not found."); syncSets(entry.reps); setDate(entry.performed_on); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load result."); } finally { setLoading(false); } })();
+    void (async () => { try { const [settings, detail] = await Promise.all([appDataCache.loadSettings(), appDataCache.loadDetail(exerciseId)]); setToday(settings.today); setExerciseName(detail.exercise.name); const entry = appDataCache.peekEntry(exerciseId, entryId) ?? (await appDataCache.loadFullEntries(exerciseId)).find((item) => item.id === entryId); if (!entry) throw new Error("Result not found."); syncSets(entry.reps); setDate(entry.performed_on); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load result."); } finally { setLoading(false); } })();
   }, [entryId, exerciseId, isEditing]);
   const updateSet = (index: number, value: number) => syncSets(reps.map((setReps, itemIndex) => itemIndex === index ? value : setReps));
   const applyQuickInput = (value: string) => { setQuickInput(value); try { const next = parseQuickResult(value); setReps(next); setQuickError(undefined); } catch { setQuickError(undefined); } };
