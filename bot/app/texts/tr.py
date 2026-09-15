@@ -109,8 +109,17 @@ def exercise_empty(name: str) -> str:
 def exercise_summary(*, name: str, last_reps: str, last_date: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str) -> str:
     return f'🏋️ {name}\n\n↩️ En son: {last_reps} · {last_date.lower()}\n\n🔥 Bugün — {today_reps}\n📅 7 gün — {last_7_days_reps}\n🗓 30 gün — {last_30_days_reps}\n🏆 Toplam — {total_reps}'
 EXERCISE_MANAGEMENT = '🛠 Egzersizleri yönet'
+BUTTON_RENAME_EXERCISE = '✏️ Egzersizi yeniden adlandır'
+RENAME_EXERCISE_CHOOSE_EXERCISE = '✏️ Egzersizi yeniden adlandır\n\nBir egzersiz seçin'
 CLEAR_HISTORY_CHOOSE_EXERCISE = '🧹 Geçmişi temizle\n\nBir egzersiz seçin'
 DELETE_EXERCISE_CHOOSE_EXERCISE = '🗑 Egzersizi sil\n\nBir egzersiz seçin'
+
+def rename_exercise_request(name: str) -> str:
+    return f'✏️ {name} egzersizini yeniden adlandır\n\nYeni adı girin'
+
+
+def exercise_renamed(name: str) -> str:
+    return f'✅ Egzersiz yeniden adlandırıldı: {name}'
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
     value = f'📊 {name}\n\nBugün: {today_reps}\n7 gün: {last_7_days_reps}\n30 gün: {last_30_days_reps}\nTüm zamanlar: {total_reps}\n\nEğitim günleri: {active_days}\nAntrenman günü başına ortalama: {average_training_day}'

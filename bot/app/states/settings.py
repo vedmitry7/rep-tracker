@@ -5,6 +5,10 @@ class ChangeTimezone(StatesGroup):
     entering_timezone = State()
 
 
+class RenameExercise(StatesGroup):
+    waiting_for_name = State()
+
+
 class ImportData(StatesGroup):
     waiting_for_file = State()
     waiting_for_strategy = State()

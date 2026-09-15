@@ -56,6 +56,14 @@ class UserResolveRequest(BaseModel):
         return normalize_default_language(value)
 
 
+class MiniAppUserResolveRequest(BaseModel):
+    """Only non-identity defaults may originate in a Mini App browser."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    default_timezone: TimezoneName = DEFAULT_TIMEZONE
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
@@ -82,6 +90,21 @@ class UserSettingsUpdateRequest(BaseModel):
 
     provider: Provider
     external_id: ExternalId
+    timezone: TimezoneName | None = None
+    language: Language | None = None
+
+    @model_validator(mode="after")
+    def require_a_setting(self) -> Self:
+        if self.timezone is None and self.language is None:
+            raise ValueError("At least one of timezone or language is required")
+        return self
+
+
+class MiniAppUserSettingsUpdateRequest(BaseModel):
+    """Settings payload for a server-authenticated Mini App user."""
+
+    model_config = ConfigDict(extra="forbid")
+
     timezone: TimezoneName | None = None
     language: Language | None = None
 

@@ -401,6 +401,24 @@ class RepTrackerApi:
             logger.exception("Backend returned an invalid exercise")
             raise UnexpectedApiError from error
 
+    async def rename_exercise(
+        self,
+        telegram_user_id: int,
+        exercise_id: int,
+        name: str,
+    ) -> Exercise:
+        response = await self._request(
+            "PATCH",
+            f"/exercises/{exercise_id}",
+            json={**self._identity(telegram_user_id), "name": name},
+            expected_statuses={200},
+        )
+        try:
+            return Exercise.model_validate(response.json())
+        except (ValueError, ValidationError) as error:
+            logger.exception("Backend returned an invalid exercise")
+            raise UnexpectedApiError from error
+
     async def set_exercise_weekly_report_enabled(
         self,
         telegram_user_id: int,

@@ -28,6 +28,7 @@ class ExerciseDetailActionValue(StrEnum):
     TOGGLE_WEEKLY_REPORT = "toggle_weekly_report"
     STATISTICS = "statistics"
     HISTORY = "history"
+    RENAME = "rename"
     CLEAR_HISTORY = "clear_history"
     CONFIRM_CLEAR_HISTORY = "confirm_clear_history"
     HARD_DELETE = "hard_delete"
@@ -120,6 +121,17 @@ def exercise_name_back_keyboard() -> InlineKeyboardMarkup:
     builder.button(
         text=texts.BUTTON_BACK,
         callback_data=ExerciseAction(action=ExerciseActionValue.LIST),
+    )
+    return builder.as_markup()
+
+
+def exercise_management_back_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=texts.BUTTON_BACK,
+        callback_data=SettingsAction(
+            action=SettingsActionValue.EXERCISE_MANAGEMENT
+        ),
     )
     return builder.as_markup()
 

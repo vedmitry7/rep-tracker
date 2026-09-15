@@ -109,8 +109,17 @@ def exercise_empty(name: str) -> str:
 def exercise_summary(*, name: str, last_reps: str, last_date: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str) -> str:
     return f'🏋️ {name}\n\n↩️ Terbaru: {last_reps} · {last_date.lower()}\n\n🔥 Hari ini — {today_reps}\n📅 7 hari — {last_7_days_reps}\n🗓 30 hari — {last_30_days_reps}\n🏆 Jumlah — {total_reps}'
 EXERCISE_MANAGEMENT = '🛠 Kelola latihan'
+BUTTON_RENAME_EXERCISE = '✏️ Ganti nama latihan'
+RENAME_EXERCISE_CHOOSE_EXERCISE = '✏️ Ganti nama latihan\n\nPilih latihan'
 CLEAR_HISTORY_CHOOSE_EXERCISE = '🧹 Hapus riwayat\n\nPilih latihan'
 DELETE_EXERCISE_CHOOSE_EXERCISE = '🗑 Hapus latihan\n\nPilih latihan'
+
+def rename_exercise_request(name: str) -> str:
+    return f'✏️ Ganti nama {name}\n\nMasukkan nama baru'
+
+
+def exercise_renamed(name: str) -> str:
+    return f'✅ Latihan diganti namanya: {name}'
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str, last_30_days_reps: str, total_reps: str, active_days: str, average_training_day: str, best_day: str | None, best_day_reps: str | None) -> str:
     value = f'📊 {name}\n\nHari ini: {today_reps}\n7 hari: {last_7_days_reps}\n30 hari: {last_30_days_reps}\nSepanjang waktu: {total_reps}\n\nHari pelatihan: {active_days}\nRata-rata per hari latihan: {average_training_day}'

@@ -99,6 +99,7 @@ BUTTON_SAVE = "✅ Save"
 BUTTON_EDIT = "✏️ Edit"
 BUTTON_DELETE = "🗑 Delete"
 BUTTON_CLEAR_HISTORY = "🧹 Clear history"
+BUTTON_RENAME_EXERCISE = "✏️ Rename exercise"
 BUTTON_DELETE_EXERCISE = "🗑 Delete exercise"
 BUTTON_CONFIRM_CLEAR_HISTORY = "🧹 Clear history"
 BUTTON_DELETE_PERMANENTLY = "🗑 Delete permanently"
@@ -219,8 +220,17 @@ def exercise_summary(
 
 
 EXERCISE_MANAGEMENT = "🛠 Manage exercises"
+RENAME_EXERCISE_CHOOSE_EXERCISE = "✏️ Rename exercise\n\nChoose an exercise"
 CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Clear history\n\nChoose an exercise"
 DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Delete exercise\n\nChoose an exercise"
+
+
+def rename_exercise_request(name: str) -> str:
+    return f"✏️ Rename {name}\n\nEnter a new name"
+
+
+def exercise_renamed(name: str) -> str:
+    return f"✅ Exercise renamed to {name}"
 
 
 def statistics(

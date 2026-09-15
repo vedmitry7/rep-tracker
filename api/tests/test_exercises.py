@@ -150,6 +150,25 @@ async def test_rename_exercise(
     assert response.json()["name"] == "Chin-ups"
 
 
+async def test_rename_exercise_rejects_duplicate_name(
+    client: AsyncClient,
+) -> None:
+    identity = await create_user(client)
+    original = await create_exercise_for(client, identity, "Pull-ups")
+    renamed = await create_exercise_for(client, identity, "Squats")
+
+    response = await client.patch(
+        f"/exercises/{renamed['id']}",
+        json={**identity, "name": "  pull-UPS  "},
+    )
+
+    assert response.status_code == 409
+    assert (await client.get("/exercises", params=identity)).json() == [
+        original,
+        renamed,
+    ]
+
+
 async def test_exercise_weekly_report_can_be_disabled(
     client: AsyncClient,
 ) -> None:

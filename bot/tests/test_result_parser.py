@@ -14,6 +14,7 @@ from bot.app.services.result_parser import ResultParseError, parse_result
         ("10 9 8 7", [10, 9, 8, 7]),
         ("10,9,8,7", [10, 9, 8, 7]),
         ("10, 9, 8, 7", [10, 9, 8, 7]),
+        ("10 + 10 + 8", [10, 10, 8]),
     ],
 )
 def test_parse_supported_result_formats(value: str, expected: list[int]) -> None:

@@ -90,8 +90,18 @@ def exercise_summary(*, name: str, last_reps: str, last_date: str, today_reps: s
 
 
 EXERCISE_MANAGEMENT = "🛠 Gestionar ejercicios"
+BUTTON_RENAME_EXERCISE = "✏️ Renombrar ejercicio"
+RENAME_EXERCISE_CHOOSE_EXERCISE = "✏️ Renombrar ejercicio\n\nElige un ejercicio"
 CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Borrar historial\n\nElige un ejercicio"
 DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Eliminar ejercicio\n\nElige un ejercicio"
+
+
+def rename_exercise_request(name: str) -> str:
+    return f"✏️ Renombrar {name}\n\nIntroduce un nombre nuevo"
+
+
+def exercise_renamed(name: str) -> str:
+    return f"✅ Ejercicio renombrado: {name}"
 
 
 def statistics(*, name: str, today_reps: str, last_7_days_reps: str,

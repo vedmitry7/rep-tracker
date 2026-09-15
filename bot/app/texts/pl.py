@@ -66,8 +66,18 @@ NUMBER_TOO_LARGE = "Liczba jest zbyt duża."
 SET_NOT_FOUND = "Nie znaleziono serii."
 LAST_SET_REQUIRED = "Musi pozostać co najmniej jedna seria."
 EXERCISE_MANAGEMENT = "🛠 Zarządzaj ćwiczeniami"
+BUTTON_RENAME_EXERCISE = "✏️ Zmień nazwę ćwiczenia"
+RENAME_EXERCISE_CHOOSE_EXERCISE = "✏️ Zmień nazwę ćwiczenia\n\nWybierz ćwiczenie"
 CLEAR_HISTORY_CHOOSE_EXERCISE = "🧹 Wyczyść historię\n\nWybierz ćwiczenie"
 DELETE_EXERCISE_CHOOSE_EXERCISE = "🗑 Usuń ćwiczenie\n\nWybierz ćwiczenie"
+
+
+def rename_exercise_request(name: str) -> str:
+    return f"✏️ Zmień nazwę {name}\n\nWpisz nową nazwę"
+
+
+def exercise_renamed(name: str) -> str:
+    return f"✅ Zmieniono nazwę ćwiczenia: {name}"
 
 def exercise_name_too_long(max_length: int) -> str: return f"Nazwa jest za długa. Maksimum: {max_length} znaków."
 def sets_count_out_of_range(max_sets: int) -> str: return f"Liczba serii musi mieścić się między 1 a {max_sets}."

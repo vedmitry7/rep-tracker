@@ -11,8 +11,8 @@ _REPEATED_SETS_PATTERN = re.compile(
     rf"^({_INTEGER})\s*[xX×*]\s*({_INTEGER})$"
 )
 _SPACE_SEPARATED_PATTERN = re.compile(rf"^{_INTEGER}(?:\s+{_INTEGER})*$")
-_COMMA_SEPARATED_PATTERN = re.compile(
-    rf"^{_INTEGER}(?:\s*,\s*{_INTEGER})*$"
+_PUNCTUATION_SEPARATED_PATTERN = re.compile(
+    rf"^{_INTEGER}(?:\s*[,+]\s*{_INTEGER})*$"
 )
 
 
@@ -35,8 +35,8 @@ def parse_result(value: str) -> list[int]:
         _validate_repetitions([repetitions])
         return [repetitions] * sets_count
 
-    if _COMMA_SEPARATED_PATTERN.fullmatch(text):
-        repetitions = [_to_int(part.strip()) for part in text.split(",")]
+    if _PUNCTUATION_SEPARATED_PATTERN.fullmatch(text):
+        repetitions = [_to_int(part.strip()) for part in re.split(r"[,+]", text)]
     elif _SPACE_SEPARATED_PATTERN.fullmatch(text):
         repetitions = [_to_int(part) for part in text.split()]
     else:

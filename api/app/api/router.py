@@ -8,6 +8,7 @@ from api.app.api.routes.users import router as users_router
 from api.app.api.routes.weekly_reports import router as weekly_reports_router
 from api.app.api.routes.analytics import router as analytics_router
 from api.app.api.routes.support_payments import router as support_payments_router
+from api.app.api.routes.mini_app import router as mini_app_router
 
 
 api_router = APIRouter()
@@ -19,3 +20,4 @@ api_router.include_router(data_export_router)
 api_router.include_router(weekly_reports_router)
 api_router.include_router(analytics_router)
 api_router.include_router(support_payments_router)
+api_router.include_router(mini_app_router)
