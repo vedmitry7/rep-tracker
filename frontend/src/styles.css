@@ -232,6 +232,12 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .progress-card .activity-30d .bar-track { height: 42px; }
 .progress-card .activity-30d .daily-bar span { position: static; overflow: hidden; max-width: 100%; transform: none; color: #71717a; font-size: 8px; line-height: 1; text-overflow: clip; white-space: nowrap; }
 .progress-card .activity-detail { color: #a1a1aa; font-size: 12px; }
+
+.animated-number { display: inline-block; font-variant-numeric: tabular-nums; }
+.animated-number.is-changing { animation: number-update .48s cubic-bezier(.16, 1, .3, 1); }
+.progress-card .bar-track i, .week-bar i { transition: height .48s cubic-bezier(.16, 1, .3, 1), width .48s cubic-bezier(.16, 1, .3, 1); }
+@keyframes number-update { 0%, 80% { transform: scale(1); } 90% { transform: scale(1.035); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .animated-number.is-changing { animation: none; }.home-activity-day i, .progress-card .bar-track i, .week-bar i { transition: none; } }
 .progress-card .activity-detail b { color: #e4e4e7; }
 
 @media (max-width: 350px) {
