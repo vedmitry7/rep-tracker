@@ -42,6 +42,7 @@ def state() -> FSMContext:
 @pytest.fixture(autouse=True)
 def patch_message(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "Message", FakeMessage)
+    monkeypatch.setattr(settings, "CallbackQuery", FakeCallback)
 
 
 @pytest.mark.asyncio
