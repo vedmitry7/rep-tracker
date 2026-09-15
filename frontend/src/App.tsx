@@ -148,7 +148,7 @@ function App() {
   const initialise = useCallback(async () => {
     setError(undefined);
     try { await appDataCache.resolveUser(); setIsReady(true); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not connect to the API."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load data. Please try again."); }
   }, []);
 
   useEffect(() => { void initialise(); }, [initialise]);
@@ -158,7 +158,7 @@ function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  if (error) return <main className="app-shell"><Header title="Rep Tracker" /><ErrorNotice message={`API unavailable: ${error}`} retry={initialise} /><p className="hint">Start FastAPI on port 8000, then reload this page.</p></main>;
+  if (error) return <main className="app-shell"><Header title="Rep Tracker" /><ErrorNotice message={error} retry={initialise} /></main>;
   if (!isReady) return <main className="app-shell"><Header title="Rep Tracker" /><Loading /></main>;
 
   const go = (next: AppRoute) => navigate(next);

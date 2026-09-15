@@ -2,6 +2,7 @@ import type { Exercise, ExerciseEntry, ExerciseStats, HistoryDay, Settings } fro
 import { getTelegramInitData } from "./telegram";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/mini-app";
+const requestFailureMessage = "Unable to load data. Please try again.";
 
 type QueryValue = string | number | boolean | undefined;
 
@@ -10,19 +11,35 @@ async function request<T>(path: string, options: RequestInit = {}, query?: Recor
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined) url.searchParams.set(key, String(value));
   });
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Telegram-Init-Data": getTelegramInitData(),
-      ...options.headers,
-    },
-  });
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { detail?: string } | null;
-    throw new Error(payload?.detail ?? `Request failed (${response.status})`);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": getTelegramInitData(),
+        ...options.headers,
+      },
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null) as { detail?: string } | null;
+      console.error("Mini App request failed", {
+        method: options.method ?? "GET",
+        path: url.pathname,
+        status: response.status,
+        detail: payload?.detail,
+      });
+      throw new Error(requestFailureMessage);
+    }
+    return response.status === 204 ? undefined as T : response.json() as Promise<T>;
+  } catch (error) {
+    if (error instanceof Error && error.message === requestFailureMessage) throw error;
+    console.error("Mini App request could not be completed", {
+      method: options.method ?? "GET",
+      path: url.pathname,
+      error,
+    });
+    throw new Error(requestFailureMessage);
   }
-  return response.status === 204 ? undefined as T : response.json() as Promise<T>;
 }
 
 export const api = {

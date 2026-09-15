@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from pydantic import SecretStr
 
 from api.app.api.dependencies import telegram_mini_app
+from api.app.main import app
 
 
 BOT_TOKEN = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"
@@ -63,3 +64,9 @@ def test_rejects_stale_init_data():
         )
 
     assert error.value.status_code == 401
+
+
+def test_mini_app_user_resolution_route_accepts_post():
+    route = next(route for route in app.routes if route.path == "/mini-app/users/resolve")
+
+    assert route.methods == {"POST"}
