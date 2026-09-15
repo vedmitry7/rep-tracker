@@ -176,18 +176,22 @@ function HomeExerciseCard({ exercise, open, addEntry }: { exercise: ExerciseSumm
   const latest = exercise.stats.last_entry;
 
   return <article className="home-exercise-card">
-    <button className="home-exercise-open" onClick={() => open(exercise.id)} aria-label={`Open ${exercise.name}`}>
-      <span className="home-exercise-summary">
-        <strong>{exercise.name}</strong>
-        {latest ? <span className="home-exercise-last"><span>{formatSets(latest.reps)}</span><i>·</i><span>{relativeEntryTime(latest.created_at)}</span></span> : <span className="home-exercise-last is-empty">No results yet</span>}
-      </span>
-      <span className={`home-today-total ${exercise.stats.today_reps > 0 ? "has-reps" : ""}`}>
-        <b>{exercise.stats.today_reps > 0 ? exercise.stats.today_reps.toLocaleString() : "—"}</b>
-        <small>Today</small>
-      </span>
-    </button>
-    <HomeActivityBars days={days} values={values} today={exercise.stats.today} />
-    <button className="home-quick-add" onClick={() => addEntry(exercise.id)} aria-label={`Add result for ${exercise.name}`}><span>+</span></button>
+    <div className="home-exercise-header">
+      <button className="home-exercise-open" onClick={() => open(exercise.id)} aria-label={`Open ${exercise.name}`}>
+        <span className="home-exercise-summary">
+          <strong>{exercise.name}</strong>
+          {latest ? <span className="home-exercise-last"><span>{formatSets(latest.reps)}</span><i>·</i><span>{relativeEntryTime(latest.created_at)}</span></span> : <span className="home-exercise-last is-empty">No results yet</span>}
+        </span>
+        <span className={`home-today-total ${exercise.stats.today_reps > 0 ? "has-reps" : ""}`}>
+          <b>{exercise.stats.today_reps > 0 ? exercise.stats.today_reps.toLocaleString() : "—"}</b>
+          <small>Today</small>
+        </span>
+      </button>
+    </div>
+    <div className="home-activity-row">
+      <HomeActivityBars days={days} values={values} today={exercise.stats.today} />
+      <button className="home-activity-add" onClick={() => addEntry(exercise.id)} aria-label={`Add result for ${exercise.name}`}><span aria-hidden="true">+</span></button>
+    </div>
   </article>;
 }
 
@@ -402,9 +406,9 @@ function ResultsPage({ exerciseId, back, edit }: { exerciseId: number; back: () 
 
 function EntryEditorPage({ exerciseId, entryId, back, done }: { exerciseId: number; entryId?: number; back: () => void; done: () => void }) {
   const isEditing = entryId !== undefined;
-  const [reps, setReps] = useState<number[]>([10]); const [quickInput, setQuickInput] = useState("10"); const [quickError, setQuickError] = useState<string>(); const [date, setDate] = useState(""); const [today, setToday] = useState(""); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState<string>();
+  const [reps, setReps] = useState<number[]>([10]); const [quickInput, setQuickInput] = useState("10"); const [quickError, setQuickError] = useState<string>(); const [date, setDate] = useState(""); const [today, setToday] = useState(""); const [exerciseName, setExerciseName] = useState(""); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState<string>();
   const syncSets = (next: number[]) => { setReps(next); setQuickInput(formatSets(next)); setQuickError(undefined); };
-  useEffect(() => { void (async () => { try { const settings = await api.settings(); setToday(settings.today); if (entryId === undefined) { setDate(settings.today); } else { const entry = (await fetchAllEntries(exerciseId)).find((item) => item.id === entryId); if (!entry) throw new Error("Result not found."); syncSets(entry.reps); setDate(entry.performed_on); } } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load result."); } finally { setLoading(false); } })(); }, [entryId, exerciseId]);
+  useEffect(() => { void (async () => { try { const [settings, exercises] = await Promise.all([api.settings(), api.exercises()]); const exercise = exercises.find((item) => item.id === exerciseId); if (!exercise) throw new Error("Exercise not found."); setToday(settings.today); setExerciseName(exercise.name); if (entryId === undefined) { setDate(settings.today); } else { const entry = (await fetchAllEntries(exerciseId)).find((item) => item.id === entryId); if (!entry) throw new Error("Result not found."); syncSets(entry.reps); setDate(entry.performed_on); } } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load result."); } finally { setLoading(false); } })(); }, [entryId, exerciseId]);
   const updateSet = (index: number, value: number) => syncSets(reps.map((setReps, itemIndex) => itemIndex === index ? value : setReps));
   const applyQuickInput = (value: string) => { setQuickInput(value); try { const next = parseQuickResult(value); setReps(next); setQuickError(undefined); } catch { setQuickError(undefined); } };
   const validateQuickInput = () => { try { const next = parseQuickResult(quickInput); syncSets(next); return next; } catch (reason) { setQuickError(reason instanceof Error ? reason.message : "Invalid result format."); return undefined; } };
@@ -413,7 +417,7 @@ function EntryEditorPage({ exerciseId, entryId, back, done }: { exerciseId: numb
   const total = reps.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
   if (loading) return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><Loading /></main>;
   if (error && !date) return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><ErrorNotice message={error} /></main>;
-  return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><form className="entry-editor" onSubmit={save}><label className="quick-entry"><span>Quick entry</span><input value={quickInput} onChange={(event) => applyQuickInput(event.target.value)} onBlur={validateQuickInput} placeholder="4×10 or 10 + 10 + 8" autoComplete="off" /><small>Try 4×10, 10 10 10, or 10 + 10 + 8.</small></label>{quickError && <p className="quick-error">{quickError}</p>}<label className="date-picker"><span>Date</span><input id="entry-date" type="date" value={date} max={today} onChange={(event) => setDate(event.target.value)} /><small>{date === today ? "Today" : "Selected training date"}</small></label><section className="sets-panel"><div className="section-heading"><h3>Sets</h3><span>{total.toLocaleString()} reps total</span></div><div className="set-list">{reps.map((value, index) => <div className="set-editor" key={index}><span>Set {index + 1}</span><button type="button" aria-label={`Decrease set ${index + 1}`} onClick={() => updateSet(index, Math.max(1, value - 1))}>−</button><input aria-label={`Repetitions for set ${index + 1}`} type="number" inputMode="numeric" min="1" max="10000" value={value || ""} onChange={(event) => updateSet(index, Number(event.target.value))} /><button type="button" aria-label={`Increase set ${index + 1}`} onClick={() => updateSet(index, Math.min(10000, value + 1))}>+</button><button className="remove-set" type="button" aria-label={`Remove set ${index + 1}`} disabled={reps.length === 1} onClick={() => syncSets(reps.filter((_, itemIndex) => itemIndex !== index))}>×</button></div>)}</div><button className="add-set" type="button" onClick={() => syncSets([...reps, reps.at(-1) ?? 10])}>＋ Add set</button></section>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={saving}>{saving ? "Saving…" : isEditing ? "Save changes" : "Save result"}</button>{isEditing && <button className="danger-button editor-delete" type="button" disabled={saving} onClick={remove}>Delete result</button>}</form></main>;
+  return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><p className="entry-exercise-context" title={exerciseName}>{exerciseName}</p><form className="entry-editor" onSubmit={save}><label className="quick-entry"><span>Quick entry</span><input value={quickInput} onChange={(event) => applyQuickInput(event.target.value)} onBlur={validateQuickInput} placeholder="4×10 or 10 + 10 + 8" autoComplete="off" /><small>Try 4×10, 10 10 10, or 10 + 10 + 8.</small></label>{quickError && <p className="quick-error">{quickError}</p>}<label className="date-picker"><span>Date</span><input id="entry-date" type="date" value={date} max={today} onChange={(event) => setDate(event.target.value)} /><small>{date === today ? "Today" : "Selected training date"}</small></label><section className="sets-panel"><div className="section-heading"><h3>Sets</h3><span>{total.toLocaleString()} reps total</span></div><div className="set-list">{reps.map((value, index) => <div className="set-editor" key={index}><span>Set {index + 1}</span><button type="button" aria-label={`Decrease set ${index + 1}`} onClick={() => updateSet(index, Math.max(1, value - 1))}>−</button><input aria-label={`Repetitions for set ${index + 1}`} type="number" inputMode="numeric" min="1" max="10000" value={value || ""} onChange={(event) => updateSet(index, Number(event.target.value))} /><button type="button" aria-label={`Increase set ${index + 1}`} onClick={() => updateSet(index, Math.min(10000, value + 1))}>+</button><button className="remove-set" type="button" aria-label={`Remove set ${index + 1}`} disabled={reps.length === 1} onClick={() => syncSets(reps.filter((_, itemIndex) => itemIndex !== index))}>×</button></div>)}</div><button className="add-set" type="button" onClick={() => syncSets([...reps, reps.at(-1) ?? 10])}>＋ Add set</button></section>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={saving}>{saving ? "Saving…" : isEditing ? "Save changes" : "Save result"}</button>{isEditing && <button className="danger-button editor-delete" type="button" disabled={saving} onClick={remove}>Delete result</button>}</form></main>;
 }
 
 function ExerciseSettingsPage({ exerciseId, back, home }: { exerciseId: number; back: () => void; home: () => void }) {
