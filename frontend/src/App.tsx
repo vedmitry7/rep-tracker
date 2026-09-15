@@ -417,7 +417,29 @@ function EntryEditorPage({ exerciseId, entryId, back, done }: { exerciseId: numb
   const total = reps.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
   if (loading) return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><Loading /></main>;
   if (error && !date) return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><ErrorNotice message={error} /></main>;
-  return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><p className="entry-exercise-context" title={exerciseName}>{exerciseName}</p><form className="entry-editor" onSubmit={save}><label className="quick-entry"><span>Quick entry</span><input value={quickInput} onChange={(event) => applyQuickInput(event.target.value)} onBlur={validateQuickInput} placeholder="4×10 or 10 + 10 + 8" autoComplete="off" /><small>Try 4×10, 10 10 10, or 10 + 10 + 8.</small></label>{quickError && <p className="quick-error">{quickError}</p>}<label className="date-picker"><span>Date</span><input id="entry-date" type="date" value={date} max={today} onChange={(event) => setDate(event.target.value)} /><small>{date === today ? "Today" : "Selected training date"}</small></label><section className="sets-panel"><div className="section-heading"><h3>Sets</h3><span>{total.toLocaleString()} reps total</span></div><div className="set-list">{reps.map((value, index) => <div className="set-editor" key={index}><span>Set {index + 1}</span><button type="button" aria-label={`Decrease set ${index + 1}`} onClick={() => updateSet(index, Math.max(1, value - 1))}>−</button><input aria-label={`Repetitions for set ${index + 1}`} type="number" inputMode="numeric" min="1" max="10000" value={value || ""} onChange={(event) => updateSet(index, Number(event.target.value))} /><button type="button" aria-label={`Increase set ${index + 1}`} onClick={() => updateSet(index, Math.min(10000, value + 1))}>+</button><button className="remove-set" type="button" aria-label={`Remove set ${index + 1}`} disabled={reps.length === 1} onClick={() => syncSets(reps.filter((_, itemIndex) => itemIndex !== index))}>×</button></div>)}</div><button className="add-set" type="button" onClick={() => syncSets([...reps, reps.at(-1) ?? 10])}>＋ Add set</button></section>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={saving}>{saving ? "Saving…" : isEditing ? "Save changes" : "Save result"}</button>{isEditing && <button className="danger-button editor-delete" type="button" disabled={saving} onClick={remove}>Delete result</button>}</form></main>;
+  return <main className="app-shell">
+    <Header title={isEditing ? "Edit result" : "Add result"} back={back} />
+    <p className="entry-exercise-context" title={exerciseName}>{exerciseName}</p>
+    <form className="entry-editor" onSubmit={save}>
+      <section className="entry-composer">
+        <label className="quick-entry">
+          <span>Quick entry</span>
+          <input value={quickInput} onChange={(event) => applyQuickInput(event.target.value)} onBlur={validateQuickInput} placeholder="4×10 or 10 + 10 + 8" autoComplete="off" />
+          <small>Try 4×10, 10 10 10, or 10 + 10 + 8.</small>
+        </label>
+        {quickError && <p className="quick-error">{quickError}</p>}
+        <section className="sets-panel">
+          <div className="section-heading"><h3>Sets</h3><span>{total.toLocaleString()} reps total</span></div>
+          <div className="set-list">{reps.map((value, index) => <div className="set-editor" key={index}><span>Set {index + 1}</span><button type="button" aria-label={`Decrease set ${index + 1}`} onClick={() => updateSet(index, Math.max(1, value - 1))}>−</button><input aria-label={`Repetitions for set ${index + 1}`} type="number" inputMode="numeric" min="1" max="10000" value={value || ""} onChange={(event) => updateSet(index, Number(event.target.value))} /><button type="button" aria-label={`Increase set ${index + 1}`} onClick={() => updateSet(index, Math.min(10000, value + 1))}>+</button><button className="remove-set" type="button" aria-label={`Remove set ${index + 1}`} disabled={reps.length === 1} onClick={() => syncSets(reps.filter((_, itemIndex) => itemIndex !== index))}>×</button></div>)}</div>
+          <button className="add-set" type="button" onClick={() => syncSets([...reps, reps.at(-1) ?? 10])}>＋ Add set</button>
+        </section>
+      </section>
+      <label className="date-picker"><span>Date</span><input id="entry-date" type="date" value={date} max={today} onChange={(event) => setDate(event.target.value)} /><small>{date === today ? "Today" : "Selected training date"}</small></label>
+      {error && <ErrorNotice message={error} />}
+      <button className="primary-button" disabled={saving}>{saving ? "Saving…" : isEditing ? "Save changes" : "Save result"}</button>
+      {isEditing && <button className="danger-button editor-delete" type="button" disabled={saving} onClick={remove}>Delete result</button>}
+    </form>
+  </main>;
 }
 
 function ExerciseSettingsPage({ exerciseId, back, home }: { exerciseId: number; back: () => void; home: () => void }) {
