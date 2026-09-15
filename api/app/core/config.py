@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
 
@@ -15,6 +15,15 @@ class Settings(BaseSettings):
     postgres_password: str = Field(alias="POSTGRES_PASSWORD")
     postgres_host: str = Field(alias="POSTGRES_HOST")
     postgres_port: int = Field(alias="POSTGRES_PORT")
+    # This is intentionally an API-only setting.  It is used to verify signed
+    # Telegram Mini App initData and must never be exposed to Vite.
+    telegram_bot_token: SecretStr = Field(alias="TELEGRAM_BOT_TOKEN")
+    telegram_init_data_max_age_seconds: int = Field(
+        default=86_400,
+        alias="TELEGRAM_INIT_DATA_MAX_AGE_SECONDS",
+        ge=60,
+        le=604_800,
+    )
 
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env",
@@ -37,4 +46,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

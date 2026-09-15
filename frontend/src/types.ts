@@ -1,5 +1,3 @@
-export type Identity = { provider: string; external_id: string };
-
 export type Exercise = {
   id: number;
   name: string;

@@ -31,6 +31,22 @@ class ExerciseWeeklyReportUpdateRequest(ExerciseIdentity):
     weekly_report_enabled: bool
 
 
+class MiniAppExerciseCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: ExerciseName
+
+
+class MiniAppExerciseUpdateRequest(MiniAppExerciseCreateRequest):
+    pass
+
+
+class MiniAppExerciseWeeklyReportUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    weekly_report_enabled: bool
+
+
 class ExerciseResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

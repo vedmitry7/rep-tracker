@@ -1,10 +1,7 @@
-import type { Exercise, ExerciseEntry, ExerciseStats, HistoryDay, Identity, Settings } from "./types";
+import type { Exercise, ExerciseEntry, ExerciseStats, HistoryDay, Settings } from "./types";
+import { getTelegramInitData } from "./telegram";
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
-export const identity: Identity = {
-  provider: import.meta.env.VITE_DEV_PROVIDER ?? "web-dev",
-  external_id: import.meta.env.VITE_DEV_EXTERNAL_ID ?? "local-user",
-};
+const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/mini-app";
 
 type QueryValue = string | number | boolean | undefined;
 
@@ -15,7 +12,11 @@ async function request<T>(path: string, options: RequestInit = {}, query?: Recor
   });
   const response = await fetch(url, {
     ...options,
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Telegram-Init-Data": getTelegramInitData(),
+      ...options.headers,
+    },
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => null) as { detail?: string } | null;
@@ -24,29 +25,25 @@ async function request<T>(path: string, options: RequestInit = {}, query?: Recor
   return response.status === 204 ? undefined as T : response.json() as Promise<T>;
 }
 
-const ownedQuery = () => identity;
-const ownedBody = <T extends object>(payload: T) => ({ ...identity, ...payload });
-
 export const api = {
   resolveUser: () => request("/users/resolve", {
     method: "POST",
-    body: JSON.stringify(ownedBody({
-      default_timezone: import.meta.env.VITE_DEV_TIMEZONE ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "Europe/Moscow",
-      default_language: import.meta.env.VITE_DEV_LANGUAGE ?? "en",
-    })),
+    body: JSON.stringify({
+      default_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? "Europe/Moscow",
+    }),
   }),
-  exercises: () => request<Exercise[]>("/exercises", {}, ownedQuery()),
-  createExercise: (name: string) => request<Exercise>("/exercises", { method: "POST", body: JSON.stringify(ownedBody({ name })) }),
-  updateExercise: (id: number, name: string) => request<Exercise>(`/exercises/${id}`, { method: "PATCH", body: JSON.stringify(ownedBody({ name })) }),
-  updateWeeklyReport: (id: number, weekly_report_enabled: boolean) => request<Exercise>(`/exercises/${id}/weekly-report`, { method: "PATCH", body: JSON.stringify(ownedBody({ weekly_report_enabled })) }),
-  archiveExercise: (id: number) => request<void>(`/exercises/${id}`, { method: "DELETE" }, ownedQuery()),
-  stats: (id: number) => request<ExerciseStats>(`/exercises/${id}/stats`, {}, ownedQuery()),
-  entries: (id: number, limit = 20, offset = 0) => request<ExerciseEntry[]>(`/exercises/${id}/entries`, {}, { ...ownedQuery(), limit, offset }),
-  entriesForDay: (id: number, date: string, limit = 100, offset = 0) => request<ExerciseEntry[]>(`/exercises/${id}/entries`, {}, { ...ownedQuery(), from: date, to: date, limit, offset }),
-  history: (id: number, limit = 100, offset = 0) => request<HistoryDay[]>(`/exercises/${id}/history-days`, {}, { ...ownedQuery(), limit, offset }),
-  createEntry: (exercise_id: number, reps: number[], performed_on: string) => request<ExerciseEntry>("/exercise-entries", { method: "POST", body: JSON.stringify(ownedBody({ exercise_id, reps, performed_on })) }),
-  updateEntry: (id: number, reps: number[], performed_on: string) => request<ExerciseEntry>(`/exercise-entries/${id}`, { method: "PATCH", body: JSON.stringify(ownedBody({ reps, performed_on })) }),
-  deleteEntry: (id: number) => request<void>(`/exercise-entries/${id}`, { method: "DELETE" }, ownedQuery()),
-  settings: () => request<Settings>("/users/settings", {}, ownedQuery()),
-  updateSettings: (settings: Partial<Pick<Settings, "timezone" | "language">>) => request<Settings>("/users/settings", { method: "PATCH", body: JSON.stringify(ownedBody(settings)) }),
+  exercises: () => request<Exercise[]>("/exercises"),
+  createExercise: (name: string) => request<Exercise>("/exercises", { method: "POST", body: JSON.stringify({ name }) }),
+  updateExercise: (id: number, name: string) => request<Exercise>(`/exercises/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }),
+  updateWeeklyReport: (id: number, weekly_report_enabled: boolean) => request<Exercise>(`/exercises/${id}/weekly-report`, { method: "PATCH", body: JSON.stringify({ weekly_report_enabled }) }),
+  archiveExercise: (id: number) => request<void>(`/exercises/${id}`, { method: "DELETE" }),
+  stats: (id: number) => request<ExerciseStats>(`/exercises/${id}/stats`),
+  entries: (id: number, limit = 20, offset = 0) => request<ExerciseEntry[]>(`/exercises/${id}/entries`, {}, { limit, offset }),
+  entriesForDay: (id: number, date: string, limit = 100, offset = 0) => request<ExerciseEntry[]>(`/exercises/${id}/entries`, {}, { from: date, to: date, limit, offset }),
+  history: (id: number, limit = 100, offset = 0) => request<HistoryDay[]>(`/exercises/${id}/history-days`, {}, { limit, offset }),
+  createEntry: (exercise_id: number, reps: number[], performed_on: string) => request<ExerciseEntry>("/exercise-entries", { method: "POST", body: JSON.stringify({ exercise_id, reps, performed_on }) }),
+  updateEntry: (id: number, reps: number[], performed_on: string) => request<ExerciseEntry>(`/exercise-entries/${id}`, { method: "PATCH", body: JSON.stringify({ reps, performed_on }) }),
+  deleteEntry: (id: number) => request<void>(`/exercise-entries/${id}`, { method: "DELETE" }),
+  settings: () => request<Settings>("/users/settings"),
+  updateSettings: (settings: Partial<Pick<Settings, "timezone" | "language">>) => request<Settings>("/users/settings", { method: "PATCH", body: JSON.stringify(settings) }),
 };

@@ -6,6 +6,7 @@ type Insets = {
 };
 
 type TelegramWebApp = {
+  initData: string;
   isFullscreen?: boolean;
   contentSafeAreaInset?: Insets;
   ready: () => void;
@@ -50,4 +51,14 @@ export function initialiseTelegramMiniApp() {
   webApp.onEvent?.("fullscreenChanged", refreshSafeArea);
 
   if (!webApp.isFullscreen) webApp.requestFullscreen?.();
+}
+
+/**
+ * Telegram signs this opaque query string. It is sent unchanged to the API,
+ * where the bot token verifies it; the browser never receives that token.
+ */
+export function getTelegramInitData(): string {
+  const initData = window.Telegram?.WebApp?.initData;
+  if (!initData) throw new Error("Open Repka from the Telegram app.");
+  return initData;
 }

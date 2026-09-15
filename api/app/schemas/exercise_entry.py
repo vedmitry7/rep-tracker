@@ -47,6 +47,32 @@ class ExerciseEntryUpdateRequest(ExerciseEntryIdentity):
         return self
 
 
+class MiniAppExerciseEntryCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    exercise_id: int = Field(gt=0)
+    reps: Reps
+    performed_on: date
+
+
+class MiniAppExerciseEntryUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reps: Reps | None = None
+    performed_on: date | None = None
+
+    @model_validator(mode="after")
+    def validate_update(self) -> Self:
+        changed_fields = self.model_fields_set
+        if not changed_fields:
+            raise ValueError("at least one field must be provided")
+        if self.reps is None and "reps" in changed_fields:
+            raise ValueError("reps cannot be null")
+        if self.performed_on is None and "performed_on" in changed_fields:
+            raise ValueError("performed_on cannot be null")
+        return self
+
+
 class ExerciseEntryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

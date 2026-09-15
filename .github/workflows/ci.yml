@@ -85,6 +85,27 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: docker compose --file docker-compose.prod.yml config --quiet
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: repka-frontend-${{ github.sha }}
+          path: frontend/dist
+          if-no-files-found: error
+          retention-days: 1
+
   images:
     name: Build ${{ matrix.service }} image
     needs: ci
@@ -139,7 +160,7 @@ jobs:
   deploy:
     name: Deploy production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: images
+    needs: [ci, images]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -153,6 +174,12 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+
+      - name: Download built frontend
+        uses: actions/download-artifact@v5
+        with:
+          name: repka-frontend-${{ github.sha }}
+          path: frontend/dist
 
       - name: Configure SSH
         env:
@@ -216,3 +243,14 @@ jobs:
 
           "${ssh_command[@]}" \
             "DOCKER_CONFIG='${remote_docker_config}' bash '${remote_docker_config}/deploy-production.sh' '${GITHUB_SHA}'"
+
+          frontend_archive="${RUNNER_TEMP}/repka-frontend-${GITHUB_SHA}.tar.gz"
+          tar --create --gzip --file "${frontend_archive}" --directory frontend/dist .
+
+          "${scp_command[@]}" \
+            .github/scripts/deploy-frontend.sh \
+            "${frontend_archive}" \
+            "${VPS_USER}@${VPS_HOST}:${remote_docker_config}/"
+
+          "${ssh_command[@]}" \
+            "bash '${remote_docker_config}/deploy-frontend.sh' '${GITHUB_SHA}' '${remote_docker_config}/$(basename "${frontend_archive}")'"
