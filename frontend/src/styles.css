@@ -7,6 +7,10 @@
   --accent-soft: #fcd34d;
   --accent-focus: rgba(245, 158, 11, .7);
   --accent-outline: rgba(251, 191, 36, .6);
+  --telegram-content-safe-area-top: 0px;
+  --telegram-content-safe-area-right: 0px;
+  --telegram-content-safe-area-bottom: 0px;
+  --telegram-content-safe-area-left: 0px;
   color: #f0f0f0;
   background: #080808;
   font-family: "DM Sans", system-ui, sans-serif;
@@ -20,7 +24,7 @@ button, input, select { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .42; }
 
-.app-shell { width: min(100%, 390px); min-height: 100vh; margin: 0 auto; padding: 40px 16px 48px; }
+.app-shell { width: min(100%, 390px); min-height: 100vh; margin: 0 auto; padding: calc(40px + var(--telegram-content-safe-area-top)) calc(16px + var(--telegram-content-safe-area-right)) calc(48px + var(--telegram-content-safe-area-bottom)) calc(16px + var(--telegram-content-safe-area-left)); }
 .topbar { display: grid; grid-template-columns: 28px 1fr 28px; align-items: center; min-height: 26px; margin-bottom: 28px; }
 .topbar h1 { overflow: hidden; margin: 0; color: #f4f4f5; font-size: 15px; font-weight: 500; letter-spacing: -.1px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .home-topbar { grid-template-columns: 1fr 28px; margin-bottom: 22px; }
