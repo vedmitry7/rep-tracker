@@ -166,15 +166,15 @@ def render_weekly_card(
     average = round(sum(w.total for w in visible) / len(visible))
     max_week_value = max(w.total for w in visible)
 
-    image = Image.new("RGB", (W, image_h), "#EAF5FF")
-    _rounded_gradient(image, (OUTER_X, OUTER_Y, OUTER_X + OUTER_W, OUTER_Y + outer_h), 42, (255, 255, 255), (247, 251, 255))
+    image = Image.new("RGB", (W, image_h), "#FFF7ED")
+    _rounded_gradient(image, (OUTER_X, OUTER_Y, OUTER_X + OUTER_W, OUTER_Y + outer_h), 42, (255, 255, 255), (255, 251, 235))
     shadow = Image.new("RGBA", image.size)
-    ImageDraw.Draw(shadow).rounded_rectangle((OUTER_X, OUTER_Y + 18, OUTER_X + OUTER_W, OUTER_Y + outer_h + 18), radius=42, fill=(107, 143, 179, 46))
+    ImageDraw.Draw(shadow).rounded_rectangle((OUTER_X, OUTER_Y + 18, OUTER_X + OUTER_W, OUTER_Y + outer_h + 18), radius=42, fill=(146, 64, 14, 38))
     image = Image.alpha_composite(image.convert("RGBA"), shadow.filter(ImageFilter.GaussianBlur(28))).convert("RGB")
-    _rounded_gradient(image, (OUTER_X, OUTER_Y, OUTER_X + OUTER_W, OUTER_Y + outer_h), 42, (255, 255, 255), (247, 251, 255))
-    _rounded_gradient(image, (HERO_X, HERO_Y, HERO_X + HERO_W, HERO_Y + HERO_H), 28, (250, 253, 255), (237, 247, 255))
+    _rounded_gradient(image, (OUTER_X, OUTER_Y, OUTER_X + OUTER_W, OUTER_Y + outer_h), 42, (255, 255, 255), (255, 251, 235))
+    _rounded_gradient(image, (HERO_X, HERO_Y, HERO_X + HERO_W, HERO_Y + HERO_H), 28, (255, 252, 242), (255, 243, 214))
     draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((HERO_X, HERO_Y, HERO_X + HERO_W, HERO_Y + HERO_H), radius=28, outline="#8FC6FF", width=2)
+    draw.rounded_rectangle((HERO_X, HERO_Y, HERO_X + HERO_W, HERO_Y + HERO_H), radius=28, outline="#F6B35A", width=2)
 
     _draw_text(draw, (84, HEADER_TITLE_Y), exercise_name, "title", "#111827")
     _draw_text(draw, (84, HEADER_SUBTITLE_Y), labels["subtitle"], "hero_prev", "#65758B")
@@ -184,8 +184,8 @@ def render_weekly_card(
     _draw_text(draw, (hero_unit_x, 360), labels["reps"], "hero_unit", "#667085")
 
     if previous is None:
-        draw.rounded_rectangle((694, 259, 922, 317), radius=29, fill="#EEF2F7")
-        _draw_text(draw, (808, 296), labels["start"], "hero_badge", "#41526B", anchor="ms")
+        draw.rounded_rectangle((694, 259, 922, 317), radius=29, fill="#FFF1D6")
+        _draw_text(draw, (808, 296), labels["start"], "hero_badge", "#7C3F00", anchor="ms")
     else:
         chip_text = f"{abs(delta)} ({_pct_text(delta_pct, language) if delta_pct is not None else '—'})"
         chip_w = max(48 + _text_width(chip_text, "hero_badge"), _text_width(labels["previous"], "hero_prev") + _text_width(str(previous), "hero_prev_value") + 44)
@@ -195,7 +195,7 @@ def render_weekly_card(
             arrow = [(chip_x + 22, chip_y + 20), (chip_x + 38, chip_y + 20), (chip_x + 30, chip_y + 33)]
             draw.polygon(arrow, fill=hero_text)
         elif delta == 0:
-            hero_bg, hero_text = "#EEF2F7", "#41526B"
+            hero_bg, hero_text = "#FFF1D6", "#7C3F00"
         else:
             hero_bg, hero_text = "#E4F6E9", "#13733A"
             arrow = [(chip_x + 22, chip_y + 33), (chip_x + 38, chip_y + 33), (chip_x + 30, chip_y + 20)]
@@ -216,15 +216,15 @@ def render_weekly_card(
     if len(all_weeks) > len(visible):
         _draw_text(draw, (74 + _text_width(history_title, "section_title") + 22, HISTORY_TITLE_Y - 4), labels["shown"].format(visible=len(visible), total=len(all_weeks)), "section_meta", "#8492A6")
 
-    bar_colors = ["#8EC8FF", "#FFC89C", "#AEE8C8", "#F2B6D8", "#D1B7F4", "#D8C8BC", "#F0C7EA"]
+    bar_colors = ["#F59E0B", "#FFC89C", "#AEE8C8", "#F2B6D8", "#D1B7F4", "#D8C8BC", "#F0C7EA"]
     for i, week in enumerate(visible):
         y = ROWS_Y + i * (ROW_H + ROW_GAP)
         pct, pct_label = _row_change(all_weeks, visible, i, language)
-        badge_fill, badge_text = ("#EEF2F7", "#41526B") if pct is None else (("#E4F6E9", "#13733A") if pct >= 0 else ("#FCE7EA", "#B4232C"))
-        draw.rounded_rectangle((CONTENT_X, y, CONTENT_X + CONTENT_W, y + ROW_H), radius=22, fill="#F2F8FF" if i == 0 else "#FFFFFF", outline="#B8D9FF" if i == 0 else "#E7EDF5", width=2 if i == 0 else 1)
+        badge_fill, badge_text = ("#FFF1D6", "#7C3F00") if pct is None else (("#E4F6E9", "#13733A") if pct >= 0 else ("#FCE7EA", "#B4232C"))
+        draw.rounded_rectangle((CONTENT_X, y, CONTENT_X + CONTENT_W, y + ROW_H), radius=22, fill="#FFF8E8" if i == 0 else "#FFFFFF", outline="#F5C36A" if i == 0 else "#EEE7DD", width=2 if i == 0 else 1)
         _draw_text(draw, (88, y + 52), week.label, "hero_prev", "#334155")
         _draw_text(draw, (315, y + 54), str(week.total), "hero_unit", "#111827")
-        draw.rounded_rectangle((408, y + 35, 833, y + 49), radius=7, fill="#E9EFF5")
+        draw.rounded_rectangle((408, y + 35, 833, y + 49), radius=7, fill="#F1E9DC")
         fill_w = 425 * week.total / max_week_value if max_week_value else 0
         if fill_w:
             draw.rounded_rectangle((408, y + 35, 408 + fill_w, y + 49), radius=7, fill=bar_colors[i])
@@ -232,7 +232,7 @@ def render_weekly_card(
         _draw_text(draw, (950, y + 48), pct_label, "hero_prev_value", badge_text, anchor="ms")
 
     draw.rounded_rectangle((CONTENT_X, footer_y, CONTENT_X + CONTENT_W, footer_y + FOOTER_H), radius=26, fill="#FFFFFF")
-    draw.line((560, footer_y + 24, 560, footer_y + FOOTER_H - 24), fill="#E4EAF1", width=1)
+    draw.line((560, footer_y + 24, 560, footer_y + FOOTER_H - 24), fill="#E9E0D3", width=1)
     _draw_text(draw, (112, footer_y + 39), labels["best"], "section_meta", "#64748B")
     _draw_text(draw, (112, footer_y + 94), str(best.total), "footer_value", "#111827")
     _draw_text(draw, (112 + _text_width(str(best.total), "footer_value") + 14, footer_y + 92), best.label, "section_meta", "#64748B")
