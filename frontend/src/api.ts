@@ -3,6 +3,8 @@ import { getTelegramInitData } from "./telegram";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/mini-app";
 const requestFailureMessage = "Unable to load data. Please try again.";
+const requestTimeoutMessage = "The connection timed out. Please try again.";
+const requestTimeoutMs = 15_000;
 
 type QueryValue = string | number | boolean | undefined;
 
@@ -11,9 +13,12 @@ async function request<T>(path: string, options: RequestInit = {}, query?: Recor
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined) url.searchParams.set(key, String(value));
   });
+  const abortController = new AbortController();
+  const timeoutId = window.setTimeout(() => abortController.abort(), requestTimeoutMs);
   try {
     const response = await fetch(url, {
       ...options,
+      signal: abortController.signal,
       headers: {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": getTelegramInitData(),
@@ -39,6 +44,8 @@ async function request<T>(path: string, options: RequestInit = {}, query?: Recor
       error,
     });
     throw new Error(requestFailureMessage);
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 }
 
