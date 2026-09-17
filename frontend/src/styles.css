@@ -263,3 +263,18 @@ button:disabled { cursor: not-allowed; opacity: .42; }
   .detail-list-page .full-history .week-row { grid-template-columns: minmax(94px, 1.3fr) minmax(44px, 1fr) 31px 40px; }
   .dashboard-card .week-change { font-size: 11px; }
 }
+
+/* The launch failure state is deliberately self-contained: it does not rely on
+   any remote asset, so it stays useful when the WebView cannot reach the API. */
+.connection-error-page { display: flex; min-height: 100vh; flex-direction: column; }
+.connection-error-page .topbar { flex: 0 0 auto; }
+.connection-error { display: grid; flex: 1; align-content: center; justify-items: center; padding: 8px 8px 12vh; text-align: center; }
+.connection-error-icon { display: grid; width: 96px; height: 96px; place-items: center; margin-bottom: 28px; border: 1px solid rgba(251, 191, 36, .22); border-radius: 50%; color: #fbbf24; background: rgba(251, 191, 36, .06); box-shadow: 0 0 42px rgba(251, 191, 36, .07); }
+.connection-error-icon svg { width: 70px; height: 70px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.connection-error-icon .connection-error-break { stroke: #fef3c7; stroke-width: 2.5; }
+.connection-error .eyebrow { margin: 0 0 12px; color: #fbbf24; font-family: "DM Mono", monospace; font-size: 10px; letter-spacing: .15em; }
+.connection-error h2 { margin: 0; color: #f4f4f5; font-size: 25px; font-weight: 600; letter-spacing: -.7px; line-height: 1.1; }
+.connection-error-copy { max-width: 270px; margin: 12px 0 0; color: #a1a1aa; font-size: 14px; line-height: 1.5; }
+.connection-error-detail { max-width: 290px; margin: 18px 0 0; color: #52525b; font-size: 12px; line-height: 1.45; }
+.connection-error-retry { width: min(100%, 280px); margin-top: 30px; }
+@media (prefers-reduced-motion: reduce) { .connection-error-icon { box-shadow: none; } }

@@ -140,6 +140,29 @@ function ErrorNotice({ message, retry }: { message: string; retry?: () => void }
   return <div className="error-notice"><span>{message}</span>{retry && <button onClick={retry}>Try again</button>}</div>;
 }
 
+function ConnectionErrorPage({ message, retry }: { message: string; retry: () => void }) {
+  return <main className="app-shell connection-error-page">
+    <Header title="Rep Tracker" />
+    <section className="connection-error" aria-live="polite">
+      <div className="connection-error-icon" aria-hidden="true">
+        <svg viewBox="0 0 96 96" fill="none">
+          <circle cx="27" cy="48" r="9" />
+          <circle cx="69" cy="48" r="9" />
+          <path d="M37 48h8M51 48h8" />
+          <path className="connection-error-break" d="m48 38-5 10h8l-5 10" />
+        </svg>
+      </div>
+      <p className="eyebrow">CONNECTION ISSUE</p>
+      <h2>Couldn’t reach Repka</h2>
+      <p className="connection-error-copy">Check your connection or VPN, then try again.</p>
+      <p className="connection-error-detail">{message}</p>
+      <button className="primary-button connection-error-retry" onClick={retry}>
+        Try again
+      </button>
+    </section>
+  </main>;
+}
+
 function App() {
   const [route, setRoute] = useState(getRoute);
   const [isReady, setIsReady] = useState(false);
@@ -158,7 +181,7 @@ function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  if (error) return <main className="app-shell"><Header title="Rep Tracker" /><ErrorNotice message={error} retry={initialise} /></main>;
+  if (error) return <ConnectionErrorPage message={error} retry={initialise} />;
   if (!isReady) return <main className="app-shell"><Header title="Rep Tracker" /><Loading /></main>;
 
   const go = (next: AppRoute) => navigate(next);
