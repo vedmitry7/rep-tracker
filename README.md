@@ -96,7 +96,11 @@ Commands below are run from the repository root.
    # Windows PowerShell: Copy-Item .env.example .env
    ```
 
-4. Ensure your shared PostgreSQL is running, then apply migrations:
+4. Ensure your shared PostgreSQL is running and has a `rep_tracker` login role
+   and a `rep_tracker` database owned by that role. Create them once with a
+   PostgreSQL administrator if absent; use the same password in `.env`. The
+   workstation's `postgres18` container currently does not have this logical
+   database. Then apply migrations:
 
    ```bash
    alembic upgrade head
@@ -127,8 +131,9 @@ endpoint is `http://127.0.0.1:8000/health/db`.
 
 ## Full stack with Docker Compose
 
-After creating `.env` and joining the external database network, the API and bot
-can be started without local Python processes. For the workstation's existing
+After creating `.env`, provisioning the logical database and role, and joining
+the external database network, the API and bot can be started without local
+Python processes. For the workstation's existing
 `postgres18` container, run once:
 
 ```bash
