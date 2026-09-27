@@ -65,7 +65,7 @@ documented in [docs/abuse-protection.md](docs/abuse-protection.md).
 api/                 FastAPI app, database models, services, migrations, tests
 bot/                 aiogram app, API client, handlers, keyboards, tests
 docs/                architecture notes
-docker-compose.yml   local full-stack infrastructure
+docker-compose.yml   local API/bot stack; PostgreSQL is external
 ```
 
 ## Local Development
@@ -96,10 +96,9 @@ Commands below are run from the repository root.
    # Windows PowerShell: Copy-Item .env.example .env
    ```
 
-4. Start PostgreSQL and apply migrations:
+4. Ensure your shared PostgreSQL is running, then apply migrations:
 
    ```bash
-   docker compose up -d postgres
    alembic upgrade head
    ```
 
@@ -128,26 +127,37 @@ endpoint is `http://127.0.0.1:8000/health/db`.
 
 ## Full stack with Docker Compose
 
-After creating `.env`, the API, bot, and PostgreSQL can all be started without
-local Python processes:
+After creating `.env` and joining the external database network, the API and bot
+can be started without local Python processes. For the workstation's existing
+`postgres18` container, run once:
+
+```bash
+docker network create shared_local_postgres_net
+docker network connect --alias shared-postgres shared_local_postgres_net postgres18
+```
+
+Then:
 
 ```bash
 docker compose up -d --build
 docker compose ps
-docker compose logs -f api bot postgres
+docker compose logs -f api bot
 ```
 
-The API container applies `alembic upgrade head` before starting Uvicorn. Inside
-the Compose network, the API connects to `postgres:5432` and the bot connects to
-`http://api:8000`. PostgreSQL is also bound to `127.0.0.1` so the existing
-PyCharm development workflow continues to work, while Swagger is available at
+The API container applies `alembic upgrade head` before starting Uvicorn. The API
+connects to `shared-postgres:5432` over the external network, while the bot
+connects to `http://api:8000`. The existing shared PostgreSQL remains bound to
+`127.0.0.1` for the PyCharm workflow, while Swagger is available at
 `http://127.0.0.1:8000/docs`.
 
-Stop the stack without deleting the named PostgreSQL volume:
+Stop the application stack; shared PostgreSQL stays running:
 
 ```bash
 docker compose down
 ```
+
+Production database ownership, operations, backup and rollback are described in
+[docs/shared-postgres.md](docs/shared-postgres.md).
 
 ## Status
 

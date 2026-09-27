@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+if [[ -f /home/dmitry0711/infrastructure/shared-postgres/deploy.hold ]]; then
+  echo "Shared PostgreSQL migration hold is active; frontend deployment deferred."
+  exit 0
+fi
+
 # This script is copied to a per-deployment temporary directory by GitHub
 # Actions. It deploys only already-built static files and never reloads Caddy.
 readonly DEPLOY_SHA="${1:-}"
