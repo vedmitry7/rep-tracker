@@ -17,5 +17,10 @@ prevents automatic GitHub Actions deployment until the infrastructure switch
 is complete. Remove the marker only after both app configurations and the
 database have been verified.
 
+The inherited `rep_tracker` login is a PostgreSQL superuser. This migration
+preserved its privileges to avoid breaking production. Least-privilege
+hardening needs a separate, tested role migration; the current role can access
+other databases on the same PostgreSQL instance.
+
 `pg_dump` backs up database contents, not `.env` files or external API tokens.
 Keep those separately in secure storage.
