@@ -1,25 +1,6 @@
 name: rep-tracker
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: rep_tracker_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "127.0.0.1:${POSTGRES_HOST_PORT}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   api:
     image: ghcr.io/vedmitry7/rep-tracker-api:${IMAGE_TAG}
     restart: unless-stopped
@@ -29,13 +10,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: shared-postgres
       POSTGRES_PORT: 5432
+    networks:
+      - default
+      - database
     ports:
       - "127.0.0.1:8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -60,7 +41,9 @@ services:
       api:
         condition: service_healthy
 
-volumes:
-  postgres_data:
+networks:
+  default:
+    name: rep-tracker_default
+  database:
     external: true
-    name: rep-tracker_postgres_data
+    name: shared_postgres_net
