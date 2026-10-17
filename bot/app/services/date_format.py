@@ -20,6 +20,15 @@ _MONTHS: dict[str, tuple[str, ...]] = {
 }
 
 
+def manual_date_formats(value: date) -> tuple[str, str, str]:
+    """Return the three numeric formats accepted by the manual date parser."""
+    return (
+        f"{value.day:02d}.{value.month:02d}",
+        f"{value.day:02d}.{value.month:02d}.{value.year:04d}",
+        f"{value.year:04d}-{value.month:02d}-{value.day:02d}",
+    )
+
+
 def format_user_date(value: date, *, language: str | None = None) -> str:
     """Render a full, readable date for the selected UI language."""
     locale = normalize_language_code(language or current_language())

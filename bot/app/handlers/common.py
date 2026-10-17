@@ -1,3 +1,5 @@
+from datetime import date
+
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
@@ -6,10 +8,24 @@ from bot.app.api.client import (
     AccessForbiddenError,
     ApiError,
     BackendUnavailableError,
+    RepTrackerApi,
     ResourceConflictError,
     ResourceNotFoundError,
 )
 from bot.app.texts import texts
+
+
+async def current_user_today(
+    api_client: RepTrackerApi,
+    telegram_user_id: int,
+    fallback: date,
+) -> date:
+    """Return the user's local date, refreshing it in case the local day rolled over."""
+    try:
+        settings = await api_client.get_user_settings(telegram_user_id)
+    except ApiError:
+        return fallback
+    return settings.today
 
 
 def api_error_text(error: ApiError) -> str:

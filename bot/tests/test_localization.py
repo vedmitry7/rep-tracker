@@ -125,6 +125,23 @@ def test_add_result_history_and_statistics_are_localized(
         reset_current_language(token)
 
 
+def test_manual_date_copy_text_is_identical_across_languages() -> None:
+    for locale in available_locales():
+        catalog = get_catalog(locale.code)
+        assert catalog.copy_date("17.10") == "📋 17.10"
+
+
+def test_manual_date_hint_and_error_list_all_three_formats() -> None:
+    formats = ("17.10", "17.10.2026", "2026-10-17")
+    for locale in available_locales():
+        catalog = get_catalog(locale.code)
+        hint = catalog.enter_date(*formats)
+        error = catalog.invalid_date(*formats)
+        for value in formats:
+            assert value in hint
+            assert value in error
+
+
 @pytest.mark.parametrize(
     ("language", "date_error", "result_error"),
     [

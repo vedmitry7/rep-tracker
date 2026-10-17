@@ -26,7 +26,8 @@ LANGUAGE_CHANGED = "Langue modifiée"
 TODAY, YESTERDAY, DAY_BEFORE_YESTERDAY = "Aujourd’hui", "Hier", "Avant-hier"
 ENTER_RESULT = "Saisissez un résultat."
 INVALID_RESULT_FORMAT = "Format non reconnu. Exemples : 10, 4x10 ou 10 9 8."
-INVALID_DATE = "Date non reconnue. Utilisez 25.08, 25.08.2026 ou 2026-08-25."
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f"Date non reconnue. Utilisez {short}, {full} ou {iso}."
 BACKEND_UNAVAILABLE = "Le service est temporairement indisponible. Réessayez plus tard."
 
 from ._translations import _apply_button_translations
@@ -44,7 +45,20 @@ ENTRY_NOT_FOUND = "Entrée introuvable."
 DAY_OR_EXERCISE_NOT_FOUND = "Jour ou exercice introuvable."
 CHOOSE_DATE = "Choisissez une date :"
 CHOOSE_NEW_DATE = "Choisissez une nouvelle date :"
-ENTER_DATE = "Saisissez une date :\n\n25.08\n25.08.2026\n2026-08-25"
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        "Saisissez une date :\n\n"
+        f"{short}\n{full}\n{iso}\n\n"
+        "Touchez la date ci-dessous pour la copier, puis collez-la et corrigez."
+    )
+
+
+def copy_date(short: str) -> str:
+    return f"📋 {short}"
+
+
 MIN_REPETITIONS = "Le minimum est de 1."
 MAX_REPETITIONS = "Le maximum est de 10 000."
 CHANGES_SAVED = "Modifications enregistrées"

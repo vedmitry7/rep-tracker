@@ -2,7 +2,7 @@ import re
 from datetime import date, timedelta
 
 from bot.app.texts import texts
-from bot.app.services.date_format import format_user_date
+from bot.app.services.date_format import format_user_date, manual_date_formats
 
 
 _SHORT_DATE = re.compile(r"^(\d{1,2})\.(\d{1,2})$")
@@ -37,7 +37,8 @@ def parse_result_date(value: str, *, today: date) -> date:
             parsed_date = None
 
     if parsed_date is None:
-        raise DateParseError(texts.INVALID_DATE)
+        short, full, iso = manual_date_formats(current_date)
+        raise DateParseError(texts.invalid_date(short, full, iso))
     if parsed_date > current_date:
         raise DateParseError(texts.FUTURE_DATE)
     return parsed_date
