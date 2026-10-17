@@ -9,8 +9,8 @@ from aiogram.exceptions import TelegramForbiddenError, TelegramRetryAfter
 from bot.app.api.client import RepTrackerApi
 from bot.app.core.config import get_settings
 from bot.app.services.weekly_report import (
-    disabled_notification,
     report_keyboard,
+    split_disabled_notifications,
     split_summary,
 )
 
@@ -65,8 +65,7 @@ async def deliver_leased_reports(bot, api_client, worker_id: str) -> int:
                     parse_mode=None,
                 )
                 await asyncio.sleep(MESSAGE_INTERVAL_SECONDS)
-            notification = disabled_notification(report)
-            if notification:
+            for notification in split_disabled_notifications(report):
                 await bot.send_message(
                     chat_id=int(report["external_id"]),
                     text=notification,

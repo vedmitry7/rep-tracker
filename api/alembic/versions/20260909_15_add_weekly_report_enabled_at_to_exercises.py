@@ -22,7 +22,6 @@ def upgrade() -> None:
         sa.Column(
             "weekly_report_enabled_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=True,
         ),
     )
@@ -32,6 +31,11 @@ def upgrade() -> None:
     op.execute(
         "UPDATE exercises SET weekly_report_enabled_at = created_at "
         "WHERE weekly_report_enabled_at IS NULL"
+    )
+    op.alter_column(
+        "exercises",
+        "weekly_report_enabled_at",
+        server_default=sa.text("CURRENT_TIMESTAMP"),
     )
 
 

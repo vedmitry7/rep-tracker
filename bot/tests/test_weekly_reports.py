@@ -18,6 +18,7 @@ from bot.app.keyboards.exercises import (
 from bot.app.services.weekly_report import (
     disabled_notification,
     report_keyboard,
+    split_disabled_notifications,
     split_summary,
     summary_text,
 )
@@ -109,6 +110,18 @@ def test_disabled_notification_combines_and_localizes():
     english = report("en")
     english["disabled_exercises"] = [{"exercise_id": 1, "name": "Pull-ups"}]
     assert "Pull-ups" in disabled_notification(english)
+
+
+def test_many_disabled_exercises_fit_telegram_messages():
+    data = report("en")
+    data["disabled_exercises"] = [
+        {"exercise_id": index, "name": f"Exercise {index} " + "x" * 200}
+        for index in range(40)
+    ]
+    messages = split_disabled_notifications(data)
+    assert len(messages) > 1
+    assert all(len(message) <= 4096 for message in messages)
+    assert sum(message.count("You can turn them back on") for message in messages) == 40
 
 
 @pytest.mark.asyncio
