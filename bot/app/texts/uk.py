@@ -230,6 +230,13 @@ def weekly_report_changed(enabled: bool) -> str:
     return 'Щотижневий звіт увімкнено' if enabled else 'Щотижневий звіт вимкнено'
 WEEKLY_NO_DATA = 'Ця вправа ще не має даних для повних тижнів.'
 WEEKLY_CARD_FAILED = 'Не вдалося надіслати одну з карток. Спробуйте ще раз із меню вправ.'
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f'Щотижневі звіти для вправи «{name}» вимкнено через відсутність '
+        'активності протягом двох тижнів. Увімкнути їх знову можна в статистиці '
+        'вправи.'
+    )
 WEEKLY_LABELS = dict(title='📅 Щотижневий звіт', period='Крапка', total='Цього тижня: {total} {unit}', first='Попереднього повного тижня ще немає.', previous='Попередній тиждень', change='Зміна', active='Активні дні', best='Найкращий день')
 
 def weekly_reps_unit(total: int) -> str:

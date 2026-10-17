@@ -57,6 +57,18 @@ def split_summary(report: dict) -> list[str]:
     return messages
 
 
+def disabled_notification(report: dict) -> str | None:
+    """One combined message for every exercise disabled in this snapshot."""
+    items = report.get("disabled_exercises") or []
+    if not items:
+        return None
+    language = report["language"]
+    return "\n\n".join(
+        get_text(language, "weekly_report_auto_disabled", item["name"])
+        for item in items
+    )
+
+
 def report_keyboard(report: dict) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[

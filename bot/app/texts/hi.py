@@ -248,6 +248,13 @@ def weekly_report_changed(enabled: bool) -> str:
 
 WEEKLY_NO_DATA = "इस व्यायाम के लिए अभी किसी पूर्ण सप्ताह का डेटा नहीं है।"
 WEEKLY_CARD_FAILED = "कार्ड में से एक भेजा नहीं जा सका। व्यायाम मेनू से फिर कोशिश करें।"
+
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f"“{name}” के लिए साप्ताहिक रिपोर्टें दो सप्ताह तक गतिविधि न होने के कारण "
+        "बंद कर दी गई हैं। आप इन्हें व्यायाम के आंकड़ों में फिर से चालू कर सकते हैं।"
+    )
 WEEKLY_LABELS = dict(title="📅 साप्ताहिक रिपोर्ट", period="अवधि", total="इस सप्ताह: {total} {unit}", first="पिछला पूर्ण सप्ताह अभी नहीं है।", previous="पिछला सप्ताह", change="बदलाव", active="सक्रिय दिन", best="सबसे अच्छा दिन")
 
 

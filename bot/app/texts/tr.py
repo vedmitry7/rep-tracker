@@ -230,6 +230,12 @@ def weekly_report_changed(enabled: bool) -> str:
     return 'Haftalık rapor etkinleştirildi' if enabled else 'Haftalık rapor devre dışı bırakıldı'
 WEEKLY_NO_DATA = 'Bu alıştırmada henüz tam haftalara ait veri yok.'
 WEEKLY_CARD_FAILED = 'Kartlardan biri gönderilemedi. Lütfen egzersiz menüsünden tekrar deneyin.'
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f'“{name}” için haftalık raporlar iki hafta boyunca etkinlik olmadığından '
+        'kapatıldı. Egzersiz istatistiklerinden yeniden açabilirsiniz.'
+    )
 WEEKLY_LABELS = dict(title='📅 Haftalık rapor', period='Dönem', total='Bu hafta: {total} {unit}', first='Henüz önceki tam hafta yok.', previous='Önceki hafta', change='Değiştir', active='Aktif günler', best='En iyi gün')
 
 def weekly_reps_unit(total: int) -> str:

@@ -225,6 +225,14 @@ def weekly_report_changed(enabled: bool) -> str:
 
 WEEKLY_NO_DATA = "Cet exercice ne contient encore aucune donnée pour une semaine complète."
 WEEKLY_CARD_FAILED = "Impossible d’envoyer une des cartes. Réessayez depuis le menu de l’exercice."
+
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f"Les rapports hebdomadaires pour « {name} » ont été désactivés après deux "
+        "semaines sans activité. Vous pouvez les réactiver dans les statistiques "
+        "de l’exercice."
+    )
 WEEKLY_LABELS = dict(title="📅 Rapport hebdomadaire", period="Période", total="Cette semaine : {total} {unit}", first="Aucune semaine complète précédente.", previous="Semaine précédente", change="Évolution", active="Jours actifs", best="Meilleur jour")
 
 

@@ -29,12 +29,18 @@ class ExerciseWeek(BaseModel):
     history: list[WeekTotal]
 
 
+class DisabledExercise(BaseModel):
+    exercise_id: int
+    name: str
+
+
 class WeeklyReportResponse(BaseModel):
     id: str
     week_start: date
     week_end: date
     language: Language
     exercises: list[ExerciseWeek]
+    disabled_exercises: list[DisabledExercise] = Field(default_factory=list)
 
 
 class MaterializeWeeklyReportsPage(BaseModel):
