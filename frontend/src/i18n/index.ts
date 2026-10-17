@@ -1,6 +1,16 @@
 import { en } from "./en";
+import { ru } from "./ru";
+import { es } from "./es";
+import { pt } from "./pt";
+import { tr } from "./tr";
+import { uk } from "./uk";
+import { id } from "./id";
+import { hi } from "./hi";
+import { kk } from "./kk";
+import { pl } from "./pl";
+import { fr } from "./fr";
 
-/** API-supported UI languages. Stage 1 ships only the English dictionary. */
+/** API-supported UI languages. */
 export const SUPPORTED_LOCALES = [
   "en",
   "ru",
@@ -25,15 +35,69 @@ export type PluralForms = {
   other: string;
 };
 
-type Dictionary = typeof en;
+/** A leaf value is either a plain template or a CLDR plural set. */
+type Leaf = string | PluralForms;
 
 /**
- * Stage 1: the web UI is intentionally English-only. The saved settings
- * language is still persisted via the API, and stage 2 will return the
- * matching dictionary here based on it.
+ * Every non-English dictionary must mirror the English key structure while
+ * being allowed to define fewer or more CLDR plural categories (for example
+ * Indonesian needs only `other`, Russian needs `one`/`few`/`many`/`other`).
  */
+type DictValue<T> = T extends string
+  ? string
+  : T extends { other: string }
+    ? PluralForms
+    : { readonly [K in keyof T]: DictValue<T[K]> };
+
+export type Dictionary = {
+  readonly [K in keyof typeof en]: DictValue<(typeof en)[K]>;
+};
+
+const dictionaries: Record<AppLocale, Dictionary> = {
+  en,
+  ru,
+  es,
+  pt,
+  tr,
+  uk,
+  id,
+  hi,
+  kk,
+  pl,
+  fr,
+};
+
+const DEFAULT_LOCALE: AppLocale = "en";
+let activeLocale: AppLocale = DEFAULT_LOCALE;
+const localeListeners = new Set<() => void>();
+
+export function isSupportedLocale(value: unknown): value is AppLocale {
+  return typeof value === "string" && (SUPPORTED_LOCALES as readonly string[]).includes(value);
+}
+
+/** The dictionary currently used by `t()` and the format helpers. */
 export function getLocale(): AppLocale {
-  return "en";
+  return activeLocale;
+}
+
+/**
+ * Switch the active dictionary. Unknown or missing values fall back to
+ * English so a bad `settings.language` can never break the UI.
+ */
+export function setLocale(value: string | null | undefined): AppLocale {
+  const next = isSupportedLocale(value) ? value : DEFAULT_LOCALE;
+  if (next === activeLocale) return next;
+  activeLocale = next;
+  for (const listener of localeListeners) listener();
+  return next;
+}
+
+/** Subscribe to locale changes; used by `useLocale` to re-render the app. */
+export function subscribeToLocale(listener: () => void): () => void {
+  localeListeners.add(listener);
+  return () => {
+    localeListeners.delete(listener);
+  };
 }
 
 function isPluralForms(value: unknown): value is PluralForms {
@@ -44,8 +108,8 @@ function isPluralForms(value: unknown): value is PluralForms {
   );
 }
 
-function lookup(key: string): string | PluralForms | undefined {
-  let current: unknown = en;
+function lookupIn(dictionary: Dictionary, key: string): Leaf | undefined {
+  let current: unknown = dictionary;
   for (const part of key.split(".")) {
     if (typeof current !== "object" || current === null) return undefined;
     current = (current as Record<string, unknown>)[part];
@@ -77,17 +141,23 @@ function interpolate(template: string, params: TranslationParams): string {
 }
 
 /**
- * Translate a key, filling `{placeholders}` from params. Plural entries
+ * Translate a key using the active dictionary, falling back to English for an
+ * unknown locale, a missing key, or a missing plural category. Plural entries
  * require a numeric `count` param and pick the CLDR form for the locale.
  */
 export function t(key: TranslationKey, params: TranslationParams = {}): string {
-  const entry = lookup(key);
+  const entry = lookupIn(dictionaries[activeLocale], key) ?? lookupIn(en, key);
   if (entry === undefined) return key;
   if (typeof entry === "string") return interpolate(entry, params);
   const count = params.count;
   if (typeof count !== "number") {
     throw new Error(`i18n: plural key "${key}" requires a numeric "count" param`);
   }
-  const category = new Intl.PluralRules(getLocale()).select(count);
-  return interpolate(entry[category] ?? entry.other, { ...params, count });
+  const category = new Intl.PluralRules(activeLocale).select(count);
+  const englishEntry = lookupIn(en, key);
+  const template =
+    entry[category] ??
+    (isPluralForms(englishEntry) ? englishEntry[category] : undefined) ??
+    entry.other;
+  return interpolate(template, { ...params, count });
 }

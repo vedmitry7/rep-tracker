@@ -1,16 +1,18 @@
 /**
- * i18n key check for the Repka web app (stage 1: English-only dictionary).
+ * i18n key check for the Repka web app.
  *
  * Usage: `npm run i18n:check` (from frontend/).
  *
  * Verifies that:
- * 1. Every `t("some.key")` call in src/ (outside src/i18n/en.ts) references a
- *    key that exists in the English dictionary (no missing/unknown keys).
- * 2. Every dictionary leaf is actually used in code (no dead keys).
- * 3. Every `{placeholder}` in a template is provided at each call site
- *    (plural entries additionally require a `count` param).
- * 4. Plural forms of one entry use a consistent placeholder set, so future
- *    translations cannot silently drop a parameter.
+ * 1. Every non-English dictionary (src/i18n/<locale>.ts) mirrors the English
+ *    reference exactly: same keys, same text/plural kind, same `{placeholder}`
+ *    set, and no extra keys.
+ * 2. Every plural entry defines exactly the CLDR categories used by that
+ *    locale's `Intl.PluralRules` (so translations cannot silently drop a form).
+ * 3. Every `t("some.key")` call in src/ references a key that exists in the
+ *    English dictionary, provides all required `{placeholder}` params, and
+ *    passes a numeric `count` for plural keys.
+ * 4. Every dictionary leaf is actually used in code (no dead keys).
  *
  * Exit code is non-zero when any of these checks fail.
  */
@@ -18,17 +20,25 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = join(fileURLToPath(import.meta.url), "..", "..", "src");
-const dictionaryPath = join(root, "i18n", "en.ts");
+const i18nDir = join(fileURLToPath(import.meta.url), "..", "..", "src", "i18n");
+const root = join(i18nDir, "..");
 const PLURAL_CATEGORIES = new Set(["zero", "one", "two", "few", "many", "other"]);
+
+/** Read `SUPPORTED_LOCALES` from index.ts so the locale list has one source. */
+function readLocales() {
+  const source = readFileSync(join(i18nDir, "index.ts"), "utf8");
+  const match = source.match(/SUPPORTED_LOCALES\s*=\s*\[([\s\S]*?)\]\s*as\s+const/);
+  if (!match) return [];
+  return [...match[1].matchAll(/"([a-z]{2}(?:-[A-Za-z]{2,4})?)"/g)].map((m) => m[1]);
+}
 
 function placeholdersOf(template) {
   return new Set([...template.matchAll(/\{(\w+)\}/g)].map((m) => m[1]));
 }
 
-/** Minimal parser for the `export const en = {...} as const` dictionary. */
+/** Minimal parser for `export const xx = {...} as const` dictionaries. */
 function parseDictionary(source) {
-  const leaves = new Map(); // key -> { kind, placeholders, forms? }
+  const leaves = new Map(); // key -> { kind, placeholders, forms?, formPlaceholders? }
   const stack = []; // { name, children: string[] }
   const pathOf = (name) => [...stack.map((s) => s.name), name].filter(Boolean).join(".");
 
@@ -49,14 +59,16 @@ function parseDictionary(source) {
         const base = [...stack.map((s) => s.name), obj.name].filter(Boolean).join(".");
         if (obj.children.every((c) => PLURAL_CATEGORIES.has(c))) {
           const forms = new Set();
+          const formPlaceholders = new Map();
           const union = new Set();
           for (const child of obj.children) {
             const leaf = leaves.get(`${base}.${child}`);
             forms.add(child);
+            formPlaceholders.set(child, leaf?.placeholders ?? new Set());
             leaf?.placeholders.forEach((p) => union.add(p));
             leaves.delete(`${base}.${child}`);
           }
-          leaves.set(base, { kind: "plural", placeholders: union, forms });
+          leaves.set(base, { kind: "plural", placeholders: union, forms, formPlaceholders });
         }
       }
     }
@@ -114,19 +126,80 @@ function findUsages(source) {
 
 const errors = [];
 const warnings = [];
-const leaves = parseDictionary(readFileSync(dictionaryPath, "utf8"));
-if (leaves.size === 0) errors.push("dictionary: no keys parsed from src/i18n/en.ts");
+
+const locales = readLocales();
+if (locales.length === 0) errors.push("dictionary: could not read SUPPORTED_LOCALES from src/i18n/index.ts");
+
+const reference = parseDictionary(readFileSync(join(i18nDir, "en.ts"), "utf8"));
+if (reference.size === 0) errors.push("dictionary: no keys parsed from src/i18n/en.ts");
+
+const dictionaryPaths = new Set(locales.map((locale) => join(i18nDir, `${locale}.ts`)));
+
+for (const locale of locales) {
+  if (locale === "en") continue;
+  const file = join(i18nDir, `${locale}.ts`);
+  let leaves;
+  try {
+    leaves = parseDictionary(readFileSync(file, "utf8"));
+  } catch {
+    errors.push(`i18n/${locale}.ts: file is missing`);
+    continue;
+  }
+  if (leaves.size === 0) {
+    errors.push(`i18n/${locale}.ts: no keys parsed`);
+    continue;
+  }
+  for (const [key, ref] of reference) {
+    if (!leaves.has(key)) {
+      errors.push(`${locale}: missing key "${key}"`);
+      continue;
+    }
+    const leaf = leaves.get(key);
+    if (leaf.kind !== ref.kind) {
+      errors.push(`${locale}: key "${key}" is ${leaf.kind} but English is ${ref.kind}`);
+      continue;
+    }
+    const missingParams = [...ref.placeholders].filter((p) => !leaf.placeholders.has(p));
+    const extraParams = [...leaf.placeholders].filter((p) => !ref.placeholders.has(p));
+    if (missingParams.length || extraParams.length) {
+      errors.push(
+        `${locale}: key "${key}" placeholders differ from English ` +
+          `(missing: ${missingParams.join(", ") || "none"}; extra: ${extraParams.join(", ") || "none"})`,
+      );
+    }
+    if (leaf.kind === "plural") {
+      const required = new Set(new Intl.PluralRules(locale).resolvedOptions().pluralCategories);
+      const absent = [...required].filter((form) => !leaf.forms.has(form));
+      if (absent.length) errors.push(`${locale}: plural key "${key}" is missing required form(s): ${absent.join(", ")}`);
+      const unused = [...leaf.forms].filter((form) => !required.has(form));
+      if (unused.length) errors.push(`${locale}: plural key "${key}" defines form(s) ${locale} never uses: ${unused.join(", ")}`);
+      for (const [form, placeholders] of leaf.formPlaceholders) {
+        const formMissing = [...ref.placeholders].filter((p) => !placeholders.has(p));
+        const formExtra = [...placeholders].filter((p) => !ref.placeholders.has(p));
+        if (formMissing.length || formExtra.length) {
+          errors.push(
+            `${locale}: plural key "${key}" form "${form}" placeholders differ from English ` +
+              `(missing: ${formMissing.join(", ") || "none"}; extra: ${formExtra.join(", ") || "none"})`,
+          );
+        }
+      }
+    }
+  }
+  for (const key of leaves.keys()) {
+    if (!reference.has(key)) errors.push(`${locale}: unexpected key "${key}"`);
+  }
+}
 
 const usedKeys = new Map(); // key -> count
 let callSites = 0;
 for (const file of listSources(root)) {
-  if (file === dictionaryPath) continue;
+  if (dictionaryPaths.has(file)) continue;
   const source = readFileSync(file, "utf8");
   const name = relative(root, file);
   for (const usage of findUsages(source)) {
     callSites++;
     usedKeys.set(usage.key, (usedKeys.get(usage.key) ?? 0) + 1);
-    const leaf = leaves.get(usage.key);
+    const leaf = reference.get(usage.key);
     if (!leaf) {
       errors.push(`${name}: unknown i18n key "${usage.key}"`);
       continue;
@@ -145,17 +218,17 @@ for (const file of listSources(root)) {
   }
 }
 
-for (const key of leaves.keys()) {
+for (const key of reference.keys()) {
   if (!usedKeys.has(key)) errors.push(`dictionary: key "${key}" is never used in src/`);
 }
 
-for (const [key, leaf] of leaves) {
+for (const [key, leaf] of reference) {
   if (leaf.kind === "plural" && !leaf.forms.has("other")) {
     errors.push(`dictionary: plural key "${key}" must define an "other" form`);
   }
 }
 
-console.log(`i18n: ${leaves.size} keys, ${callSites} call sites`);
+console.log(`i18n: ${locales.length} locales, ${reference.size} keys, ${callSites} call sites`);
 for (const w of warnings) console.log(`warning: ${w}`);
 if (errors.length > 0) {
   for (const e of errors) console.log(`error: ${e}`);

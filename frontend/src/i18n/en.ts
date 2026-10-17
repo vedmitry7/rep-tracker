@@ -1,25 +1,25 @@
 /**
- * English UI dictionary for the Repka web app (stage 1 of web i18n).
+ * English UI dictionary for the Repka web app, the reference for every locale.
  *
- * Stage 1 is English-only: the UI always renders these strings, even when
- * the user has another language saved in settings. Stage 2 will add one
- * sibling file per supported API language
- * (ru, es, pt, tr, uk, id, hi, kk, pl, fr) with the same key structure and
- * switch the active dictionary based on the saved language.
+ * All supported languages (en, ru, es, pt, tr, uk, id, hi, kk, pl, fr) live in
+ * sibling files with the same key structure; `index.ts` picks the dictionary
+ * from `settings.language`. English is also the fallback for an unknown locale,
+ * a missing key, or a missing plural category.
  *
  * Conventions:
  * - `{name}` placeholders are filled via `t(key, { name })`. Placeholder
  *   names stay stable across languages; only the surrounding text translates.
  * - `{count}` marks a plural entry. Plural entries are objects with CLDR
  *   categories (`zero`, `one`, `two`, `few`, `many`, `other`; `other` is
- *   required). English only needs `one`/`other`; other languages add more.
+ *   required). Each language defines the categories its `Intl.PluralRules`
+ *   needs; `npm run i18n:check` verifies this.
  * - Proper names ("Repka"), IANA timezone IDs, language autonyms
  *   ("Русский", ...), routes, CSS classes and API contracts are NOT here.
  */
 export const en = {
   app: {
     brand: "Repka",
-    title: "Rep Tracker",
+    title: "Repka · Workout Tracker",
   },
   common: {
     loading: "Loading your training…",

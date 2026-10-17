@@ -1,17 +1,16 @@
-import { t } from "./index";
+import { getLocale, t } from "./index";
 import type { ExerciseEntry } from "../types";
 
 /**
- * User-visible date/number formatting with an explicit locale override.
- * The locale defaults to `undefined` (browser locale), preserving the
- * current visible behaviour; stage 2 will pass the saved app locale.
+ * User-visible date/number formatting. The locale defaults to the active app
+ * locale (`settings.language`); callers may still pass an explicit override.
  */
 
-export function formatNumber(value: number, locale?: string): string {
+export function formatNumber(value: number, locale: string = getLocale()): string {
   return value.toLocaleString(locale);
 }
 
-export function formatDate(value: string, locale?: string): string {
+export function formatDate(value: string, locale: string = getLocale()): string {
   return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
@@ -19,7 +18,7 @@ export function formatDate(value: string, locale?: string): string {
   }).format(new Date(`${value}T12:00:00`));
 }
 
-export function formatTime(value: string, timeZone?: string, locale?: string): string {
+export function formatTime(value: string, timeZone?: string, locale: string = getLocale()): string {
   return new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
@@ -27,23 +26,23 @@ export function formatTime(value: string, timeZone?: string, locale?: string): s
   }).format(new Date(value));
 }
 
-export function formatMonth(value: Date, locale?: string): string {
+export function formatMonth(value: Date, locale: string = getLocale()): string {
   return new Intl.DateTimeFormat(locale, { month: "short", year: "2-digit" }).format(value);
 }
 
-export function formatMonthShort(value: Date, locale?: string): string {
+export function formatMonthShort(value: Date, locale: string = getLocale()): string {
   return new Intl.DateTimeFormat(locale, { month: "short" }).format(value);
 }
 
-export function formatWeekdayNarrow(value: Date, locale?: string): string {
+export function formatWeekdayNarrow(value: Date, locale: string = getLocale()): string {
   return new Intl.DateTimeFormat(locale, { weekday: "narrow" }).format(value);
 }
 
-export function formatWeekdayShort(value: Date, locale?: string): string {
+export function formatWeekdayShort(value: Date, locale: string = getLocale()): string {
   return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(value);
 }
 
-export function formatDayNumeric(value: Date, locale?: string): string {
+export function formatDayNumeric(value: Date, locale: string = getLocale()): string {
   return new Intl.DateTimeFormat(locale, { day: "numeric" }).format(value);
 }
 
@@ -61,7 +60,7 @@ export function formatResultMoment(
   entry: ExerciseEntry,
   today: string,
   timezone: string,
-  locale?: string,
+  locale: string = getLocale(),
 ): string {
   const performedOn =
     entry.performed_on === today ? t("common.today") : formatDate(entry.performed_on, locale);
@@ -86,7 +85,7 @@ export function formatPercentChange(percent: number | null): string {
   return `${percent >= 0 ? "+" : ""}${percent}%`;
 }
 
-export function formatWeekRange(start: string, end: string, locale?: string): string {
+export function formatWeekRange(start: string, end: string, locale: string = getLocale()): string {
   const startDate = new Date(`${start}T12:00:00`);
   const endDate = new Date(`${end}T12:00:00`);
   const month = new Intl.DateTimeFormat(locale, { month: "short" });

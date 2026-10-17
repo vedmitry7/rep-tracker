@@ -3,7 +3,8 @@ import { api } from "./api";
 import { appDataCache, type ExerciseDetail, type ExerciseSummary } from "./data-cache";
 import repkaLogo from "./assets/repka-logo.png";
 import type { Exercise, ExerciseEntry, HistoryDay, Settings } from "./types";
-import { t } from "./i18n";
+import { setLocale, t } from "./i18n";
+import { useLocale } from "./i18n/useLocale";
 import {
   formatDate,
   formatDayNumeric,
@@ -148,13 +149,20 @@ function ConnectionErrorPage({ message, retry }: { message: string; retry: () =>
 }
 
 function App() {
+  const locale = useLocale();
   const [route, setRoute] = useState(getRoute);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string>();
 
   const initialise = useCallback(async () => {
     setError(undefined);
-    try { await appDataCache.resolveUser(); setIsReady(true); }
+    try {
+      await appDataCache.resolveUser();
+      // Apply the saved language before the first screen renders. A settings
+      // failure must not block the app, so we keep English in that case.
+      try { setLocale((await appDataCache.loadSettings()).language); } catch { /* keep English */ }
+      setIsReady(true);
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadFailed")); }
   }, []);
 
@@ -164,6 +172,10 @@ function App() {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.title = t("app.title");
+  }, [locale]);
 
   if (error) return <ConnectionErrorPage message={error} retry={initialise} />;
   if (!isReady) return <main className="app-shell"><Header title={t("app.title")} /><Loading /></main>;
@@ -550,7 +562,7 @@ function SettingsPage({ back }: { back: () => void }) {
   const [settings, setSettings] = useState<Settings>(); const [timezone, setTimezone] = useState(""); const [language, setLanguage] = useState<Settings["language"]>("en"); const [error, setError] = useState<string>(); const [saving, setSaving] = useState(false);
   const load = useCallback(async () => { try { const response = await appDataCache.loadSettings(); setSettings(response); setTimezone(response.timezone); setLanguage(response.language); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadSettings")); } }, []);
   useEffect(() => { void load(); }, [load]);
-  const save = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { const updated = await api.updateSettings({ timezone: timezone.trim(), language }); setSettings(updated); appDataCache.saveSettings(updated); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.saveSettings")); } finally { setSaving(false); } };
+  const save = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { const updated = await api.updateSettings({ timezone: timezone.trim(), language }); setSettings(updated); appDataCache.saveSettings(updated); setLocale(updated.language); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.saveSettings")); } finally { setSaving(false); } };
   if (!settings) return <main className="app-shell"><Header title={t("settings.title")} back={back} />{error ? <ErrorNotice message={error} retry={load} /> : <Loading />}</main>;
   const hasCurrentTimezone = timezoneOptions.some(([value]) => value === timezone);
   return <main className="app-shell"><Header title={t("settings.title")} back={back} /><form className="screen-form settings-form" onSubmit={save}><p className="eyebrow">{t("settings.eyebrow")}</p><label>{t("settings.timezoneLabel")}<select value={timezone} onChange={(event) => setTimezone(event.target.value)}>{!hasCurrentTimezone && <option value={timezone}>{timezone}</option>}{timezoneOptions.map(([value, label]) => <option key={value} value={value}>{label} — {value}</option>)}</select><small>{t("settings.timezoneHint")}</small></label><label>{t("settings.languageLabel")}<select value={language} onChange={(event) => setLanguage(event.target.value as Settings["language"])}>{languageOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={!timezone.trim() || saving}>{saving ? t("common.saving") : t("settings.save")}</button></form><p className="local-note">{t("settings.verifiedNote")}</p></main>;
