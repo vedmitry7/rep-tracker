@@ -230,6 +230,12 @@ def weekly_report_changed(enabled: bool) -> str:
     return 'Laporan mingguan diaktifkan' if enabled else 'Laporan mingguan dinonaktifkan'
 WEEKLY_NO_DATA = 'Latihan ini belum memiliki data selama beberapa minggu penuh.'
 WEEKLY_CARD_FAILED = 'Tidak dapat mengirim salah satu kartu. Silakan coba lagi dari menu latihan.'
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f'Laporan mingguan untuk “{name}” dinonaktifkan setelah dua minggu tanpa '
+        'aktivitas. Anda dapat mengaktifkannya lagi di statistik latihan.'
+    )
 WEEKLY_LABELS = dict(title='📅 Laporan mingguan', period='Titik', total='Minggu ini: {total} {unit}', first='Belum ada minggu lengkap sebelumnya.', previous='Minggu sebelumnya', change='Perubahan', active='Hari-hari aktif', best='Hari terbaik')
 
 def weekly_reps_unit(total: int) -> str:

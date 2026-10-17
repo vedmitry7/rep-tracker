@@ -89,6 +89,10 @@ async def set_weekly_report_enabled(
         user = await get_allowed_user_by_identity(session, provider, external_id)
         exercise = await get_owned_exercise(session, exercise_id, user.id)
         exercise.weekly_report_enabled = weekly_report_enabled
+        if weekly_report_enabled:
+            # Re-enabling manually restarts the two-full-week tracking window so
+            # an idle exercise is not disabled again before the user can train.
+            exercise.weekly_report_enabled_at = func.now()
         await session.flush()
         return exercise
 

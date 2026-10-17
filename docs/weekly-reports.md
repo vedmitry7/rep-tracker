@@ -12,6 +12,22 @@
 - One Telegram text contains blocks for all non-archived exercises with any
   completed-week history. Exercises with only current-week entries are omitted.
   An entirely empty report is never claimed or sent.
+- While a snapshot is built, every non-archived exercise with
+  `weekly_report_enabled=true` is checked separately. If both of the last two
+  fully completed calendar weeks have zero repetitions, the existing
+  `weekly_report_enabled` flag is set to `false` and the exercise joins a single
+  combined notice in the user's saved language. A user who disabled the exercise
+  manually receives nothing. Reports are never re-enabled automatically.
+- The tracking window starts with the week after the exercise was created (or
+  manually re-enabled), so a partial creation week does not count and a
+  re-enabled exercise still gets two full weeks. Older activity does not prevent
+  the auto-disable; a single missed week does not trigger it.
+- The disabled exercise is left out of the current report and its card button.
+  When no exercises remain, the worker sends only the notice without an empty
+  report or a "Generate cards" button. The auto-disable state and its notice are
+  part of the immutable snapshot: a repeated `materialize`, a crash, or a queue
+  retry never produces a second notice (an at-least-once duplicate after a lost
+  Telegram acknowledgement remains possible).
 - Users marked `is_blocked` are excluded both while snapshots are created and
   while pending deliveries are leased. Existing queued reports therefore never
   reach a worker after Telegram has refused delivery to that user.
@@ -77,6 +93,11 @@ between exercise blocks; an individual oversize block is rejected and retried.
 | GET | `/weekly-reports/{report_id}` | Owned saved report, using `provider` + `external_id` |
 | POST | `/weekly-reports/{report_id}/delivery` | Lease token + `status: sent/retry`; 204 acknowledgement |
 
+The immutable snapshot payload now also carries `disabled_exercises`
+(`exercise_id`, `name`), defaulting to an empty list, so previously stored
+snapshots stay readable and the worker can render the notice without extra API
+calls.
+
 Image generation runs in a thread off the API event loop, with its own temporary
 directory, and cleans up the PNG afterward. The response is `Cache-Control:
 no-store`. A missing user, exercise, report or completed-week dataset returns
@@ -108,6 +129,19 @@ This week: 354 reps
 Previous week: 396
 Change: 🔴 ▼ 42 (−10.6%)
 Active days: 5
+```
+
+Auto-disable notice examples:
+
+```text
+Еженедельные отчёты по упражнению «Подтягивания» отключены из-за отсутствия
+активности в течение двух недель. Включить их снова можно в статистике
+упражнения.
+```
+
+```text
+Weekly reports for “Pull-ups” were turned off after two weeks without activity.
+You can turn them back on in the exercise statistics.
 ```
 
 Growth uses `🟢 ▲`, decline `🔴 ▼`, and unchanged totals `➖`. One-week history
@@ -144,6 +178,7 @@ Targeted modules:
 
 ```text
 api/tests/test_weekly_report.py
+api/tests/test_weekly_report_auto_disable.py
 api/tests/test_weekly_card_renderer.py
 api/tests/test_weekly_reports_api.py
 api/tests/test_dates.py
@@ -162,8 +197,13 @@ local Monday boundaries, Sunday 23:59, Monday 08:59, Monday 09:00, Monday 10:00
 restart recovery, already-sent deduplication, two timezone users, RU/EN, actual
 PNG rendering, owned snapshots, archive/ban checks, scheduler pagination, send
 failures/rate limits, both card buttons, command registration and existing screen
-routing. PostgreSQL integration tests run in transactions that are rolled back
-after each test; they do not rewrite existing user records.
+routing. The auto-disable module adds one missed week vs two, activity resetting
+the sequence, a brand-new exercise, a mid-week creation, old history not
+preventing disable, combined multi-exercise notices, manual disable producing no
+notice, re-enable not being disabled again immediately, repeated `materialize`
+without duplicates, and a notice-only delivery without a report or keyboard.
+PostgreSQL integration tests run in transactions that are rolled back after each
+test; they do not rewrite existing user records.
 
 Additional checks: `alembic check`, `python -m compileall -q api bot`,
 `git diff --check`, local `/health/db`, API Docker build and PNG render smoke.
@@ -183,6 +223,7 @@ Added:
 ```text
 api/alembic/versions/20260906_10_weekly_reports.py
 api/alembic/versions/20260906_12_add_weekly_report_delivery_queue.py
+api/alembic/versions/20260909_15_add_weekly_report_enabled_at_to_exercises.py
 api/app/api/routes/weekly_reports.py
 api/app/assets/DejaVuSans.ttf
 api/app/assets/DejaVuSans-Bold.ttf

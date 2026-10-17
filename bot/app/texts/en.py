@@ -496,6 +496,13 @@ def weekly_report_changed(enabled: bool) -> str:
 
 WEEKLY_NO_DATA = "This exercise has no data for any complete weeks yet."
 WEEKLY_CARD_FAILED = "Couldn't send one of the cards. Please try again from the exercise menu."
+
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f"Weekly reports for “{name}” were turned off after two weeks without "
+        "activity. You can turn them back on in the exercise statistics."
+    )
 WEEKLY_LABELS = dict(title="📅 Weekly report", period="Period", total="This week: {total} {unit}",
                      first="No previous complete week yet.", previous="Previous week",
                      change="Change", active="Active days", best="Best day")

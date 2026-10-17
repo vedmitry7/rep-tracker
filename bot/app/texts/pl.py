@@ -128,6 +128,13 @@ BUTTON_GENERATE_CARDS = "🖼 Generuj karty"
 BUTTON_WEEKLY_CARD = "🖼 Karta tygodniowa"
 WEEKLY_NO_DATA = "To ćwiczenie nie ma jeszcze danych z pełnych tygodni."
 WEEKLY_CARD_FAILED = "Nie udało się wysłać jednej z kart. Spróbuj ponownie z menu ćwiczenia."
+
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f"Raporty tygodniowe dla „{name}” zostały wyłączone po dwóch tygodniach "
+        "bez aktywności. Możesz je ponownie włączyć w statystykach ćwiczenia."
+    )
 WEEKLY_LABELS = dict(title="📅 Raport tygodniowy", period="Okres", total="Ten tydzień: {total} {unit}", first="Brak wcześniejszego pełnego tygodnia.", previous="Poprzedni tydzień", change="Zmiana", active="Aktywne dni", best="Najlepszy dzień")
 def weekly_reps_unit(total: int) -> str: return "powtórzenie" if total == 1 else "powtórzeń"
 
