@@ -3,6 +3,22 @@ import { api } from "./api";
 import { appDataCache, type ExerciseDetail, type ExerciseSummary } from "./data-cache";
 import repkaLogo from "./assets/repka-logo.png";
 import type { Exercise, ExerciseEntry, HistoryDay, Settings } from "./types";
+import { t } from "./i18n";
+import {
+  formatDate,
+  formatDayNumeric,
+  formatMonth,
+  formatNumber,
+  formatPercentChange,
+  formatSets,
+  formatTime,
+  formatWeekRange,
+  formatWeekdayNarrow,
+  formatWeekdayShort,
+  parseQuickResult,
+  relativeEntryTime,
+  totalReps,
+} from "./i18n/format";
 
 type Route = "home" | "new-exercise" | "exercise" | "new-entry" | "exercise-settings" | "settings" | "weeks" | "results" | "edit-entry";
 
@@ -58,38 +74,6 @@ function navigate(route: AppRoute) {
   window.location.hash = `/${path}${route.returnToHome ? "?from=home" : ""}`;
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
-}
-
-function formatTime(value: string, timeZone?: string) {
-  return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", timeZone }).format(new Date(value));
-}
-
-function totalReps(entry: ExerciseEntry) { return entry.reps.reduce((sum, reps) => sum + reps, 0); }
-
-function formatSets(reps: number[]) {
-  return reps.length > 1 && reps.every((value) => value === reps[0]) ? `${reps.length} × ${reps[0]}` : reps.join(" + ");
-}
-
-function formatResultMoment(entry: ExerciseEntry, today: string, timezone: string) {
-  const performedOn = entry.performed_on === today ? "Today" : formatDate(entry.performed_on);
-  return `${performedOn}, ${formatTime(entry.created_at, timezone)}`;
-}
-
-function relativeEntryTime(value: string) {
-  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
-  const minutes = Math.floor(elapsed / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "yesterday";
-  if (days < 7) return `${days}d ago`;
-  return formatDate(value.slice(0, 10));
-}
-
 function AnimatedNumber({ value, empty = "—" }: { value: number; empty?: string }) {
   const previousValue = useRef(value);
   const [displayValue, setDisplayValue] = useState(value);
@@ -122,27 +106,27 @@ function AnimatedNumber({ value, empty = "—" }: { value: number; empty?: strin
     return () => cancelAnimationFrame(animationFrame);
   }, [value]);
 
-  const text = value === 0 && !isAnimating ? empty : displayValue.toLocaleString();
+  const text = value === 0 && !isAnimating ? empty : formatNumber(displayValue);
   return <span className={`animated-number${isAnimating ? " is-changing" : ""}`}>{text}</span>;
 }
 
 function Header({ title, back, action }: { title: string; back?: () => void; action?: React.ReactNode }) {
   return <header className="topbar">
-    {back ? <button className="icon-button back-button" aria-label="Go back" onClick={back}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7" /></svg></button> : <span className="brand-mark">R</span>}
+    {back ? <button className="icon-button back-button" aria-label={t("common.goBack")} onClick={back}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7" /></svg></button> : <span className="brand-mark">R</span>}
     <h1>{title}</h1>
     {action ?? <span className="topbar-space" />}
   </header>;
 }
 
-function Loading() { return <div className="loading">Loading your training…</div>; }
+function Loading() { return <div className="loading">{t("common.loading")}</div>; }
 
 function ErrorNotice({ message, retry }: { message: string; retry?: () => void }) {
-  return <div className="error-notice"><span>{message}</span>{retry && <button onClick={retry}>Try again</button>}</div>;
+  return <div className="error-notice"><span>{message}</span>{retry && <button onClick={retry}>{t("common.tryAgain")}</button>}</div>;
 }
 
 function ConnectionErrorPage({ message, retry }: { message: string; retry: () => void }) {
   return <main className="app-shell connection-error-page">
-    <Header title="Rep Tracker" />
+    <Header title={t("app.title")} />
     <section className="connection-error" aria-live="polite">
       <div className="connection-error-icon" aria-hidden="true">
         <svg viewBox="0 0 96 96" fill="none">
@@ -152,12 +136,12 @@ function ConnectionErrorPage({ message, retry }: { message: string; retry: () =>
           <path className="connection-error-break" d="m48 38-5 10h8l-5 10" />
         </svg>
       </div>
-      <p className="eyebrow">CONNECTION ISSUE</p>
-      <h2>Couldn’t reach Repka</h2>
-      <p className="connection-error-copy">Check your connection or VPN, then try again.</p>
+      <p className="eyebrow">{t("connection.eyebrow")}</p>
+      <h2>{t("connection.title")}</h2>
+      <p className="connection-error-copy">{t("connection.copy")}</p>
       <p className="connection-error-detail">{message}</p>
       <button className="primary-button connection-error-retry" onClick={retry}>
-        Try again
+        {t("common.tryAgain")}
       </button>
     </section>
   </main>;
@@ -171,7 +155,7 @@ function App() {
   const initialise = useCallback(async () => {
     setError(undefined);
     try { await appDataCache.resolveUser(); setIsReady(true); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load data. Please try again."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadFailed")); }
   }, []);
 
   useEffect(() => { void initialise(); }, [initialise]);
@@ -182,7 +166,7 @@ function App() {
   }, []);
 
   if (error) return <ConnectionErrorPage message={error} retry={initialise} />;
-  if (!isReady) return <main className="app-shell"><Header title="Rep Tracker" /><Loading /></main>;
+  if (!isReady) return <main className="app-shell"><Header title={t("app.title")} /><Loading /></main>;
 
   const go = (next: AppRoute) => navigate(next);
   if (route.name === "new-exercise") return <NewExercisePage back={() => go({ name: "home" })} done={() => go({ name: "home" })} />;
@@ -202,15 +186,15 @@ function HomePage({ open, add, settings }: { open: (id: number) => void; add: ()
   const load = useCallback(async (force = false) => {
     setError(undefined);
     try { setExercises(await appDataCache.loadDashboard(force)); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load exercises."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadExercises")); }
   }, []);
   useEffect(() => { void load(); }, [load]);
   return <main className="app-shell">
-    <header className="topbar home-topbar"><div className="home-brand"><img src={repkaLogo} alt="" /><h1>Repka</h1></div><button className="icon-button home-settings-button" aria-label="Global settings" onClick={settings}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg></button></header>
-    {error && !exercises ? <ErrorNotice message={error} retry={() => load(true)} /> : !exercises ? <Loading /> : exercises.length === 0 ? <EmptyState onAdd={add} /> : <section className="exercise-list" aria-label="Exercises">
+    <header className="topbar home-topbar"><div className="home-brand"><img src={repkaLogo} alt="" /><h1>{t("app.brand")}</h1></div><button className="icon-button home-settings-button" aria-label={t("home.settingsLabel")} onClick={settings}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg></button></header>
+    {error && !exercises ? <ErrorNotice message={error} retry={() => load(true)} /> : !exercises ? <Loading /> : exercises.length === 0 ? <EmptyState onAdd={add} /> : <section className="exercise-list" aria-label={t("home.exercisesLabel")}>
       {exercises.map((exercise) => <HomeExerciseCard key={exercise.id} exercise={exercise} open={open} addEntry={(id) => navigate({ name: "new-entry", exerciseId: id, returnToHome: true })} />)}
     </section>}
-    <button className="primary-button floating-button" onClick={add}><span>+</span> New exercise</button>
+    <button className="primary-button floating-button" onClick={add}><span>+</span> {t("home.newExercise")}</button>
   </main>;
 }
 
@@ -231,32 +215,32 @@ function HomeExerciseCard({ exercise, open, addEntry }: { exercise: ExerciseSumm
 
   return <article className="home-exercise-card">
     <div className="home-exercise-header">
-      <button className="home-exercise-open" onClick={() => open(exercise.id)} aria-label={`Open ${exercise.name}`}>
+      <button className="home-exercise-open" onClick={() => open(exercise.id)} aria-label={t("home.openExercise", { name: exercise.name })}>
         <span className="home-exercise-summary">
           <strong>{exercise.name}</strong>
-          {latest ? <span className="home-exercise-last"><span>{formatSets(latest.reps)}</span><i>·</i><span>{relativeEntryTime(latest.created_at)}</span></span> : <span className="home-exercise-last is-empty">No results yet</span>}
+          {latest ? <span className="home-exercise-last"><span>{formatSets(latest.reps)}</span><i>·</i><span>{relativeEntryTime(latest.created_at)}</span></span> : <span className="home-exercise-last is-empty">{t("common.noResultsYet")}</span>}
         </span>
         <span className={`home-today-total ${exercise.stats.today_reps > 0 ? "has-reps" : ""}`}>
           <b><AnimatedNumber value={exercise.stats.today_reps} /></b>
-          <small>Today</small>
+          <small>{t("common.today")}</small>
         </span>
       </button>
     </div>
     <div className="home-activity-row">
       <HomeActivityBars days={days} values={values} today={exercise.stats.today} />
-      <button className="home-activity-add" onClick={() => addEntry(exercise.id)} aria-label={`Add result for ${exercise.name}`}><span aria-hidden="true">+</span></button>
+      <button className="home-activity-add" onClick={() => addEntry(exercise.id)} aria-label={t("home.addResultFor", { name: exercise.name })}><span aria-hidden="true">+</span></button>
     </div>
   </article>;
 }
 
 function HomeActivityBars({ days, values, today }: { days: string[]; values: number[]; today: string }) {
   const maximum = Math.max(...values, 1);
-  return <div className="home-activity-bars" aria-label="Last seven days activity">
+  return <div className="home-activity-bars" aria-label={t("home.activityLabel")}>
     {days.map((day, index) => {
       const value = values[index];
       const active = value > 0;
       const isToday = day === today;
-      const label = new Intl.DateTimeFormat(undefined, { weekday: "narrow" }).format(new Date(`${day}T12:00:00`));
+      const label = formatWeekdayNarrow(new Date(`${day}T12:00:00`));
       return <span className={`home-activity-day ${active ? "has-activity" : ""} ${isToday ? "is-today" : ""}`} key={day}>
         <i style={{ height: `${active ? Math.max(3, (value / maximum) * 32) : 2}px` }} />
         <small>{label}</small>
@@ -266,13 +250,13 @@ function HomeActivityBars({ days, values, today }: { days: string[]; values: num
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
-  return <section className="empty-state"><div className="empty-orb">↗</div><h3>Your list is ready</h3><p>Add the first exercise you want to track.</p><button className="primary-button" onClick={onAdd}>Add your first exercise</button></section>;
+  return <section className="empty-state"><div className="empty-orb">↗</div><h3>{t("home.emptyTitle")}</h3><p>{t("home.emptyCopy")}</p><button className="primary-button" onClick={onAdd}>{t("home.emptyCta")}</button></section>;
 }
 
 function NewExercisePage({ back, done }: { back: () => void; done: () => void }) {
   const [name, setName] = useState(""); const [error, setError] = useState<string>(); const [saving, setSaving] = useState(false);
-  const submit = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { await api.createExercise(name.trim()); appDataCache.invalidateExercises(); done(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not create exercise."); } finally { setSaving(false); } };
-  return <main className="app-shell"><Header title="New exercise" back={back} /><form className="screen-form new-exercise-form" onSubmit={submit}><label>Exercise name<input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Exercise name" maxLength={255} /></label>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={!name.trim() || saving}>{saving ? "Creating…" : "Create exercise"}</button></form></main>;
+  const submit = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { await api.createExercise(name.trim()); appDataCache.invalidateExercises(); done(); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.createExercise")); } finally { setSaving(false); } };
+  return <main className="app-shell"><Header title={t("newExercise.title")} back={back} /><form className="screen-form new-exercise-form" onSubmit={submit}><label>{t("newExercise.nameLabel")}<input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder={t("newExercise.nameLabel")} maxLength={255} /></label>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={!name.trim() || saving}>{saving ? t("newExercise.creating") : t("newExercise.create")}</button></form></main>;
 }
 
 function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResults, edit }: { exerciseId: number; back: () => void; addEntry: () => void; settings: () => void; allWeeks: () => void; allResults: () => void; edit: (entryId: number) => void }) {
@@ -284,7 +268,7 @@ function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResul
   const [recentError, setRecentError] = useState<string>();
   const [error, setError] = useState<string>();
   const [period, setPeriod] = useState<ChartPeriod>("7d");
-  const load = useCallback(async (force = false) => { setError(undefined); try { setDetail(await appDataCache.loadDetail(exerciseId, force)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load the exercise."); } }, [exerciseId]);
+  const load = useCallback(async (force = false) => { setError(undefined); try { setDetail(await appDataCache.loadDetail(exerciseId, force)); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadExercise")); } }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     setDetail(appDataCache.peekDetail(exerciseId));
@@ -303,14 +287,14 @@ function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResul
     setLoadingRecentDays(dates);
     void Promise.all(dates.map(async (date) => [date, await appDataCache.loadEntriesForDay(exerciseId, date)] as const))
       .then((dayEntries) => { if (current) setRecentEntries(Object.fromEntries(dayEntries)); })
-      .catch((reason) => { if (current) setRecentError(reason instanceof Error ? reason.message : "Could not load recent results."); })
+      .catch((reason) => { if (current) setRecentError(reason instanceof Error ? reason.message : t("errors.loadRecentResults")); })
       .finally(() => { if (current) setLoadingRecentDays([]); });
     return () => { current = false; };
   }, [detail, exerciseId]);
   const loadFullHistory = useCallback(async () => {
     setLoadingFullHistory(true);
     try { setHistory(await appDataCache.loadFullHistory(exerciseId)); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load the full history."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadFullHistory")); }
     finally { setLoadingFullHistory(false); }
   }, [exerciseId]);
   const changePeriod = (nextPeriod: ChartPeriod) => {
@@ -318,23 +302,23 @@ function ExercisePage({ exerciseId, back, addEntry, settings, allWeeks, allResul
     if (nextPeriod === "all") void loadFullHistory();
   };
   const visibleDetail = detail?.exercise.id === exerciseId ? detail : undefined;
-  if (error && !visibleDetail) return <main className="app-shell"><Header title="Exercise" back={back} /><ErrorNotice message={error} retry={() => load(true)} /></main>;
-  if (!visibleDetail) return <main className="app-shell"><Header title="Exercise" back={back} /><Loading /></main>;
+  if (error && !visibleDetail) return <main className="app-shell"><Header title={t("exercise.fallbackTitle")} back={back} /><ErrorNotice message={error} retry={() => load(true)} /></main>;
+  if (!visibleDetail) return <main className="app-shell"><Header title={t("exercise.fallbackTitle")} back={back} /><Loading /></main>;
   const exerciseHistory = period === "all" && history ? history : visibleDetail.history;
   const recentDays = visibleDetail.history.slice(0, 3);
   return <main className="app-shell exercise-page">
-    <Header title={visibleDetail.exercise.name} back={back} action={<button className="icon-button settings-button" aria-label="Exercise settings" onClick={settings}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></button>} />
+    <Header title={visibleDetail.exercise.name} back={back} action={<button className="icon-button settings-button" aria-label={t("exercise.settingsLabel")} onClick={settings}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg></button>} />
     <section className="dashboard-card today-card">
-      <div className="dashboard-label">Today</div>
+      <div className="dashboard-label">{t("common.today")}</div>
       <div className="today-card-content">
-        <div><strong><AnimatedNumber value={visibleDetail.stats.today_reps} /></strong><small>{visibleDetail.stats.today_reps > 0 ? "reps" : "No results yet"}</small></div>
-        {visibleDetail.stats.last_entry && <div className="latest-result"><span>Latest</span><b>{formatSets(visibleDetail.stats.last_entry.reps)}</b><small>{relativeEntryTime(visibleDetail.stats.last_entry.created_at)}</small></div>}
+        <div><strong><AnimatedNumber value={visibleDetail.stats.today_reps} /></strong><small>{visibleDetail.stats.today_reps > 0 ? t("common.reps") : t("common.noResultsYet")}</small></div>
+        {visibleDetail.stats.last_entry && <div className="latest-result"><span>{t("exercise.latest")}</span><b>{formatSets(visibleDetail.stats.last_entry.reps)}</b><small>{relativeEntryTime(visibleDetail.stats.last_entry.created_at)}</small></div>}
       </div>
     </section>
-    <button className="primary-button overview-add-button" onClick={addEntry}>+ Add result</button>
+    <button className="primary-button overview-add-button" onClick={addEntry}>{t("exercise.addResult")}</button>
     <LastSevenDays days={exerciseHistory} today={visibleDetail.stats.today} period={period} setPeriod={changePeriod} loadingAll={loadingFullHistory} />
     <WeeklyProgress days={exerciseHistory} today={visibleDetail.stats.today} onShowAll={allWeeks} />
-    <section className="dashboard-card results-panel"><div className="section-heading"><h3>Recent results</h3></div>{recentDays.length === 0 ? <p className="muted">No results yet. Log your first set.</p> : <><RecentResults days={recentDays} entriesByDate={recentEntries} loadingDates={loadingRecentDays} timezone={visibleDetail.timezone} onSelect={edit} />{recentError && <p className="result-load-error">{recentError}</p>}<div className="results-footer"><button className="text-button" onClick={allResults}>All results →</button></div></>}</section>
+    <section className="dashboard-card results-panel"><div className="section-heading"><h3>{t("exercise.recentTitle")}</h3></div>{recentDays.length === 0 ? <p className="muted">{t("exercise.recentEmpty")}</p> : <><RecentResults days={recentDays} entriesByDate={recentEntries} loadingDates={loadingRecentDays} timezone={visibleDetail.timezone} onSelect={edit} />{recentError && <p className="result-load-error">{recentError}</p>}<div className="results-footer"><button className="text-button" onClick={allResults}>{t("exercise.allResults")}</button></div></>}</section>
   </main>;
 }
 
@@ -370,19 +354,13 @@ function buildWeeks(days: HistoryDay[], today: string, minimumWeeks = 1) {
 
 type ActivityDatum = { key: string; label: string; detail: string; total: number; isToday?: boolean };
 
-function formatMonth(value: Date) {
-  return new Intl.DateTimeFormat(undefined, { month: "short", year: "2-digit" }).format(value);
-}
-
 function buildDailyActivity(days: HistoryDay[], today: string, count: number): ActivityDatum[] {
   const totals = new Map(days.map((day) => [day.date, day.total_reps]));
   const end = new Date(`${today}T12:00:00`);
   return Array.from({ length: count }, (_, index) => {
     const date = new Date(end); date.setDate(date.getDate() - (count - index - 1));
     const dateString = isoDate(date);
-    const label = count === 7
-      ? new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date)
-      : new Intl.DateTimeFormat(undefined, { day: "numeric" }).format(date);
+    const label = count === 7 ? formatWeekdayShort(date) : formatDayNumeric(date);
     return { key: dateString, label, detail: formatDate(dateString), total: totals.get(dateString) ?? 0, isToday: dateString === today };
   });
 }
@@ -415,7 +393,7 @@ function LastSevenDays({ days, today, period, setPeriod, loadingAll }: { days: H
   const max = Math.max(...chartDays.map((day) => day.total), 1);
   const periodTotal = chartDays.reduce((sum, day) => sum + day.total, 0);
   const visibleAxis = period === "7d" ? new Set(chartDays.map((_, index) => index)) : axisIndexes(chartDays.length);
-  return <section className="dashboard-card progress-card"><div className="progress-card-header"><div><div className="dashboard-label">Progress</div><div className="progress-period-total"><strong><AnimatedNumber value={periodTotal} empty="0" /></strong><span>reps</span></div></div><div className="period-tabs">{(["7d", "30d", "all"] as ChartPeriod[]).map((item) => <button type="button" key={item} className={period === item ? "is-active" : ""} onClick={() => { setSelectedKey(undefined); setPeriod(item); }}>{item === "all" ? "All" : item}</button>)}</div></div>{loadingAll ? <p className="muted">Loading full history…</p> : <><div className={`daily-bars activity-${period}`}>{chartDays.map((day, index) => <button type="button" className={`daily-bar ${day.total > 0 ? "has-activity" : ""} ${visibleAxis.has(index) ? "has-axis" : ""} ${selected?.key === day.key ? "is-selected" : ""}`} key={day.key} onClick={() => setSelectedKey(day.key)} aria-label={`${day.detail}: ${day.total.toLocaleString()} reps`} aria-pressed={selected?.key === day.key}>{period === "7d" && <strong>{day.total}</strong>}<div className="bar-track"><i style={{ height: day.total > 0 ? `${Math.max((day.total / max) * 100, 6)}%` : "2px" }} /></div>{visibleAxis.has(index) && <span>{day.label}</span>}</button>)}</div><p className="activity-detail" aria-live="polite">{selected && <>{selected.detail} <b>{selected.total.toLocaleString()} reps</b></>}</p></>}</section>;
+  return <section className="dashboard-card progress-card"><div className="progress-card-header"><div><div className="dashboard-label">{t("progress.title")}</div><div className="progress-period-total"><strong><AnimatedNumber value={periodTotal} empty="0" /></strong><span>{t("common.reps")}</span></div></div><div className="period-tabs">{(["7d", "30d", "all"] as ChartPeriod[]).map((item) => <button type="button" key={item} className={period === item ? "is-active" : ""} onClick={() => { setSelectedKey(undefined); setPeriod(item); }}>{item === "all" ? t("progress.periodAll") : item}</button>)}</div></div>{loadingAll ? <p className="muted">{t("progress.loadingHistory")}</p> : <><div className={`daily-bars activity-${period}`}>{chartDays.map((day, index) => <button type="button" className={`daily-bar ${day.total > 0 ? "has-activity" : ""} ${visibleAxis.has(index) ? "has-axis" : ""} ${selected?.key === day.key ? "is-selected" : ""}`} key={day.key} onClick={() => setSelectedKey(day.key)} aria-label={t("progress.barLabel", { detail: day.detail, total: formatNumber(day.total) })} aria-pressed={selected?.key === day.key}>{period === "7d" && <strong>{day.total}</strong>}<div className="bar-track"><i style={{ height: day.total > 0 ? `${Math.max((day.total / max) * 100, 6)}%` : "2px" }} /></div>{visibleAxis.has(index) && <span>{day.label}</span>}</button>)}</div><p className="activity-detail" aria-live="polite">{selected && <>{selected.detail} <b>{t("progress.selectedTotal", { total: formatNumber(selected.total) })}</b></>}</p></>}</section>;
 }
 
 function WeeklyProgress({ days, today, onShowAll }: { days: HistoryDay[]; today: string; onShowAll: () => void }) {
@@ -423,33 +401,27 @@ function WeeklyProgress({ days, today, onShowAll }: { days: HistoryDay[]; today:
   const [current, previous] = weeks;
   const percent = previous.total > 0 ? Math.round(((current.total - previous.total) / previous.total) * 100) : null;
   const maximum = Math.max(...weeks.map((week) => week.total), 1);
-  if (!days.length) return <section className="dashboard-card weekly-progress"><div className="section-heading"><h3>Weekly progress</h3><button className="text-button" onClick={onShowAll}>All weeks →</button></div><div className="chart-empty">Your weekly progress will appear after the first result.</div></section>;
-  return <section className="dashboard-card weekly-progress"><div className="section-heading"><h3>Weekly progress</h3></div><div className="week-summary"><div className="week-summary-main"><span>{formatWeekRange(current.start, current.end)}</span><div className="week-summary-total"><strong><AnimatedNumber value={current.total} empty="0" /></strong><small>reps</small></div></div>{percent !== null && <div className="week-summary-change"><strong className={percent >= 0 ? "positive" : "negative"}>{percent >= 0 ? "+" : ""}{percent}%</strong><span>vs last week</span></div>}</div><div className="week-list">{weeks.slice(1).map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 2]} maximum={maximum} />)}</div><div className="week-footer"><div className="week-footer-stats"><div><small>Best</small><strong>{Math.max(...weeks.map((week) => week.total)).toLocaleString()}</strong></div><div><small>Avg</small><strong>{Math.round(weeks.reduce((sum, week) => sum + week.total, 0) / weeks.length).toLocaleString()}</strong></div></div><button className="text-button" onClick={onShowAll}>All weeks →</button></div></section>;
-}
-
-function formatWeekRange(start: string, end: string) {
-  const startDate = new Date(`${start}T12:00:00`); const endDate = new Date(`${end}T12:00:00`);
-  const month = new Intl.DateTimeFormat(undefined, { month: "short" });
-  return startDate.getMonth() === endDate.getMonth() ? `${startDate.getDate()}–${endDate.getDate()} ${month.format(endDate)}` : `${startDate.getDate()} ${month.format(startDate)} – ${endDate.getDate()} ${month.format(endDate)}`;
+  if (!days.length) return <section className="dashboard-card weekly-progress"><div className="section-heading"><h3>{t("weekly.title")}</h3><button className="text-button" onClick={onShowAll}>{t("weekly.allWeeks")}</button></div><div className="chart-empty">{t("weekly.empty")}</div></section>;
+  return <section className="dashboard-card weekly-progress"><div className="section-heading"><h3>{t("weekly.title")}</h3></div><div className="week-summary"><div className="week-summary-main"><span>{formatWeekRange(current.start, current.end)}</span><div className="week-summary-total"><strong><AnimatedNumber value={current.total} empty="0" /></strong><small>{t("common.reps")}</small></div></div>{percent !== null && <div className="week-summary-change"><strong className={percent >= 0 ? "positive" : "negative"}>{formatPercentChange(percent)}</strong><span>{t("weekly.vsLastWeek")}</span></div>}</div><div className="week-list">{weeks.slice(1).map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 2]} maximum={maximum} />)}</div><div className="week-footer"><div className="week-footer-stats"><div><small>{t("weekly.best")}</small><strong>{formatNumber(Math.max(...weeks.map((week) => week.total)))}</strong></div><div><small>{t("weekly.avg")}</small><strong>{formatNumber(Math.round(weeks.reduce((sum, week) => sum + week.total, 0) / weeks.length))}</strong></div></div><button className="text-button" onClick={onShowAll}>{t("weekly.allWeeks")}</button></div></section>;
 }
 
 function WeekRow({ week, older, maximum }: { week: Week; older?: Week; maximum: number }) {
   const change = older && older.total > 0 ? Math.round(((week.total - older.total) / older.total) * 100) : null;
   const barWidth = week.total > 0 ? Math.max(4, Math.round((week.total / maximum) * 100)) : 0;
-  const changeLabel = change === null ? "—" : `${change >= 0 ? "+" : ""}${change}%`;
-  return <div className="week-row"><div className="week-label"><strong>{formatWeekRange(week.start, week.end)}</strong></div><div className="week-bar" aria-hidden="true"><i style={{ width: `${barWidth}%` }} /></div><span className="week-total">{week.total.toLocaleString()}</span><b className={`week-change ${change === null ? "neutral" : change >= 0 ? "positive" : "negative"}`}>{changeLabel}</b></div>;
+  const changeLabel = formatPercentChange(change);
+  return <div className="week-row"><div className="week-label"><strong>{formatWeekRange(week.start, week.end)}</strong></div><div className="week-bar" aria-hidden="true"><i style={{ width: `${barWidth}%` }} /></div><span className="week-total">{formatNumber(week.total)}</span><b className={`week-change ${change === null ? "neutral" : change >= 0 ? "positive" : "negative"}`}>{changeLabel}</b></div>;
 }
 
 function ResultRows({ entries, timezone, onSelect }: { entries: ExerciseEntry[]; timezone: string; onSelect: (entryId: number) => void }) {
-  return <>{entries.map((entry) => <button className="result-row result-button" key={entry.id} onClick={() => onSelect(entry.id)} aria-label={`Open result: ${formatSets(entry.reps)}, ${totalReps(entry).toLocaleString()} reps`}><div><strong>{formatSets(entry.reps)}</strong><small>{formatTime(entry.created_at, timezone)}</small></div><b>{totalReps(entry).toLocaleString()} <small>reps</small></b><span className="result-chevron" aria-hidden="true">›</span></button>)}</>;
+  return <>{entries.map((entry) => <button className="result-row result-button" key={entry.id} onClick={() => onSelect(entry.id)} aria-label={t("results.openResult", { sets: formatSets(entry.reps), total: formatNumber(totalReps(entry)) })}><div><strong>{formatSets(entry.reps)}</strong><small>{formatTime(entry.created_at, timezone)}</small></div><b>{formatNumber(totalReps(entry))} <small>{t("common.reps")}</small></b><span className="result-chevron" aria-hidden="true">›</span></button>)}</>;
 }
 
 function DayTotal({ day }: { day: HistoryDay }) {
-  return <span className="result-day-total"><strong>{day.total_reps.toLocaleString()}</strong> reps <small>· {day.entries_count} {day.entries_count === 1 ? "result" : "results"}</small></span>;
+  return <span className="result-day-total"><strong>{formatNumber(day.total_reps)}</strong> {t("common.reps")} <small>· {t("results.resultsCount", { count: day.entries_count })}</small></span>;
 }
 
 function RecentResults({ days, entriesByDate, loadingDates, timezone, onSelect }: { days: HistoryDay[]; entriesByDate: Record<string, ExerciseEntry[]>; loadingDates: string[]; timezone: string; onSelect: (entryId: number) => void }) {
-  return <div className="result-list">{days.map((day) => <section className="result-day" key={day.date}><h4><span className="result-date">{formatDate(day.date)}</span><DayTotal day={day} /></h4>{loadingDates.includes(day.date) ? <p className="result-loading">Loading results…</p> : <ResultRows entries={entriesByDate[day.date] ?? []} timezone={timezone} onSelect={onSelect} />}</section>)}</div>;
+  return <div className="result-list">{days.map((day) => <section className="result-day" key={day.date}><h4><span className="result-date">{formatDate(day.date)}</span><DayTotal day={day} /></h4>{loadingDates.includes(day.date) ? <p className="result-loading">{t("exercise.loadingResults")}</p> : <ResultRows entries={entriesByDate[day.date] ?? []} timezone={timezone} onSelect={onSelect} />}</section>)}</div>;
 }
 
 function HistoryDays({ days, expandedDate, entriesByDate, loadingDates, errors, timezone, onSelect, onToggle }: { days: HistoryDay[]; expandedDate?: string; entriesByDate: Record<string, ExerciseEntry[]>; loadingDates: string[]; errors: Record<string, string>; timezone: string; onSelect: (entryId: number) => void; onToggle: (date: string) => void }) {
@@ -459,42 +431,19 @@ function HistoryDays({ days, expandedDate, entriesByDate, loadingDates, errors, 
       <button className="history-day-toggle" onClick={() => onToggle(day.date)} aria-expanded={expanded}>
         <span className="history-day-date">{formatDate(day.date)}</span><DayTotal day={day} /><span className="history-day-chevron" aria-hidden="true">⌄</span>
       </button>
-      {expanded && <div className="history-day-entries">{loadingDates.includes(day.date) ? <p className="result-loading">Loading results…</p> : errors[day.date] ? <p className="result-load-error">{errors[day.date]}</p> : <ResultRows entries={entriesByDate[day.date] ?? []} timezone={timezone} onSelect={onSelect} />}</div>}
+      {expanded && <div className="history-day-entries">{loadingDates.includes(day.date) ? <p className="result-loading">{t("exercise.loadingResults")}</p> : errors[day.date] ? <p className="result-load-error">{errors[day.date]}</p> : <ResultRows entries={entriesByDate[day.date] ?? []} timezone={timezone} onSelect={onSelect} />}</div>}
     </section>;
   })}</div>;
 }
 
-// Keep the frontend grammar aligned with bot.app.services.result_parser:
-// `4x10` / `4×10`, numbers separated by spaces, commas, or plus signs.
-function parseQuickResult(value: string): number[] {
-  const text = value.trim();
-  if (!text) throw new Error("Enter at least one set.");
-  let parsed: number[];
-  const repeated = text.match(/^(\d+)\s*[xX×*]\s*(\d+)$/);
-  if (repeated) {
-    const count = Number(repeated[1]); const reps = Number(repeated[2]);
-    parsed = Array.from({ length: count }, () => reps);
-  } else if (/^\d+(?:\s+\d+)*$/.test(text)) {
-    parsed = text.split(/\s+/).map(Number);
-  } else if (/^\d+(?:\s*[,+]\s*\d+)*$/.test(text)) {
-    parsed = text.split(/\s*[,+]\s*/).map(Number);
-  } else {
-    throw new Error("Use formats such as 4×10, 10 10 10, or 10 + 10 + 8.");
-  }
-  if (!parsed.length || parsed.length > 100 || parsed.some((item) => !Number.isInteger(item) || item < 1 || item > 10000)) {
-    throw new Error("Use 1–100 sets with 1–10,000 repetitions each.");
-  }
-  return parsed;
-}
-
 function WeeksPage({ exerciseId, back }: { exerciseId: number; back: () => void }) {
   const [days, setDays] = useState<HistoryDay[] | undefined>(() => appDataCache.peekFullHistory(exerciseId)); const [today, setToday] = useState<string | undefined>(() => appDataCache.peekSettings()?.today); const [error, setError] = useState<string>();
-  const load = useCallback(async (force = false) => { setError(undefined); try { const [history, settings] = await Promise.all([appDataCache.loadFullHistory(exerciseId, force), appDataCache.loadSettings(force)]); setDays(history); setToday(settings.today); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load weekly history."); } }, [exerciseId]);
+  const load = useCallback(async (force = false) => { setError(undefined); try { const [history, settings] = await Promise.all([appDataCache.loadFullHistory(exerciseId, force), appDataCache.loadSettings(force)]); setDays(history); setToday(settings.today); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadWeeklyHistory")); } }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
-  if (!days || !today) return <main className="app-shell"><Header title="All weeks" back={back} />{error ? <ErrorNotice message={error} retry={() => load(true)} /> : <Loading />}</main>;
+  if (!days || !today) return <main className="app-shell"><Header title={t("weeks.title")} back={back} />{error ? <ErrorNotice message={error} retry={() => load(true)} /> : <Loading />}</main>;
   const weeks = buildWeeks(days, today);
   const maximum = Math.max(...weeks.map((week) => week.total), 1);
-  return <main className="app-shell detail-list-page"><Header title="All weeks" back={back} />{!days.length ? <section className="dashboard-card"><div className="chart-empty">No weekly history yet.</div></section> : <section className="dashboard-card weekly-progress full-history"><div className="section-heading"><h3>Weekly history</h3><span>{weeks.length} weeks</span></div><div className="week-list">{weeks.map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 1]} maximum={maximum} />)}</div></section>}</main>;
+  return <main className="app-shell detail-list-page"><Header title={t("weeks.title")} back={back} />{!days.length ? <section className="dashboard-card"><div className="chart-empty">{t("weeks.empty")}</div></section> : <section className="dashboard-card weekly-progress full-history"><div className="section-heading"><h3>{t("weeks.historyTitle")}</h3><span>{t("weeks.weeksCount", { count: weeks.length })}</span></div><div className="week-list">{weeks.map((week, index) => <WeekRow key={week.start} week={week} older={weeks[index + 1]} maximum={maximum} />)}</div></section>}</main>;
 }
 
 const HISTORY_DAYS_PAGE_SIZE = 20;
@@ -515,7 +464,7 @@ function ResultsPage({ exerciseId, back, edit }: { exerciseId: number; back: () 
       const [history, settings] = await Promise.all([appDataCache.loadResultsHistory(exerciseId, HISTORY_DAYS_PAGE_SIZE, force), appDataCache.loadSettings(force)]);
       setDays(history.days); setTimezone(settings.timezone); setHasMore(history.hasMore);
       setExpandedDate(undefined); setEntriesByDate({}); setLoadingDates([]); setDayErrors({});
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load results."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadResults")); }
   }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
   const loadMore = async () => {
@@ -525,7 +474,7 @@ function ResultsPage({ exerciseId, back, edit }: { exerciseId: number; back: () 
       const nextDays = await api.history(exerciseId, HISTORY_DAYS_PAGE_SIZE, days.length);
       const history = { days: [...days, ...nextDays], hasMore: nextDays.length === HISTORY_DAYS_PAGE_SIZE };
       setDays(history.days); setHasMore(history.hasMore); appDataCache.saveResultsHistory(exerciseId, history);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load more days."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadMoreDays")); }
     finally { setLoadingMore(false); }
   };
   const toggleDay = async (date: string) => {
@@ -537,11 +486,11 @@ function ResultsPage({ exerciseId, back, edit }: { exerciseId: number; back: () 
     try {
       const entries = await appDataCache.loadEntriesForDay(exerciseId, date);
       setEntriesByDate((current) => ({ ...current, [date]: entries }));
-    } catch (reason) { setDayErrors((current) => ({ ...current, [date]: reason instanceof Error ? reason.message : "Could not load results for this day." })); }
+    } catch (reason) { setDayErrors((current) => ({ ...current, [date]: reason instanceof Error ? reason.message : t("errors.loadDayResults") })); }
     finally { setLoadingDates((current) => current.filter((item) => item !== date)); }
   };
-  if (!days || !timezone) return <main className="app-shell"><Header title="All results" back={back} />{error ? <ErrorNotice message={error} retry={() => load(true)} /> : <Loading />}</main>;
-  return <main className="app-shell detail-list-page"><Header title="All results" back={back} /><section className="dashboard-card results-panel"><div className="section-heading"><h3>Training history</h3>{days.length > 0 && <span>{days.length} {days.length === 1 ? "day" : "days"}</span>}</div>{days.length ? <><HistoryDays days={days} expandedDate={expandedDate} entriesByDate={entriesByDate} loadingDates={loadingDates} errors={dayErrors} timezone={timezone} onSelect={edit} onToggle={toggleDay} />{error && <ErrorNotice message={error} retry={loadMore} />}{hasMore && <div className="results-footer"><button className="text-button" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load more"}</button></div>}</> : <p className="muted">No results yet.</p>}</section></main>;
+  if (!days || !timezone) return <main className="app-shell"><Header title={t("results.title")} back={back} />{error ? <ErrorNotice message={error} retry={() => load(true)} /> : <Loading />}</main>;
+  return <main className="app-shell detail-list-page"><Header title={t("results.title")} back={back} /><section className="dashboard-card results-panel"><div className="section-heading"><h3>{t("results.historyTitle")}</h3>{days.length > 0 && <span>{t("results.daysCount", { count: days.length })}</span>}</div>{days.length ? <><HistoryDays days={days} expandedDate={expandedDate} entriesByDate={entriesByDate} loadingDates={loadingDates} errors={dayErrors} timezone={timezone} onSelect={edit} onToggle={toggleDay} />{error && <ErrorNotice message={error} retry={loadMore} />}{hasMore && <div className="results-footer"><button className="text-button" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? t("common.loadingShort") : t("results.loadMore")}</button></div>}</> : <p className="muted">{t("results.empty")}</p>}</section></main>;
 }
 
 function EntryEditorPage({ exerciseId, entryId, back, done }: { exerciseId: number; entryId?: number; back: () => void; done: () => void }) {
@@ -551,60 +500,60 @@ function EntryEditorPage({ exerciseId, entryId, back, done }: { exerciseId: numb
   const syncSets = (next: number[]) => { setReps(next); setQuickInput(formatSets(next)); setQuickError(undefined); };
   useEffect(() => {
     if (!isEditing) return;
-    void (async () => { try { const [settings, detail] = await Promise.all([appDataCache.loadSettings(), appDataCache.loadDetail(exerciseId)]); setToday(settings.today); setExerciseName(detail.exercise.name); const entry = appDataCache.peekEntry(exerciseId, entryId) ?? (await appDataCache.loadFullEntries(exerciseId)).find((item) => item.id === entryId); if (!entry) throw new Error("Result not found."); syncSets(entry.reps); setDate(entry.performed_on); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load result."); } finally { setLoading(false); } })();
+    void (async () => { try { const [settings, detail] = await Promise.all([appDataCache.loadSettings(), appDataCache.loadDetail(exerciseId)]); setToday(settings.today); setExerciseName(detail.exercise.name); const entry = appDataCache.peekEntry(exerciseId, entryId) ?? (await appDataCache.loadFullEntries(exerciseId)).find((item) => item.id === entryId); if (!entry) throw new Error(t("errors.resultNotFound")); syncSets(entry.reps); setDate(entry.performed_on); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadResult")); } finally { setLoading(false); } })();
   }, [entryId, exerciseId, isEditing]);
   const updateSet = (index: number, value: number) => syncSets(reps.map((setReps, itemIndex) => itemIndex === index ? value : setReps));
   const applyQuickInput = (value: string) => { setQuickInput(value); try { const next = parseQuickResult(value); setReps(next); setQuickError(undefined); } catch { setQuickError(undefined); } };
-  const validateQuickInput = () => { try { const next = parseQuickResult(quickInput); syncSets(next); return next; } catch (reason) { setQuickError(reason instanceof Error ? reason.message : "Invalid result format."); return undefined; } };
-  const save = async (event: FormEvent) => { event.preventDefault(); const parsed = validateQuickInput(); if (!date || !parsed) return; setSaving(true); setError(undefined); try { if (entryId === undefined) await api.createEntry(exerciseId, parsed, date); else await api.updateEntry(entryId, parsed, date); appDataCache.invalidateExercise(exerciseId); done(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save result."); } finally { setSaving(false); } };
-  const remove = async () => { if (!entryId || !window.confirm("Delete this result? This cannot be undone.")) return; setSaving(true); try { await api.deleteEntry(entryId); appDataCache.invalidateExercise(exerciseId); done(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not delete result."); setSaving(false); } };
+  const validateQuickInput = () => { try { const next = parseQuickResult(quickInput); syncSets(next); return next; } catch (reason) { setQuickError(reason instanceof Error ? reason.message : t("errors.invalidResult")); return undefined; } };
+  const save = async (event: FormEvent) => { event.preventDefault(); const parsed = validateQuickInput(); if (!date || !parsed) return; setSaving(true); setError(undefined); try { if (entryId === undefined) await api.createEntry(exerciseId, parsed, date); else await api.updateEntry(entryId, parsed, date); appDataCache.invalidateExercise(exerciseId); done(); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.saveResult")); } finally { setSaving(false); } };
+  const remove = async () => { if (!entryId || !window.confirm(t("entry.deleteConfirm"))) return; setSaving(true); try { await api.deleteEntry(entryId); appDataCache.invalidateExercise(exerciseId); done(); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.deleteResult")); setSaving(false); } };
   const total = reps.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
-  if (loading) return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><Loading /></main>;
-  if (error && !date) return <main className="app-shell"><Header title={isEditing ? "Edit result" : "Add result"} back={back} /><ErrorNotice message={error} /></main>;
+  if (loading) return <main className="app-shell"><Header title={isEditing ? t("entry.editTitle") : t("entry.addTitle")} back={back} /><Loading /></main>;
+  if (error && !date) return <main className="app-shell"><Header title={isEditing ? t("entry.editTitle") : t("entry.addTitle")} back={back} /><ErrorNotice message={error} /></main>;
   return <main className="app-shell">
-    <Header title={isEditing ? "Edit result" : "Add result"} back={back} />
+    <Header title={isEditing ? t("entry.editTitle") : t("entry.addTitle")} back={back} />
     {exerciseName && <p className="entry-exercise-context" title={exerciseName}>{exerciseName}</p>}
     <form className="entry-editor" onSubmit={save}>
       <section className="entry-composer">
         <label className="quick-entry">
-          <span>Quick entry</span>
-          <input value={quickInput} onChange={(event) => applyQuickInput(event.target.value)} onBlur={validateQuickInput} placeholder="4×10 or 10 + 10 + 8" autoComplete="off" />
-          <small>Try 4×10, 10 10 10, or 10 + 10 + 8.</small>
+          <span>{t("entry.quickLabel")}</span>
+          <input value={quickInput} onChange={(event) => applyQuickInput(event.target.value)} onBlur={validateQuickInput} placeholder={t("entry.quickPlaceholder")} autoComplete="off" />
+          <small>{t("entry.quickHint")}</small>
         </label>
         {quickError && <p className="quick-error">{quickError}</p>}
         <section className="sets-panel">
-          <div className="section-heading"><h3>Sets</h3><span>{total.toLocaleString()} reps total</span></div>
-          <div className="set-list">{reps.map((value, index) => <div className="set-editor" key={index}><span>Set {index + 1}</span><button type="button" aria-label={`Decrease set ${index + 1}`} onClick={() => updateSet(index, Math.max(1, value - 1))}>−</button><input aria-label={`Repetitions for set ${index + 1}`} type="number" inputMode="numeric" min="1" max="10000" value={value || ""} onChange={(event) => updateSet(index, Number(event.target.value))} /><button type="button" aria-label={`Increase set ${index + 1}`} onClick={() => updateSet(index, Math.min(10000, value + 1))}>+</button><button className="remove-set" type="button" aria-label={`Remove set ${index + 1}`} disabled={reps.length === 1} onClick={() => syncSets(reps.filter((_, itemIndex) => itemIndex !== index))}>×</button></div>)}</div>
-          <button className="add-set" type="button" onClick={() => syncSets([...reps, reps.at(-1) ?? 10])}>＋ Add set</button>
+          <div className="section-heading"><h3>{t("entry.setsTitle")}</h3><span>{t("entry.setsTotal", { total: formatNumber(total) })}</span></div>
+          <div className="set-list">{reps.map((value, index) => <div className="set-editor" key={index}><span>{t("entry.setLabel", { index: index + 1 })}</span><button type="button" aria-label={t("entry.decreaseSet", { index: index + 1 })} onClick={() => updateSet(index, Math.max(1, value - 1))}>−</button><input aria-label={t("entry.repsForSet", { index: index + 1 })} type="number" inputMode="numeric" min="1" max="10000" value={value || ""} onChange={(event) => updateSet(index, Number(event.target.value))} /><button type="button" aria-label={t("entry.increaseSet", { index: index + 1 })} onClick={() => updateSet(index, Math.min(10000, value + 1))}>+</button><button className="remove-set" type="button" aria-label={t("entry.removeSet", { index: index + 1 })} disabled={reps.length === 1} onClick={() => syncSets(reps.filter((_, itemIndex) => itemIndex !== index))}>×</button></div>)}</div>
+          <button className="add-set" type="button" onClick={() => syncSets([...reps, reps.at(-1) ?? 10])}>{t("entry.addSet")}</button>
         </section>
       </section>
-      <label className="date-picker"><span>Date</span><input id="entry-date" type="date" value={date} max={today} onChange={(event) => setDate(event.target.value)} /><small>{date === today ? "Today" : "Selected training date"}</small></label>
+      <label className="date-picker"><span>{t("entry.dateLabel")}</span><input id="entry-date" type="date" value={date} max={today} onChange={(event) => setDate(event.target.value)} /><small>{date === today ? t("common.today") : t("entry.selectedDateHint")}</small></label>
       {error && <ErrorNotice message={error} />}
-      <button className="primary-button" disabled={saving}>{saving ? "Saving…" : isEditing ? "Save changes" : "Save result"}</button>
-      {isEditing && <button className="danger-button editor-delete" type="button" disabled={saving} onClick={remove}>Delete result</button>}
+      <button className="primary-button" disabled={saving}>{saving ? t("common.saving") : isEditing ? t("entry.saveChanges") : t("entry.save")}</button>
+      {isEditing && <button className="danger-button editor-delete" type="button" disabled={saving} onClick={remove}>{t("entry.delete")}</button>}
     </form>
   </main>;
 }
 
 function ExerciseSettingsPage({ exerciseId, back, home }: { exerciseId: number; back: () => void; home: () => void }) {
   const [exercise, setExercise] = useState<Exercise>(); const [name, setName] = useState(""); const [error, setError] = useState<string>(); const [saving, setSaving] = useState(false);
-  const load = useCallback(async () => { try { const detail = await appDataCache.loadDetail(exerciseId); setExercise(detail.exercise); setName(detail.exercise.name); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load settings."); } }, [exerciseId]);
+  const load = useCallback(async () => { try { const detail = await appDataCache.loadDetail(exerciseId); setExercise(detail.exercise); setName(detail.exercise.name); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadSettings")); } }, [exerciseId]);
   useEffect(() => { void load(); }, [load]);
-  const saveName = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { const updated = await api.updateExercise(exerciseId, name.trim()); setExercise(updated); setName(updated.name); appDataCache.invalidateExercises(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the name."); } finally { setSaving(false); } };
-  const toggleReport = async () => { if (!exercise) return; setSaving(true); setError(undefined); try { setExercise(await api.updateWeeklyReport(exerciseId, !exercise.weekly_report_enabled)); appDataCache.invalidateExercises(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not update report setting."); } finally { setSaving(false); } };
-  const archive = async () => { if (!window.confirm("Archive this exercise? Its results will stay saved.")) return; try { await api.archiveExercise(exerciseId); appDataCache.invalidateExercises(); home(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not archive the exercise."); } };
-  if (!exercise) return <main className="app-shell"><Header title="Exercise settings" back={back} />{error ? <ErrorNotice message={error} retry={load} /> : <Loading />}</main>;
-  return <main className="app-shell"><Header title="Exercise settings" back={back} /><form className="screen-form settings-form" onSubmit={saveName}><label>Exercise name<input value={name} onChange={(event) => setName(event.target.value)} maxLength={255} /></label><button className="secondary-button" disabled={!name.trim() || saving}>{saving ? "Saving…" : "Save name"}</button></form><section className="settings-group"><div><strong>Weekly report</strong><p>Include this exercise in the weekly summary.</p></div><button className={`switch ${exercise.weekly_report_enabled ? "is-on" : ""}`} aria-label="Toggle weekly report" onClick={toggleReport} disabled={saving}><span /></button></section>{error && <ErrorNotice message={error} />}<section className="danger-zone"><h3>Danger zone</h3><p>Archiving hides this exercise from your list. You can restore it later from the bot.</p><button className="danger-button" onClick={archive}>Archive exercise</button></section></main>;
+  const saveName = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { const updated = await api.updateExercise(exerciseId, name.trim()); setExercise(updated); setName(updated.name); appDataCache.invalidateExercises(); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.saveName")); } finally { setSaving(false); } };
+  const toggleReport = async () => { if (!exercise) return; setSaving(true); setError(undefined); try { setExercise(await api.updateWeeklyReport(exerciseId, !exercise.weekly_report_enabled)); appDataCache.invalidateExercises(); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.updateReport")); } finally { setSaving(false); } };
+  const archive = async () => { if (!window.confirm(t("exerciseSettings.archiveConfirm"))) return; try { await api.archiveExercise(exerciseId); appDataCache.invalidateExercises(); home(); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.archiveExercise")); } };
+  if (!exercise) return <main className="app-shell"><Header title={t("exerciseSettings.title")} back={back} />{error ? <ErrorNotice message={error} retry={load} /> : <Loading />}</main>;
+  return <main className="app-shell"><Header title={t("exerciseSettings.title")} back={back} /><form className="screen-form settings-form" onSubmit={saveName}><label>{t("exerciseSettings.nameLabel")}<input value={name} onChange={(event) => setName(event.target.value)} maxLength={255} /></label><button className="secondary-button" disabled={!name.trim() || saving}>{saving ? t("common.saving") : t("exerciseSettings.saveName")}</button></form><section className="settings-group"><div><strong>{t("exerciseSettings.weeklyTitle")}</strong><p>{t("exerciseSettings.weeklyCopy")}</p></div><button className={`switch ${exercise.weekly_report_enabled ? "is-on" : ""}`} aria-label={t("exerciseSettings.weeklyToggle")} onClick={toggleReport} disabled={saving}><span /></button></section>{error && <ErrorNotice message={error} />}<section className="danger-zone"><h3>{t("exerciseSettings.dangerTitle")}</h3><p>{t("exerciseSettings.dangerCopy")}</p><button className="danger-button" onClick={archive}>{t("exerciseSettings.archive")}</button></section></main>;
 }
 
 function SettingsPage({ back }: { back: () => void }) {
   const [settings, setSettings] = useState<Settings>(); const [timezone, setTimezone] = useState(""); const [language, setLanguage] = useState<Settings["language"]>("en"); const [error, setError] = useState<string>(); const [saving, setSaving] = useState(false);
-  const load = useCallback(async () => { try { const response = await appDataCache.loadSettings(); setSettings(response); setTimezone(response.timezone); setLanguage(response.language); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load settings."); } }, []);
+  const load = useCallback(async () => { try { const response = await appDataCache.loadSettings(); setSettings(response); setTimezone(response.timezone); setLanguage(response.language); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.loadSettings")); } }, []);
   useEffect(() => { void load(); }, [load]);
-  const save = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { const updated = await api.updateSettings({ timezone: timezone.trim(), language }); setSettings(updated); appDataCache.saveSettings(updated); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save settings."); } finally { setSaving(false); } };
-  if (!settings) return <main className="app-shell"><Header title="Settings" back={back} />{error ? <ErrorNotice message={error} retry={load} /> : <Loading />}</main>;
+  const save = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(undefined); try { const updated = await api.updateSettings({ timezone: timezone.trim(), language }); setSettings(updated); appDataCache.saveSettings(updated); } catch (reason) { setError(reason instanceof Error ? reason.message : t("errors.saveSettings")); } finally { setSaving(false); } };
+  if (!settings) return <main className="app-shell"><Header title={t("settings.title")} back={back} />{error ? <ErrorNotice message={error} retry={load} /> : <Loading />}</main>;
   const hasCurrentTimezone = timezoneOptions.some(([value]) => value === timezone);
-  return <main className="app-shell"><Header title="Settings" back={back} /><form className="screen-form settings-form" onSubmit={save}><p className="eyebrow">PREFERENCES</p><label>Time zone<select value={timezone} onChange={(event) => setTimezone(event.target.value)}>{!hasCurrentTimezone && <option value={timezone}>{timezone}</option>}{timezoneOptions.map(([value, label]) => <option key={value} value={value}>{label} — {value}</option>)}</select><small>Uses the same curated timezone choices as the Telegram bot.</small></label><label>Language<select value={language} onChange={(event) => setLanguage(event.target.value as Settings["language"])}>{languageOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={!timezone.trim() || saving}>{saving ? "Saving…" : "Save settings"}</button></form><p className="local-note">Your Telegram account is verified securely.</p></main>;
+  return <main className="app-shell"><Header title={t("settings.title")} back={back} /><form className="screen-form settings-form" onSubmit={save}><p className="eyebrow">{t("settings.eyebrow")}</p><label>{t("settings.timezoneLabel")}<select value={timezone} onChange={(event) => setTimezone(event.target.value)}>{!hasCurrentTimezone && <option value={timezone}>{timezone}</option>}{timezoneOptions.map(([value, label]) => <option key={value} value={value}>{label} — {value}</option>)}</select><small>{t("settings.timezoneHint")}</small></label><label>{t("settings.languageLabel")}<select value={language} onChange={(event) => setLanguage(event.target.value as Settings["language"])}>{languageOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>{error && <ErrorNotice message={error} />}<button className="primary-button" disabled={!timezone.trim() || saving}>{saving ? t("common.saving") : t("settings.save")}</button></form><p className="local-note">{t("settings.verifiedNote")}</p></main>;
 }
 
 export default App;

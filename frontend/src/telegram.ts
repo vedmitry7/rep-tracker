@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+
 type Insets = {
   top: number;
   right: number;
@@ -59,6 +61,6 @@ export function initialiseTelegramMiniApp() {
  */
 export function getTelegramInitData(): string {
   const initData = window.Telegram?.WebApp?.initData;
-  if (!initData) throw new Error("Open Repka from the Telegram app.");
+  if (!initData) throw new Error(t("errors.openInTelegram"));
   return initData;
 }

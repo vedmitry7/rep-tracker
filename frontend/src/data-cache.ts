@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { t } from "./i18n";
 import type { Exercise, ExerciseEntry, ExerciseStats, HistoryDay, Settings } from "./types";
 
 export type ExerciseSummary = Exercise & { stats: ExerciseStats; history: HistoryDay[] };
@@ -87,7 +88,7 @@ class AppDataCache {
         this.loadSettings(force),
       ]);
       const exercise = exercises.find((item) => item.id === exerciseId);
-      if (!exercise) throw new Error("Exercise not found.");
+      if (!exercise) throw new Error(t("errors.exerciseNotFound"));
       return { exercise, stats, history, timezone: settings.timezone };
     });
   }
