@@ -25,7 +25,20 @@ RESTORE_INPUT_FAILED = 'Não foi possível restaurar a entrada. Abra o exercíci
 RESTORE_ENTRY_FAILED = 'Não foi possível restaurar a entrada.'
 CHOOSE_DATE = 'Escolha uma data:'
 CHOOSE_NEW_DATE = 'Escolha uma nova data:'
-ENTER_DATE = 'Insira uma data:\n\n25.08\n25.08.2026\n25/08/2026'
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        'Insira uma data:\n\n'
+        f'{short}\n{full}\n{iso}\n\n'
+        'Toque na data abaixo para copiá-la, depois cole e corrija.'
+    )
+
+
+def copy_date(short: str) -> str:
+    return f'📋 {short}'
+
+
 TODAY = 'Hoje'
 YESTERDAY = 'Ontem'
 DAY_BEFORE_YESTERDAY = 'Anteontem'
@@ -86,7 +99,12 @@ POSITIVE_RESULT_REQUIRED = 'O número de séries e repetições deve ser positiv
 INVALID_RESULT_FORMAT = 'Formato não reconhecido. Exemplos: 10, 4x10 ou 10 9 8.'
 NUMBER_TOO_LARGE = 'O número é muito grande.'
 ENTER_DATE_REQUIRED = 'Insira uma data.'
-INVALID_DATE = 'Data não reconhecida. Use 25/08, 25/08/2026 ou 25/08/2026.'
+
+
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f'Data não reconhecida. Use {short}, {full} ou {iso}.'
+
+
 FUTURE_DATE = 'Uma data futura não pode ser selecionada.'
 SET_NOT_FOUND = 'Conjunto não encontrado.'
 LAST_SET_REQUIRED = 'Pelo menos um conjunto deve permanecer.'

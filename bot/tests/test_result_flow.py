@@ -18,7 +18,17 @@ from bot.app.keyboards.results import (
     ResultActionValue,
     ResultScreen,
 )
+from bot.app.services.date_format import manual_date_formats
 from bot.app.states.result import AddResult
+
+
+def copy_button(markup: object):
+    return next(
+        button
+        for row in markup.inline_keyboard  # type: ignore[attr-defined]
+        for button in row
+        if button.copy_text is not None
+    )
 
 
 @pytest.fixture
@@ -108,6 +118,7 @@ async def test_relative_date_selection(
         callback(),
         DateChoice(choice=choice),
         state,
+        SimpleNamespace(),
     )
 
     data = await state.get_data()
@@ -138,12 +149,136 @@ async def test_manual_date_preserves_reps_and_return_screen(
     monkeypatch.setattr(results, "_return_to_previous_screen", return_to_screen)
     message = SimpleNamespace(text="25.08.2026", answer=AsyncMock())
 
-    await results.enter_date(message, state)
+    await results.enter_date(message, state, SimpleNamespace())
 
     data = await state.get_data()
     assert data["performed_on"] == date(2026, 8, 25)
     assert data["reps"] == [10, 9]
     assert data["return_screen"] == ResultScreen.CONSTRUCTOR.value
+
+
+def manual_state(today: date, *, return_screen: ResultScreen) -> dict[str, object]:
+    return {
+        "exercise_id": 7,
+        "exercise_name": "Подтягивания",
+        "user_today": today,
+        "performed_on": today,
+        "reps": [10],
+        "return_screen": return_screen.value,
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "return_screen",
+    [ResultScreen.INPUT, ResultScreen.CONSTRUCTOR],
+)
+async def test_manual_date_shows_today_in_all_formats_and_copy_button(
+    return_screen: ResultScreen,
+    state: FSMContext,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 10, 17)
+    await state.set_state(AddResult.choosing_date)
+    await state.set_data(manual_state(today, return_screen=return_screen))
+    api_client = SimpleNamespace(
+        get_user_settings=AsyncMock(return_value=SimpleNamespace(today=today))
+    )
+    render = AsyncMock()
+    monkeypatch.setattr(results, "_render", render)
+
+    await results.choose_date(
+        callback(),
+        DateChoice(choice=DateChoiceValue.MANUAL),
+        state,
+        api_client,
+    )
+
+    short, full, iso = manual_date_formats(today)
+    text = render.await_args.args[1]
+    markup = render.await_args.args[2]
+    assert short in text and full in text and iso in text
+    button = copy_button(markup)
+    assert button.text == f"📋 {short}"
+    assert button.copy_text.text == short
+    data = await state.get_data()
+    assert data["return_screen"] == return_screen.value
+    assert data["reps"] == [10]
+    assert await state.get_state() == AddResult.entering_date.state
+
+
+@pytest.mark.asyncio
+async def test_manual_date_refreshes_today_after_local_midnight(
+    state: FSMContext,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    old_today = date(2026, 10, 17)
+    new_today = date(2026, 10, 18)
+    await state.set_state(AddResult.choosing_date)
+    await state.set_data(manual_state(old_today, return_screen=ResultScreen.INPUT))
+    api_client = SimpleNamespace(
+        get_user_settings=AsyncMock(return_value=SimpleNamespace(today=new_today))
+    )
+    render = AsyncMock()
+    monkeypatch.setattr(results, "_render", render)
+
+    await results.choose_date(
+        callback(),
+        DateChoice(choice=DateChoiceValue.MANUAL),
+        state,
+        api_client,
+    )
+
+    short, full, iso = manual_date_formats(new_today)
+    text = render.await_args.args[1]
+    assert short in text and full in text and iso in text
+    assert (await state.get_data())["user_today"] == new_today
+    assert copy_button(render.await_args.args[2]).copy_text.text == short
+
+
+@pytest.mark.asyncio
+async def test_invalid_manual_date_error_shows_current_day_examples(
+    state: FSMContext,
+) -> None:
+    today = date(2026, 10, 17)
+    original_data = manual_state(today, return_screen=ResultScreen.INPUT)
+    await state.set_state(AddResult.entering_date)
+    await state.set_data(original_data)
+    message = SimpleNamespace(text="31.02.2026", answer=AsyncMock())
+
+    await results.enter_date(message, state, SimpleNamespace())
+
+    short, full, iso = manual_date_formats(today)
+    text = message.answer.await_args.args[0]
+    assert short in text and full in text and iso in text
+    markup = message.answer.await_args.kwargs["reply_markup"]
+    assert copy_button(markup).copy_text.text == short
+    assert await state.get_state() == AddResult.entering_date.state
+    assert await state.get_data() == original_data
+
+
+@pytest.mark.asyncio
+async def test_copied_short_date_is_accepted_by_parser(
+    state: FSMContext,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 10, 17)
+    await state.set_state(AddResult.entering_date)
+    await state.set_data(manual_state(today, return_screen=ResultScreen.CONSTRUCTOR))
+    return_to_screen = AsyncMock()
+    monkeypatch.setattr(results, "_return_to_previous_screen", return_to_screen)
+    message = SimpleNamespace(
+        text="17.10",
+        from_user=SimpleNamespace(id=3),
+        answer=AsyncMock(),
+    )
+    api_client = SimpleNamespace(
+        get_user_settings=AsyncMock(return_value=SimpleNamespace(today=today))
+    )
+
+    await results.enter_date(message, state, api_client)
+
+    assert (await state.get_data())["performed_on"] == today
 
 
 @pytest.mark.asyncio
@@ -160,7 +295,7 @@ async def test_invalid_manual_date_does_not_reset_fsm(state: FSMContext) -> None
     await state.set_data(original_data)
     message = SimpleNamespace(text="31.02.2026", answer=AsyncMock())
 
-    await results.enter_date(message, state)
+    await results.enter_date(message, state, SimpleNamespace())
 
     assert await state.get_state() == AddResult.entering_date.state
     assert await state.get_data() == original_data

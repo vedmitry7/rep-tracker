@@ -62,7 +62,20 @@ RESTORE_ENTRY_FAILED = "Не удалось восстановить запис�
 
 CHOOSE_DATE = "Выбери дату:"
 CHOOSE_NEW_DATE = "Выбери новую дату:"
-ENTER_DATE = "Введи дату:\n\n25.08\n25.08.2026\n2026-08-25"
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        "Введи дату:\n\n"
+        f"{short}\n{full}\n{iso}\n\n"
+        "Нажми дату ниже, чтобы скопировать, затем вставь и исправь."
+    )
+
+
+def copy_date(short: str) -> str:
+    return f"📋 {short}"
+
+
 TODAY = "Сегодня"
 YESTERDAY = "Вчера"
 DAY_BEFORE_YESTERDAY = "Позавчера"
@@ -133,7 +146,12 @@ POSITIVE_RESULT_REQUIRED = (
 INVALID_RESULT_FORMAT = "Не понял формат. Примеры: 10, 4x10 или 10 9 8."
 NUMBER_TOO_LARGE = "Число слишком большое."
 ENTER_DATE_REQUIRED = "Введи дату."
-INVALID_DATE = "Не понял дату. Используй 25.08, 25.08.2026 или 2026-08-25."
+
+
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f"Не понял дату. Используй {short}, {full} или {iso}."
+
+
 FUTURE_DATE = "Будущую дату выбрать нельзя."
 SET_NOT_FOUND = "Подход не найден."
 LAST_SET_REQUIRED = "Должен остаться хотя бы один подход."

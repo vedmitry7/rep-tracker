@@ -19,7 +19,8 @@ LANGUAGE_CHANGED = "भाषा बदल दी गई"
 TODAY, YESTERDAY, DAY_BEFORE_YESTERDAY = "आज", "कल", "परसों"
 ENTER_RESULT = "एक परिणाम दर्ज करें।"
 INVALID_RESULT_FORMAT = "प्रारूप पहचाना नहीं गया। उदाहरण: 10, 4x10, या 10 9 8।"
-INVALID_DATE = "तारीख पहचानी नहीं गई। 25.08, 25.08.2026 या 2026-08-25 का उपयोग करें।"
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f"तारीख पहचानी नहीं गई। {short}, {full} या {iso} का उपयोग करें।"
 BACKEND_UNAVAILABLE = "सेवा अस्थायी रूप से उपलब्ध नहीं है। बाद में फिर कोशिश करें।"
 BOT_NAME = "Repka · वर्कआउट ट्रैकर"
 BOT_SHORT_DESCRIPTION = "व्यायाम दर्ज करें, अपनी प्रगति देखें और साप्ताहिक रिपोर्ट पाएं।"
@@ -45,7 +46,20 @@ RESTORE_INPUT_FAILED = "इनपुट बहाल नहीं किया �
 RESTORE_ENTRY_FAILED = "रिकॉर्ड बहाल नहीं किया जा सका।"
 CHOOSE_DATE = "तारीख चुनें:"
 CHOOSE_NEW_DATE = "नई तारीख चुनें:"
-ENTER_DATE = "तारीख लिखें:\n\n25.08\n25.08.2026\n2026-08-25"
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        "तारीख लिखें:\n\n"
+        f"{short}\n{full}\n{iso}\n\n"
+        "कॉपी करने के लिए नीचे दी तारीख पर टैप करें, फिर पेस्ट करके ठीक करें।"
+    )
+
+
+def copy_date(short: str) -> str:
+    return f"📋 {short}"
+
+
 MIN_REPETITIONS = "न्यूनतम 1 है।"
 MAX_REPETITIONS = "अधिकतम 10,000 है।"
 CHANGES_SAVED = "बदलाव सहेजे गए"

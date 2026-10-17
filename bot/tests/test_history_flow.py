@@ -249,7 +249,10 @@ async def test_manual_date_reuses_parser_and_patches(
     parser = Mock(return_value=selected)
     monkeypatch.setattr(history, "parse_result_date", parser)
     api = SimpleNamespace(
-        update_exercise_entry=AsyncMock(return_value=entry(15, [10], selected))
+        update_exercise_entry=AsyncMock(return_value=entry(15, [10], selected)),
+        get_user_settings=AsyncMock(
+            return_value=SimpleNamespace(today=date(2026, 8, 27))
+        ),
     )
     message = FakeMessage()
     message.text = "20.08.2026"

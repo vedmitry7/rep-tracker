@@ -25,7 +25,20 @@ RESTORE_INPUT_FAILED = 'Giriş geri yüklenemedi. Egzersizi tekrar açın.'
 RESTORE_ENTRY_FAILED = 'Giriş geri yüklenemedi.'
 CHOOSE_DATE = 'Bir tarih seçin:'
 CHOOSE_NEW_DATE = 'Yeni bir tarih seçin:'
-ENTER_DATE = 'Bir tarih girin:\n\n25.08\n25.08.2026\n2026-08-25'
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        'Bir tarih girin:\n\n'
+        f'{short}\n{full}\n{iso}\n\n'
+        'Tarihi kopyalamak için aşağıdaki tarihe dokunun, sonra yapıştırıp düzeltin.'
+    )
+
+
+def copy_date(short: str) -> str:
+    return f'📋 {short}'
+
+
 TODAY = 'Bugün'
 YESTERDAY = 'Dün'
 DAY_BEFORE_YESTERDAY = 'Dünden önceki gün'
@@ -86,7 +99,12 @@ POSITIVE_RESULT_REQUIRED = 'Set ve tekrar sayısı pozitif olmalıdır.'
 INVALID_RESULT_FORMAT = 'Tanınmayan biçim. Örnekler: 10, 4x10 veya 10 9 8.'
 NUMBER_TOO_LARGE = 'Sayı çok büyük.'
 ENTER_DATE_REQUIRED = 'Bir tarih girin.'
-INVALID_DATE = "Tanınmayan tarih. 25.08, 25.08.2026 veya 2026-08-25'i kullanın."
+
+
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f'Tanınmayan tarih. {short}, {full} veya {iso} kullanın.'
+
+
 FUTURE_DATE = 'Gelecekteki bir tarih seçilemez.'
 SET_NOT_FOUND = 'Ayar bulunamadı.'
 LAST_SET_REQUIRED = 'En az bir set kalmalıdır.'

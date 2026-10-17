@@ -26,7 +26,8 @@ LANGUAGE_CHANGED = "Język zmieniony"
 TODAY, YESTERDAY, DAY_BEFORE_YESTERDAY = "Dziś", "Wczoraj", "Przedwczoraj"
 ENTER_RESULT = "Wpisz wynik."
 INVALID_RESULT_FORMAT = "Nierozpoznany format. Przykłady: 10, 4x10 albo 10 9 8."
-INVALID_DATE = "Nierozpoznana data. Użyj 25.08, 25.08.2026 albo 2026-08-25."
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f"Nierozpoznana data. Użyj {short}, {full} albo {iso}."
 BACKEND_UNAVAILABLE = "Usługa jest chwilowo niedostępna. Spróbuj ponownie później."
 
 from ._translations import _apply_button_translations
@@ -46,7 +47,20 @@ RESTORE_INPUT_FAILED = "Nie udało się przywrócić wprowadzania. Otwórz ćwic
 RESTORE_ENTRY_FAILED = "Nie udało się przywrócić wpisu."
 CHOOSE_DATE = "Wybierz datę:"
 CHOOSE_NEW_DATE = "Wybierz nową datę:"
-ENTER_DATE = "Wpisz datę:\n\n25.08\n25.08.2026\n2026-08-25"
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        "Wpisz datę:\n\n"
+        f"{short}\n{full}\n{iso}\n\n"
+        "Dotknij daty poniżej, aby ją skopiować, a następnie wklej i popraw."
+    )
+
+
+def copy_date(short: str) -> str:
+    return f"📋 {short}"
+
+
 ENTER_DATE_REQUIRED = "Wpisz datę."
 FUTURE_DATE = "Nie można wybrać przyszłej daty."
 MIN_REPETITIONS = "Minimum to 1."

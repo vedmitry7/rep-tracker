@@ -1,7 +1,7 @@
 from enum import StrEnum
 
 from aiogram.filters.callback_data import CallbackData
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.app.api.client import ExerciseEntry, ExerciseHistoryDay
@@ -228,8 +228,12 @@ def history_date_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def history_manual_date_keyboard() -> InlineKeyboardMarkup:
+def history_manual_date_keyboard(copy_date: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    builder.button(
+        text=texts.copy_date(copy_date),
+        copy_text=CopyTextButton(text=copy_date),
+    )
     builder.button(
         text=texts.BUTTON_BACK,
         callback_data=HistoryDateChoice(choice=HistoryDateChoiceValue.BACK),

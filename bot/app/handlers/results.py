@@ -9,6 +9,7 @@ from bot.app.api.client import ApiError, Exercise, RepTrackerApi
 from bot.app.handlers.common import (
     answer_api_error,
     api_error_text,
+    current_user_today,
     edit_or_answer,
     replace_stored_or_answer,
 )
@@ -36,7 +37,7 @@ from bot.app.services.date_parser import (
     format_result_date,
     parse_result_date,
 )
-from bot.app.services.date_format import format_user_date
+from bot.app.services.date_format import format_user_date, manual_date_formats
 from bot.app.services.result_constructor import (
     ConstructorError,
     add_set,
@@ -228,6 +229,7 @@ async def choose_date(
     callback: CallbackQuery,
     callback_data: DateChoice,
     state: FSMContext,
+    api_client: RepTrackerApi,
 ) -> None:
     if await state.get_state() not in {
         AddResult.choosing_date.state,
@@ -240,12 +242,19 @@ async def choose_date(
         return
 
     if callback_data.choice == DateChoiceValue.MANUAL:
+        context = await _refresh_user_today(
+            callback.from_user.id,
+            state,
+            context,
+            api_client,
+        )
         await state.set_state(AddResult.entering_date)
         await callback.answer()
+        short, text = _manual_date_text(context)
         await _render(
             callback,
-            texts.ENTER_DATE,
-            manual_date_keyboard(context.exercise_id),
+            text,
+            manual_date_keyboard(context.exercise_id, short),
         )
         return
 
@@ -270,20 +279,34 @@ async def choose_date(
 
 
 @router.message(AddResult.entering_date)
-async def enter_date(message: Message, state: FSMContext) -> None:
+async def enter_date(
+    message: Message,
+    state: FSMContext,
+    api_client: RepTrackerApi,
+) -> None:
+    context = await _get_context(message, state)
+    if context is None:
+        return
+    from_user = getattr(message, "from_user", None)
+    if from_user is not None:
+        context = await _refresh_user_today(
+            from_user.id,
+            state,
+            context,
+            api_client,
+        )
     try:
-        context = await _get_context(message, state)
-        if context is None:
-            return
         selected_date = parse_result_date(
             message.text or "",
             today=context.user_today,
         )
     except DateParseError as error:
-        if isinstance(message, Message):
-            await _render_manual_date_after_text(message, state, str(error))
-        else:
-            await message.answer(str(error))
+        await _render_manual_date_after_text(
+            message,
+            state,
+            context,
+            str(error),
+        )
         return
 
     context = replace(context, performed_on=selected_date)
@@ -586,17 +609,39 @@ async def _render_constructor_after_text(
 async def _render_manual_date_after_text(
     message: Message,
     state: FSMContext,
+    context: ResultContext,
     error: str,
 ) -> None:
-    context = await _get_context(message, state)
-    if context is None:
-        return
+    short, text = _manual_date_text(context)
     await _replace_stored_ui_after_text(
         message,
         state,
-        f"{error}\n\n{texts.ENTER_DATE}",
-        manual_date_keyboard(context.exercise_id),
+        f"{error}\n\n{text}",
+        manual_date_keyboard(context.exercise_id, short),
     )
+
+
+async def _refresh_user_today(
+    telegram_user_id: int,
+    state: FSMContext,
+    context: ResultContext,
+    api_client: RepTrackerApi,
+) -> ResultContext:
+    today = await current_user_today(
+        api_client,
+        telegram_user_id,
+        context.user_today,
+    )
+    if today == context.user_today:
+        return context
+    context = replace(context, user_today=today)
+    await state.update_data(user_today=today)
+    return context
+
+
+def _manual_date_text(context: ResultContext) -> tuple[str, str]:
+    short, full, iso = manual_date_formats(context.user_today)
+    return short, texts.enter_date(short, full, iso)
 
 
 async def _replace_stored_ui_after_text(
