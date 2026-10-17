@@ -55,7 +55,20 @@ RESTORE_ENTRY_FAILED = "Could not restore the entry."
 
 CHOOSE_DATE = "Choose a date:"
 CHOOSE_NEW_DATE = "Choose a new date:"
-ENTER_DATE = "Enter a date:\n\n25.08\n25.08.2026\n2026-08-25"
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        "Enter a date:\n\n"
+        f"{short}\n{full}\n{iso}\n\n"
+        "Tap the date below to copy it, then paste and fix it."
+    )
+
+
+def copy_date(short: str) -> str:
+    return f"📋 {short}"
+
+
 TODAY = "Today"
 YESTERDAY = "Yesterday"
 DAY_BEFORE_YESTERDAY = "Day before yesterday"
@@ -168,7 +181,12 @@ POSITIVE_RESULT_REQUIRED = "The number of sets and repetitions must be positive.
 INVALID_RESULT_FORMAT = "Unrecognized format. Examples: 10, 4x10, or 10 9 8."
 NUMBER_TOO_LARGE = "The number is too large."
 ENTER_DATE_REQUIRED = "Enter a date."
-INVALID_DATE = "Unrecognized date. Use 25.08, 25.08.2026, or 2026-08-25."
+
+
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f"Unrecognized date. Use {short}, {full}, or {iso}."
+
+
 FUTURE_DATE = "A future date cannot be selected."
 SET_NOT_FOUND = "Set not found."
 LAST_SET_REQUIRED = "At least one set must remain."
@@ -496,6 +514,13 @@ def weekly_report_changed(enabled: bool) -> str:
 
 WEEKLY_NO_DATA = "This exercise has no data for any complete weeks yet."
 WEEKLY_CARD_FAILED = "Couldn't send one of the cards. Please try again from the exercise menu."
+
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f"Weekly reports for “{name}” were turned off after two weeks without "
+        "activity. You can turn them back on in the exercise statistics."
+    )
 WEEKLY_LABELS = dict(title="📅 Weekly report", period="Period", total="This week: {total} {unit}",
                      first="No previous complete week yet.", previous="Previous week",
                      change="Change", active="Active days", best="Best day")

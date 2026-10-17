@@ -57,6 +57,36 @@ def split_summary(report: dict) -> list[str]:
     return messages
 
 
+def disabled_notification(report: dict) -> str | None:
+    """One combined message for every exercise disabled in this snapshot."""
+    items = report.get("disabled_exercises") or []
+    if not items:
+        return None
+    language = report["language"]
+    return "\n\n".join(
+        get_text(language, "weekly_report_auto_disabled", item["name"])
+        for item in items
+    )
+
+
+def split_disabled_notifications(report: dict) -> list[str]:
+    """Combine notices while keeping each Telegram message within its limit."""
+    items = report.get("disabled_exercises") or []
+    messages: list[str] = []
+    current = ""
+    for item in items:
+        notice = get_text(report["language"], "weekly_report_auto_disabled", item["name"])
+        candidate = f"{current}\n\n{notice}" if current else notice
+        if len(candidate) > TELEGRAM_TEXT_LIMIT and current:
+            messages.append(current)
+            current = notice
+        else:
+            current = candidate
+    if current:
+        messages.append(current)
+    return messages
+
+
 def report_keyboard(report: dict) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[

@@ -14,6 +14,7 @@ from bot.app.api.client import (
 )
 from bot.app.handlers.common import (
     answer_api_error,
+    current_user_today,
     edit_or_answer,
     edit_stored_or_answer,
 )
@@ -41,7 +42,7 @@ from bot.app.keyboards.history import (
     history_manual_date_keyboard,
 )
 from bot.app.services.date_parser import DateParseError, days_ago, parse_result_date
-from bot.app.services.date_format import format_user_date
+from bot.app.services.date_format import format_user_date, manual_date_formats
 from bot.app.services.exercise_format import format_number, format_reps
 from bot.app.services.result_constructor import (
     ConstructorError,
@@ -401,12 +402,19 @@ async def choose_entry_date(
         return
 
     if callback_data.choice == HistoryDateChoiceValue.MANUAL:
+        context = await _refresh_user_today(
+            callback.from_user.id,
+            state,
+            context,
+            api_client,
+        )
         await state.set_state(EditHistoryEntry.entering_date)
         await callback.answer()
+        short, text = _manual_date_text(context.user_today)
         await _render(
             callback,
-            texts.ENTER_DATE,
-            history_manual_date_keyboard(),
+            text,
+            history_manual_date_keyboard(short),
         )
         return
     if callback_data.choice == HistoryDateChoiceValue.BACK:
@@ -440,14 +448,22 @@ async def enter_entry_date(
     state: FSMContext,
     api_client: RepTrackerApi,
 ) -> None:
-    try:
-        context = await _get_edit_context(
-            message,
+    context = await _get_edit_context(
+        message,
+        state,
+        EditHistoryEntry.entering_date.state,
+    )
+    if context is None:
+        return
+    from_user = getattr(message, "from_user", None)
+    if from_user is not None:
+        context = await _refresh_user_today(
+            from_user.id,
             state,
-            EditHistoryEntry.entering_date.state,
+            context,
+            api_client,
         )
-        if context is None:
-            return
+    try:
         performed_on = parse_result_date(
             message.text or "",
             today=context.user_today,
@@ -687,6 +703,29 @@ async def _get_edit_context(
     else:
         await event.answer(texts.RESTORE_ENTRY_FAILED)
     return None
+
+
+async def _refresh_user_today(
+    telegram_user_id: int,
+    state: FSMContext,
+    context: HistoryEditContext,
+    api_client: RepTrackerApi,
+) -> HistoryEditContext:
+    today = await current_user_today(
+        api_client,
+        telegram_user_id,
+        context.user_today,
+    )
+    if today == context.user_today:
+        return context
+    context = replace(context, user_today=today)
+    await state.update_data(user_today=today)
+    return context
+
+
+def _manual_date_text(today: date) -> tuple[str, str]:
+    short, full, iso = manual_date_formats(today)
+    return short, texts.enter_date(short, full, iso)
 
 
 async def _render_day(

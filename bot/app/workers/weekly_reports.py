@@ -8,7 +8,11 @@ from aiogram.exceptions import TelegramForbiddenError, TelegramRetryAfter
 
 from bot.app.api.client import RepTrackerApi
 from bot.app.core.config import get_settings
-from bot.app.services.weekly_report import report_keyboard, split_summary
+from bot.app.services.weekly_report import (
+    report_keyboard,
+    split_disabled_notifications,
+    split_summary,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -52,12 +56,19 @@ async def deliver_leased_reports(bot, api_client, worker_id: str) -> int:
     reports = page["reports"]
     for report in reports:
         try:
-            messages = split_summary(report)
+            messages = split_summary(report) if report.get("exercises") else []
             for index, text in enumerate(messages):
                 await bot.send_message(
                     chat_id=int(report["external_id"]),
                     text=text,
                     reply_markup=report_keyboard(report) if index == len(messages) - 1 else None,
+                    parse_mode=None,
+                )
+                await asyncio.sleep(MESSAGE_INTERVAL_SECONDS)
+            for notification in split_disabled_notifications(report):
+                await bot.send_message(
+                    chat_id=int(report["external_id"]),
+                    text=notification,
                     parse_mode=None,
                 )
                 await asyncio.sleep(MESSAGE_INTERVAL_SECONDS)

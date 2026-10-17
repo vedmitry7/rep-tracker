@@ -1,9 +1,8 @@
 import type { Exercise, ExerciseEntry, ExerciseStats, HistoryDay, Settings } from "./types";
 import { getTelegramInitData } from "./telegram";
+import { t } from "./i18n";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api/mini-app";
-const requestFailureMessage = "Unable to load data. Please try again.";
-const requestTimeoutMessage = "The connection timed out. Please try again.";
 const requestTimeoutMs = 15_000;
 
 type QueryValue = string | number | boolean | undefined;
@@ -33,17 +32,18 @@ async function request<T>(path: string, options: RequestInit = {}, query?: Recor
         status: response.status,
         detail: payload?.detail,
       });
-      throw new Error(requestFailureMessage);
+      throw new Error(t("errors.loadFailed"));
     }
     return response.status === 204 ? undefined as T : response.json() as Promise<T>;
   } catch (error) {
-    if (error instanceof Error && error.message === requestFailureMessage) throw error;
+    if (error instanceof Error && (error.message === t("errors.loadFailed") || error.message === t("errors.requestTimedOut"))) throw error;
     console.error("Mini App request could not be completed", {
       method: options.method ?? "GET",
       path: url.pathname,
       error,
     });
-    throw new Error(requestFailureMessage);
+    if (error instanceof DOMException && error.name === "AbortError") throw new Error(t("errors.requestTimedOut"));
+    throw new Error(t("errors.loadFailed"));
   } finally {
     window.clearTimeout(timeoutId);
   }

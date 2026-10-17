@@ -25,7 +25,20 @@ RESTORE_INPUT_FAILED = 'Giriş geri yüklenemedi. Egzersizi tekrar açın.'
 RESTORE_ENTRY_FAILED = 'Giriş geri yüklenemedi.'
 CHOOSE_DATE = 'Bir tarih seçin:'
 CHOOSE_NEW_DATE = 'Yeni bir tarih seçin:'
-ENTER_DATE = 'Bir tarih girin:\n\n25.08\n25.08.2026\n2026-08-25'
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        'Bir tarih girin:\n\n'
+        f'{short}\n{full}\n{iso}\n\n'
+        'Tarihi kopyalamak için aşağıdaki tarihe dokunun, sonra yapıştırıp düzeltin.'
+    )
+
+
+def copy_date(short: str) -> str:
+    return f'📋 {short}'
+
+
 TODAY = 'Bugün'
 YESTERDAY = 'Dün'
 DAY_BEFORE_YESTERDAY = 'Dünden önceki gün'
@@ -86,7 +99,12 @@ POSITIVE_RESULT_REQUIRED = 'Set ve tekrar sayısı pozitif olmalıdır.'
 INVALID_RESULT_FORMAT = 'Tanınmayan biçim. Örnekler: 10, 4x10 veya 10 9 8.'
 NUMBER_TOO_LARGE = 'Sayı çok büyük.'
 ENTER_DATE_REQUIRED = 'Bir tarih girin.'
-INVALID_DATE = "Tanınmayan tarih. 25.08, 25.08.2026 veya 2026-08-25'i kullanın."
+
+
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f'Tanınmayan tarih. {short}, {full} veya {iso} kullanın.'
+
+
 FUTURE_DATE = 'Gelecekteki bir tarih seçilemez.'
 SET_NOT_FOUND = 'Ayar bulunamadı.'
 LAST_SET_REQUIRED = 'En az bir set kalmalıdır.'
@@ -230,6 +248,12 @@ def weekly_report_changed(enabled: bool) -> str:
     return 'Haftalık rapor etkinleştirildi' if enabled else 'Haftalık rapor devre dışı bırakıldı'
 WEEKLY_NO_DATA = 'Bu alıştırmada henüz tam haftalara ait veri yok.'
 WEEKLY_CARD_FAILED = 'Kartlardan biri gönderilemedi. Lütfen egzersiz menüsünden tekrar deneyin.'
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f'“{name}” için haftalık raporlar iki hafta boyunca etkinlik olmadığından '
+        'kapatıldı. Egzersiz istatistiklerinden yeniden açabilirsiniz.'
+    )
 WEEKLY_LABELS = dict(title='📅 Haftalık rapor', period='Dönem', total='Bu hafta: {total} {unit}', first='Henüz önceki tam hafta yok.', previous='Önceki hafta', change='Değiştir', active='Aktif günler', best='En iyi gün')
 
 def weekly_reps_unit(total: int) -> str:

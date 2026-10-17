@@ -19,7 +19,8 @@ LANGUAGE_CHANGED = "Idioma cambiado"
 TODAY, YESTERDAY, DAY_BEFORE_YESTERDAY = "Hoy", "Ayer", "Anteayer"
 ENTER_RESULT = "Introduce un resultado."
 INVALID_RESULT_FORMAT = "Formato no reconocido. Ejemplos: 10, 4x10 o 10 9 8."
-INVALID_DATE = "Fecha no reconocida. Usa 25.08, 25.08.2026 o 2026-08-25."
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f"Fecha no reconocida. Usa {short}, {full} o {iso}."
 BACKEND_UNAVAILABLE = "El servicio no está disponible temporalmente. Inténtalo más tarde."
 BOT_NAME = "Repka · Registro de entrenamiento"
 BOT_SHORT_DESCRIPTION = "Registra ejercicios, sigue tu progreso y recibe informes semanales."
@@ -45,7 +46,20 @@ RESTORE_INPUT_FAILED = "No se pudo restaurar la introducción. Abre el ejercicio
 RESTORE_ENTRY_FAILED = "No se pudo restaurar la entrada."
 CHOOSE_DATE = "Elige una fecha:"
 CHOOSE_NEW_DATE = "Elige una nueva fecha:"
-ENTER_DATE = "Introduce una fecha:\n\n25.08\n25.08.2026\n2026-08-25"
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        "Introduce una fecha:\n\n"
+        f"{short}\n{full}\n{iso}\n\n"
+        "Toca la fecha de abajo para copiarla, luego pégala y corrígela."
+    )
+
+
+def copy_date(short: str) -> str:
+    return f"📋 {short}"
+
+
 MIN_REPETITIONS = "El mínimo es 1."
 MAX_REPETITIONS = "El máximo es 10.000."
 CHANGES_SAVED = "Cambios guardados"
@@ -252,6 +266,13 @@ def weekly_report_changed(enabled: bool) -> str:
 
 WEEKLY_NO_DATA = "Este ejercicio aún no tiene datos de semanas completas."
 WEEKLY_CARD_FAILED = "No se pudo enviar una de las tarjetas. Inténtalo de nuevo desde el menú del ejercicio."
+
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f"Los informes semanales de “{name}” se desactivaron tras dos semanas sin "
+        "actividad. Puedes volver a activarlos en las estadísticas del ejercicio."
+    )
 WEEKLY_LABELS = dict(title="📅 Informe semanal", period="Periodo", total="Esta semana: {total} {unit}", first="Aún no hay una semana completa anterior.", previous="Semana anterior", change="Cambio", active="Días activos", best="Mejor día")
 
 

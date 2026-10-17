@@ -26,7 +26,8 @@ LANGUAGE_CHANGED = "Тіл өзгертілді"
 TODAY, YESTERDAY, DAY_BEFORE_YESTERDAY = "Бүгін", "Кеше", "Арғы күні"
 ENTER_RESULT = "Нәтижені енгізіңіз."
 INVALID_RESULT_FORMAT = "Пішім танылмады. Мысалдар: 10, 4x10 немесе 10 9 8."
-INVALID_DATE = "Күн танылмады. 25.08, 25.08.2026 немесе 2026-08-25 қолданыңыз."
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f"Күн танылмады. {short}, {full} немесе {iso} қолданыңыз."
 BACKEND_UNAVAILABLE = "Қызмет уақытша қолжетімсіз. Кейінірек қайталап көріңіз."
 
 from ._translations import _apply_button_translations
@@ -47,7 +48,20 @@ RESTORE_INPUT_FAILED = "Енгізуді қалпына келтіру мүмк�
 RESTORE_ENTRY_FAILED = "Жазбаны қалпына келтіру мүмкін болмады."
 CHOOSE_DATE = "Күнді таңдаңыз:"
 CHOOSE_NEW_DATE = "Жаңа күнді таңдаңыз:"
-ENTER_DATE = "Күнді енгізіңіз:\n\n25.08\n25.08.2026\n2026-08-25"
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        "Күнді енгізіңіз:\n\n"
+        f"{short}\n{full}\n{iso}\n\n"
+        "Көшіру үшін төмендегі күнді түртіңіз, содан кейін қойып, түзетіңіз."
+    )
+
+
+def copy_date(short: str) -> str:
+    return f"📋 {short}"
+
+
 MIN_REPETITIONS = "Ең азы — 1."
 MAX_REPETITIONS = "Ең көбі — 10 000."
 CHANGES_SAVED = "Өзгерістер сақталды"
@@ -250,6 +264,14 @@ def weekly_report_changed(enabled: bool) -> str:
 
 WEEKLY_NO_DATA = "Бұл жаттығу үшін толық апталар туралы дерек әлі жоқ."
 WEEKLY_CARD_FAILED = "Карталардың бірін жіберу мүмкін болмады. Жаттығу мәзірінен қайталап көріңіз."
+
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f"«{name}» жаттығуы бойынша апталық есептер екі апта бойы белсенділік "
+        "болмағандықтан өшірілді. Оларды жаттығу статистикасында қайта қосуға "
+        "болады."
+    )
 WEEKLY_LABELS = dict(title="📅 Апталық есеп", period="Кезең", total="Осы апта: {total} {unit}", first="Алдыңғы толық апта әлі жоқ.", previous="Алдыңғы апта", change="Өзгеріс", active="Белсенді күндер", best="Ең жақсы күн")
 
 

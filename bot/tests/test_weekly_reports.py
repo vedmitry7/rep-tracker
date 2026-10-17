@@ -15,7 +15,13 @@ from bot.app.keyboards.exercises import (
     ExerciseDetailActionValue,
     exercise_statistics_keyboard,
 )
-from bot.app.services.weekly_report import report_keyboard, split_summary, summary_text
+from bot.app.services.weekly_report import (
+    disabled_notification,
+    report_keyboard,
+    split_disabled_notifications,
+    split_summary,
+    summary_text,
+)
 from bot.app.texts import reset_current_language, set_current_language
 from bot.app.workers.weekly_reports import deliver_leased_reports, materialize_all
 
@@ -89,6 +95,74 @@ async def test_worker_materializes_pages_and_delivers_leased_report(monkeypatch)
     bot.send_message.assert_awaited_once()
     api.complete_weekly_delivery.assert_awaited_once_with("a-report", "lease-token", "sent")
     pause.assert_awaited_once_with(1)
+
+
+def test_disabled_notification_combines_and_localizes():
+    assert disabled_notification(report()) is None
+    data = report("ru")
+    data["disabled_exercises"] = [
+        {"exercise_id": 1, "name": "Подтягивания"},
+        {"exercise_id": 2, "name": "Приседания"},
+    ]
+    text = disabled_notification(data)
+    assert "Подтягивания" in text and "Приседания" in text
+    assert text.count("\n\n") == 1
+    english = report("en")
+    english["disabled_exercises"] = [{"exercise_id": 1, "name": "Pull-ups"}]
+    assert "Pull-ups" in disabled_notification(english)
+
+
+def test_many_disabled_exercises_fit_telegram_messages():
+    data = report("en")
+    data["disabled_exercises"] = [
+        {"exercise_id": index, "name": f"Exercise {index} " + "x" * 200}
+        for index in range(40)
+    ]
+    messages = split_disabled_notifications(data)
+    assert len(messages) > 1
+    assert all(len(message) <= 4096 for message in messages)
+    assert sum(message.count("You can turn them back on") for message in messages) == 40
+
+
+@pytest.mark.asyncio
+async def test_worker_sends_only_the_disabled_notification_without_a_report(monkeypatch):
+    data = report()
+    data["exercises"] = []
+    data["disabled_exercises"] = [{"exercise_id": 1, "name": "Pull-ups"}]
+    api = SimpleNamespace(
+        lease_weekly_reports=AsyncMock(return_value=dict(reports=[data])),
+        complete_weekly_delivery=AsyncMock(),
+    )
+    bot = SimpleNamespace(send_message=AsyncMock())
+    from bot.app.workers import weekly_reports
+    monkeypatch.setattr(weekly_reports.asyncio, "sleep", AsyncMock())
+
+    await deliver_leased_reports(bot, api, "worker-a")
+
+    bot.send_message.assert_awaited_once()
+    call = bot.send_message.await_args
+    assert call.kwargs["text"] == disabled_notification(data)
+    assert call.kwargs.get("reply_markup") is None
+    api.complete_weekly_delivery.assert_awaited_once_with("a-report", "lease-token", "sent")
+
+
+@pytest.mark.asyncio
+async def test_worker_sends_report_then_disabled_notification(monkeypatch):
+    data = report()
+    data["disabled_exercises"] = [{"exercise_id": 3, "name": "Dips"}]
+    api = SimpleNamespace(
+        lease_weekly_reports=AsyncMock(return_value=dict(reports=[data])),
+        complete_weekly_delivery=AsyncMock(),
+    )
+    bot = SimpleNamespace(send_message=AsyncMock())
+    from bot.app.workers import weekly_reports
+    monkeypatch.setattr(weekly_reports.asyncio, "sleep", AsyncMock())
+
+    await deliver_leased_reports(bot, api, "worker-a")
+
+    assert bot.send_message.await_count == 2
+    assert bot.send_message.await_args_list[1].kwargs["text"] == disabled_notification(data)
+    assert bot.send_message.await_args_list[0].kwargs["reply_markup"] is not None
 
 
 @pytest.mark.asyncio

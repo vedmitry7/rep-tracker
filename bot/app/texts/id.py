@@ -25,7 +25,20 @@ RESTORE_INPUT_FAILED = 'Tidak dapat memulihkan masukan. Buka latihan lagi.'
 RESTORE_ENTRY_FAILED = 'Tidak dapat memulihkan entri.'
 CHOOSE_DATE = 'Pilih tanggal:'
 CHOOSE_NEW_DATE = 'Pilih tanggal baru:'
-ENTER_DATE = 'Masukkan tanggal:\n\n25.08\n25.08.2026\n25-08-2026'
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        'Masukkan tanggal:\n\n'
+        f'{short}\n{full}\n{iso}\n\n'
+        'Ketuk tanggal di bawah untuk menyalinnya, lalu tempel dan perbaiki.'
+    )
+
+
+def copy_date(short: str) -> str:
+    return f'📋 {short}'
+
+
 TODAY = 'Hari ini'
 YESTERDAY = 'Kemarin'
 DAY_BEFORE_YESTERDAY = 'Sehari sebelum kemarin'
@@ -86,7 +99,12 @@ POSITIVE_RESULT_REQUIRED = 'Jumlah set dan repetisi harus positif.'
 INVALID_RESULT_FORMAT = 'Format tidak dikenal. Contoh: 10, 4x10, atau 10 9 8.'
 NUMBER_TOO_LARGE = 'Jumlahnya terlalu besar.'
 ENTER_DATE_REQUIRED = 'Masukkan tanggal.'
-INVALID_DATE = 'Tanggal tidak dikenal. Gunakan 25.08, 25.08.2026, atau 25-08-2026.'
+
+
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f'Tanggal tidak dikenal. Gunakan {short}, {full}, atau {iso}.'
+
+
 FUTURE_DATE = 'Tanggal yang akan datang tidak dapat dipilih.'
 SET_NOT_FOUND = 'Kumpulan tidak ditemukan.'
 LAST_SET_REQUIRED = 'Setidaknya satu set harus tersisa.'
@@ -230,6 +248,12 @@ def weekly_report_changed(enabled: bool) -> str:
     return 'Laporan mingguan diaktifkan' if enabled else 'Laporan mingguan dinonaktifkan'
 WEEKLY_NO_DATA = 'Latihan ini belum memiliki data selama beberapa minggu penuh.'
 WEEKLY_CARD_FAILED = 'Tidak dapat mengirim salah satu kartu. Silakan coba lagi dari menu latihan.'
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f'Laporan mingguan untuk “{name}” dinonaktifkan setelah dua minggu tanpa '
+        'aktivitas. Anda dapat mengaktifkannya lagi di statistik latihan.'
+    )
 WEEKLY_LABELS = dict(title='📅 Laporan mingguan', period='Titik', total='Minggu ini: {total} {unit}', first='Belum ada minggu lengkap sebelumnya.', previous='Minggu sebelumnya', change='Perubahan', active='Hari-hari aktif', best='Hari terbaik')
 
 def weekly_reps_unit(total: int) -> str:

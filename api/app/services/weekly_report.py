@@ -2,6 +2,7 @@
 from collections import defaultdict
 from datetime import date, time, timedelta
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, case, func, or_, select, true, update
 from sqlalchemy.dialects.postgresql import insert
@@ -21,8 +22,35 @@ LEASE_DURATION = timedelta(minutes=10)
 RETRY_DELAYS = (60, 300, 900, 3600, 21600)
 
 
+AUTO_DISABLE_MISSED_WEEKS = 2
+
+
 def last_week(today: date) -> date:
     return today - timedelta(days=today.weekday() + 7)
+
+
+def start_of_week(day: date) -> date:
+    return day - timedelta(days=day.weekday())
+
+
+def week_total(days, week_start: date) -> int:
+    end = week_start + timedelta(days=6)
+    return sum(int(reps) for day, reps in days if week_start <= day <= end)
+
+
+def should_auto_disable(exercise, user, days, week_start: date) -> bool:
+    """True when the two completed weeks after the tracking start had no activity.
+
+    The week the exercise started being tracked is partial and does not count, so
+    a freshly created (or manually re-enabled) exercise gets two full weeks.
+    """
+    enabled_at = exercise.weekly_report_enabled_at or exercise.created_at
+    local_day = enabled_at.astimezone(ZoneInfo(user.timezone)).date()
+    first_full_week = start_of_week(local_day) + timedelta(weeks=1)
+    previous_start = week_start - timedelta(weeks=1)
+    if previous_start < first_full_week:
+        return False
+    return week_total(days, week_start) == 0 and week_total(days, previous_start) == 0
 
 
 def due_week_start(timezone_name: str) -> date | None:
@@ -105,8 +133,13 @@ async def build_reports(session, due_users: list[tuple[UserIdentity, User, date]
     for user_id, user in users_by_id.items():
         start = starts_by_user_id[user_id]
         items = []
+        disabled = []
         for exercise in exercises_by_user_id[user_id]:
-            result = calculate_weekly(daily_by_exercise_id[exercise.id], start)
+            days = daily_by_exercise_id[exercise.id]
+            if should_auto_disable(exercise, user, days, start):
+                disabled.append(dict(exercise_id=exercise.id, name=exercise.name))
+                continue
+            result = calculate_weekly(days, start)
             if result:
                 items.append(dict(exercise_id=exercise.id, name=exercise.name, **result))
         payloads[user_id] = dict(
@@ -114,8 +147,13 @@ async def build_reports(session, due_users: list[tuple[UserIdentity, User, date]
             week_end=(start + timedelta(days=6)).isoformat(),
             language=user.language,
             exercises=items,
+            disabled_exercises=disabled,
         )
     return payloads
+
+
+def _has_report_content(payload: dict) -> bool:
+    return bool(payload["exercises"] or payload["disabled_exercises"])
 
 
 async def materialize_reports(session, after_id=0, limit=50):
@@ -129,6 +167,18 @@ async def materialize_reports(session, after_id=0, limit=50):
         ).order_by(UserIdentity.id).limit(limit))).all()
         due_users = [(identity, user, start) for identity, user in identities
                      if (start := due_week_start(user.timezone)) is not None]
+        if due_users:
+            # A week is decided once. Re-running materialize must not re-evaluate a
+            # week that already produced a snapshot, so an auto-disable is announced
+            # exactly once through the row that carries it.
+            existing = set((await session.execute(select(
+                WeeklyReport.user_id, WeeklyReport.week_start,
+            ).where(
+                WeeklyReport.user_id.in_([user.id for _, user, _ in due_users]),
+                WeeklyReport.week_start.in_({start for _, _, start in due_users}),
+            ))).all())
+            due_users = [item for item in due_users
+                         if (item[1].id, item[2]) not in existing]
         payloads = await build_reports(session, due_users)
         rows = [
             dict(
@@ -141,12 +191,24 @@ async def materialize_reports(session, after_id=0, limit=50):
                 next_attempt_at=func.now(),
             )
             for _, user, start in due_users
-            if (payload := payloads[user.id])["exercises"]
+            if _has_report_content(payload := payloads[user.id])
         ]
         if rows:
-            await session.execute(insert(WeeklyReport).values(rows).on_conflict_do_nothing(
-                index_elements=["user_id", "week_start"],
-            ))
+            inserted = set((await session.execute(
+                insert(WeeklyReport).values(rows)
+                .on_conflict_do_nothing(index_elements=["user_id", "week_start"])
+                .returning(WeeklyReport.user_id)
+            )).scalars().all())
+            disabled_ids = [
+                item["exercise_id"]
+                for user_id, payload in payloads.items()
+                if user_id in inserted
+                for item in payload["disabled_exercises"]
+            ]
+            if disabled_ids:
+                await session.execute(update(Exercise).where(
+                    Exercise.id.in_(disabled_ids),
+                ).values(weekly_report_enabled=False))
         return dict(next_cursor=identities[-1][0].id if len(identities) == limit else None)
 
 

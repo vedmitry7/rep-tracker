@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "i18n:check": "node scripts/i18n-check.mjs",
+    "test": "node --import ./scripts/ts-hooks.mjs --test scripts/i18n.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

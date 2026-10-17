@@ -12,8 +12,11 @@ from bot.app.keyboards.exercises import (
     exercises_list_keyboard,
 )
 from bot.app.keyboards.results import (
+    DateChoice,
+    DateChoiceValue,
     ResultAction,
     ResultActionValue,
+    manual_date_keyboard,
 )
 from bot.app.keyboards.settings import SettingsAction, SettingsActionValue
 
@@ -93,6 +96,28 @@ def test_back_button_returns_to_correct_exercise() -> None:
 
     assert len(callbacks) == 1
     assert ExerciseOpen.unpack(callbacks[0]).exercise_id == 42
+
+
+def test_manual_date_keyboard_copies_short_date_and_keeps_navigation() -> None:
+    markup = manual_date_keyboard(exercise_id=42, copy_date="17.10")
+
+    copy_buttons = [
+        button
+        for row in markup.inline_keyboard
+        for button in row
+        if button.copy_text is not None
+    ]
+    assert len(copy_buttons) == 1
+    assert copy_buttons[0].text == "📋 17.10"
+    assert copy_buttons[0].copy_text.text == "17.10"
+    assert copy_buttons[0].callback_data is None
+
+    callbacks = callback_values(markup)
+    back = DateChoice.unpack(callbacks[0])
+    cancel = ResultAction.unpack(callbacks[1])
+    assert back.choice == DateChoiceValue.BACK
+    assert (cancel.action, cancel.exercise_id) == (ResultActionValue.CANCEL, 42)
+    assert [len(row) for row in markup.inline_keyboard] == [1, 1, 1]
 
 
 def test_destructive_cancel_returns_without_mutating() -> None:

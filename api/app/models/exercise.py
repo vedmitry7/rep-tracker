@@ -1,9 +1,11 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -52,6 +54,11 @@ class Exercise(TimestampMixin, Base):
         default=True,
         server_default=true(),
         nullable=False,
+    )
+    weekly_report_enabled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=True,
     )
 
     user: Mapped["User"] = relationship(back_populates="exercises")

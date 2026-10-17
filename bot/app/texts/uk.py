@@ -25,7 +25,20 @@ RESTORE_INPUT_FAILED = 'Не вдалося відновити введення.
 RESTORE_ENTRY_FAILED = 'Не вдалося відновити запис.'
 CHOOSE_DATE = 'Виберіть дату:'
 CHOOSE_NEW_DATE = 'Виберіть нову дату:'
-ENTER_DATE = 'Введіть дату:\n\n25.08\n25.08.2026\n2026-08-25'
+
+
+def enter_date(short: str, full: str, iso: str) -> str:
+    return (
+        'Введіть дату:\n\n'
+        f'{short}\n{full}\n{iso}\n\n'
+        'Натисни дату нижче, щоб скопіювати, потім встав і виправ.'
+    )
+
+
+def copy_date(short: str) -> str:
+    return f'📋 {short}'
+
+
 TODAY = 'Сьогодні'
 YESTERDAY = 'вчора'
 DAY_BEFORE_YESTERDAY = 'Позавчора'
@@ -86,7 +99,12 @@ POSITIVE_RESULT_REQUIRED = 'Кількість підходів і повтор�
 INVALID_RESULT_FORMAT = 'Нерозпізнаний формат. Приклади: 10, 4x10 або 10 9 8.'
 NUMBER_TOO_LARGE = 'Завелике число.'
 ENTER_DATE_REQUIRED = 'Введіть дату.'
-INVALID_DATE = 'Нерозпізнана дата. Використовуйте 25.08, 25.08.2026 або 2026-08-25.'
+
+
+def invalid_date(short: str, full: str, iso: str) -> str:
+    return f'Нерозпізнана дата. Використовуйте {short}, {full} або {iso}.'
+
+
 FUTURE_DATE = 'Майбутню дату вибрати неможливо.'
 SET_NOT_FOUND = 'Набір не знайдено.'
 LAST_SET_REQUIRED = 'Повинен залишитися хоча б один набір.'
@@ -230,6 +248,13 @@ def weekly_report_changed(enabled: bool) -> str:
     return 'Щотижневий звіт увімкнено' if enabled else 'Щотижневий звіт вимкнено'
 WEEKLY_NO_DATA = 'Ця вправа ще не має даних для повних тижнів.'
 WEEKLY_CARD_FAILED = 'Не вдалося надіслати одну з карток. Спробуйте ще раз із меню вправ.'
+
+def weekly_report_auto_disabled(name: str) -> str:
+    return (
+        f'Щотижневі звіти для вправи «{name}» вимкнено через відсутність '
+        'активності протягом двох тижнів. Увімкнути їх знову можна в статистиці '
+        'вправи.'
+    )
 WEEKLY_LABELS = dict(title='📅 Щотижневий звіт', period='Крапка', total='Цього тижня: {total} {unit}', first='Попереднього повного тижня ще немає.', previous='Попередній тиждень', change='Зміна', active='Активні дні', best='Найкращий день')
 
 def weekly_reps_unit(total: int) -> str:
